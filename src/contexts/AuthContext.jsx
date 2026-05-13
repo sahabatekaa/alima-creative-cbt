@@ -1,8 +1,6 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db } from '../config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { ref, get } from 'firebase/database';
+import { supabase } from '../config/supabase'; // 100% SUPABASE
 import { RefreshCw } from 'lucide-react';
 
 const AuthContext = createContext();
@@ -14,44 +12,75 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          // 1. Cek identitas global user di root direktori
-          const userRef = ref(db, `users/${user.uid}`);
-          const userSnap = await get(userRef);
-
-          if (userSnap.exists()) {
-            const data = userSnap.val();
-            setUserData(data);
-            setCurrentUser(user);
-
-            // 2. Jika user terkait dengan sebuah yayasan/sekolah (punya schoolId)
-            if (data.schoolId && data.role !== 'superadmin') {
-              const tenantRef = ref(db, `tenants/${data.schoolId}/profile`);
-              const tenantSnap = await get(tenantRef);
-              if (tenantSnap.exists()) {
-                setTenantData({ id: data.schoolId, ...tenantSnap.val() });
-              }
-            }
-          } else {
-            // User ada di Firebase Auth tapi tidak ada di Realtime DB (Kasus anomali)
-            setUserData(null);
-            setCurrentUser(user);
-          }
-        } catch (error) {
-          console.error("🚨 FATAL: Gagal menarik data otentikasi SaaS:", error);
-        }
-      } else {
-        // User logout atau belum login
+    // Fungsi untuk mengambil detail profil user dan institusi dari PostgreSQL
+    const fetchUserProfile = async (user) => {
+      if (!user) {
         setCurrentUser(null);
         setUserData(null);
         setTenantData(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false); // Matikan layar loading setelah data siap
+
+      try {
+        setCurrentUser(user);
+
+        // 1. Tarik data profil dari tabel 'users'
+        const { data: profileData, error: profileErr } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileErr || !profileData) {
+          setUserData(null);
+          setLoading(false);
+          return;
+        }
+
+        // Normalisasi snake_case (SQL) ke camelCase (React) agar komponen UI tidak rusak
+        const normalizedUser = {
+          ...profileData,
+          schoolId: profileData.school_id 
+        };
+        setUserData(normalizedUser);
+
+        // 2. Tarik data institusi/yayasan jika user terkait sekolah
+        if (normalizedUser.schoolId && normalizedUser.role !== 'superadmin') {
+          const { data: schoolData, error: schoolErr } = await supabase
+            .from('schools')
+            .select('*')
+            .eq('id', normalizedUser.schoolId)
+            .single();
+
+          if (schoolData && !schoolErr) {
+            setTenantData(schoolData);
+          }
+        }
+      } catch (error) {
+        console.error("🚨 FATAL: Gagal menarik data otentikasi SaaS dari Supabase:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Cek sesi aktif saat aplikasi pertama kali dimuat
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      fetchUserProfile(session?.user ?? null);
     });
 
-    return unsubscribe;
+    // Pantau perubahan status login (Login, Logout, Token Refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Hanya set loading true jika benar-benar ganti user/login (mencegah kedip saat refresh token di background)
+      if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
+        setLoading(true);
+        fetchUserProfile(session?.user ?? null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Paket data yang akan disebar ke seluruh komponen aplikasi

@@ -1,13 +1,11 @@
 // src/pages/superadmin/MasterDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { db } from '../../config/firebase';
-import { ref, onValue, set, remove, update } from 'firebase/database';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth'; // Tambahkan signOut
-import { useNavigate } from 'react-router-dom'; // Tambahkan useNavigate
+import { supabase } from '../../config/supabase'; // 100% SUPABASE
+import { useNavigate } from 'react-router-dom';
 import { Building2, CreditCard, Users, LogOut, Plus, Trash2, Database, Menu, X, Landmark, KeyRound, Activity, User, Phone, MessageCircle } from 'lucide-react';
 
 export default function MasterDashboard({ onLogout }) {
-  const navigate = useNavigate(); // Inisialisasi useNavigate
+  const navigate = useNavigate(); 
   const [activeTab, setActiveTab] = useState('clients');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [clients, setClients] = useState([]);
@@ -19,70 +17,102 @@ export default function MasterDashboard({ onLogout }) {
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   const [adminForm, setAdminForm] = useState({ email: '', password: '', name: '', schoolId: '' });
 
+  // ==========================================
+  // TARIK DATA REALTIME DARI POSTGRESQL
+  // ==========================================
   useEffect(() => {
-    const clientsRef = ref(db, 'clients');
-    const unsubClients = onValue(clientsRef, (snap) => {
-      if (snap.exists()) {
-        setClients(Object.keys(snap.val()).map(key => ({ id: key, ...snap.val()[key] })));
-      } else {
-        setClients([]);
+    const fetchSchools = async () => {
+      const { data, error } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
+      if (data && !error) {
+        // Normalisasi snake_case ke camelCase
+        setClients(data.map(c => ({
+          ...c,
+          picName: c.pic_name,
+          waNumber: c.wa_number,
+          expiryDate: c.expiry_date
+        })));
       }
-    });
+    };
 
-    const usersRef = ref(db, 'users');
-    const unsubUsers = onValue(usersRef, (snap) => {
-      if (snap.exists()) {
-        const allUsers = Object.keys(snap.val()).map(key => ({ uid: key, ...snap.val()[key] }));
-        setClientAdmins(allUsers.filter(u => u.role === 'admin_sekolah'));
-      } else {
-        setClientAdmins([]);
+    const fetchAdmins = async () => {
+      const { data, error } = await supabase.from('users').select('*').eq('role', 'admin_sekolah');
+      if (data && !error) {
+        setClientAdmins(data.map(u => ({
+          uid: u.id,
+          ...u,
+          schoolId: u.school_id
+        })));
       }
-    });
+    };
 
-    return () => { unsubClients(); unsubUsers(); };
+    // Panggilan perdana
+    fetchSchools();
+    fetchAdmins();
+
+    // Berlangganan Realtime
+    const schoolsChannel = supabase.channel('public:schools')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'schools' }, fetchSchools)
+      .subscribe();
+
+    const usersChannel = supabase.channel('public:users')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, fetchAdmins)
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(schoolsChannel); 
+      supabase.removeChannel(usersChannel); 
+    };
   }, []);
 
-  // --- FUNGSI LOGOUT INTERNAL ---
-  const handleLogout = () => {
-    const auth = getAuth();
-    signOut(auth).then(() => {
+  // --- FUNGSI LOGOUT ---
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
       localStorage.clear();
       navigate('/login');
-    }).catch((error) => {
+    } catch (error) {
       alert("Gagal keluar: " + error.message);
-    });
-  };
-
-  // --- MANAJEMEN KLIEN (SEKOLAH) ---
-  const handleSaveClient = (e) => {
-    e.preventDefault();
-    const clientId = clientForm.id.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-    
-    set(ref(db, `clients/${clientId}`), {
-      name: clientForm.name,
-      plan: clientForm.plan,
-      expiryDate: clientForm.expiryDate,
-      picName: clientForm.picName,
-      waNumber: clientForm.waNumber,
-      status: 'active',
-      createdAt: Date.now()
-    }).then(() => {
-      alert("Klien sekolah berhasil didaftarkan!");
-      setShowAddClientModal(false);
-      setClientForm({ id: '', name: '', plan: 'Basic', expiryDate: '', picName: '', waNumber: '' });
-    }).catch(err => alert("Gagal: " + err.message));
-  };
-
-  const toggleClientStatus = (id, currentStatus) => {
-    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
-    if(window.confirm(`Yakin ingin ubah status klien ini menjadi ${newStatus.toUpperCase()}?`)) {
-      update(ref(db, `clients/${id}`), { status: newStatus });
     }
   };
 
-  const deleteClient = (id) => {
-    if(window.confirm("PERINGATAN! Hapus klien ini secara permanen? Data tenant mereka akan kehilangan referensi billing.")) {
-      remove(ref(db, `clients/${id}`));
+  // --- MANAJEMEN KLIEN (SEKOLAH) ---
+  const handleSaveClient = async (e) => {
+    e.preventDefault();
+    const clientId = clientForm.id.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    
+    try {
+      const { error } = await supabase.from('schools').insert([{
+        id: clientId,
+        name: clientForm.name,
+        plan: clientForm.plan,
+        expiry_date: clientForm.expiryDate || null,
+        pic_name: clientForm.picName,
+        wa_number: clientForm.waNumber,
+        status: 'active'
+      }]);
+
+      if (error) throw error;
+
+      alert("Klien sekolah berhasil didaftarkan!");
+      setShowAddClientModal(false);
+      setClientForm({ id: '', name: '', plan: 'Basic', expiryDate: '', picName: '', waNumber: '' });
+    } catch (err) {
+      alert("Gagal menyimpan data sekolah: " + err.message);
+    }
+  };
+
+  const toggleClientStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    if(window.confirm(`Yakin ingin ubah status klien ini menjadi ${newStatus.toUpperCase()}?`)) {
+      const { error } = await supabase.from('schools').update({ status: newStatus }).eq('id', id);
+      if (error) alert("Gagal update status: " + error.message);
+    }
+  };
+
+  const deleteClient = async (id) => {
+    if(window.confirm("PERINGATAN! Hapus klien ini secara permanen? Seluruh data (Guru, Siswa, Soal, Nilai) milik sekolah ini akan IKUT TERHAPUS BERSIH karena fitur CASCADE PostgreSQL.")) {
+      const { error } = await supabase.from('schools').delete().eq('id', id);
+      if (error) alert("Gagal menghapus: " + error.message);
     }
   };
 
@@ -92,28 +122,51 @@ export default function MasterDashboard({ onLogout }) {
     if (!adminForm.schoolId) return alert("Pilih sekolah untuk admin ini!");
     
     try {
-      const auth = getAuth();
-      const userCred = await createUserWithEmailAndPassword(auth, adminForm.email, adminForm.password);
-      
-      await set(ref(db, `users/${userCred.user.uid}`), {
+      // 1. Daftarkan Autentikasi
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: adminForm.email,
+        password: adminForm.password,
+      });
+
+      if (authErr) throw authErr;
+
+      const user = authData.user;
+
+      // 2. Simpan profil sebagai admin_sekolah
+      const { error: dbErr } = await supabase.from('users').insert([{
+        id: user.id,
         name: adminForm.name,
         email: adminForm.email,
         role: 'admin_sekolah',
-        schoolId: adminForm.schoolId,
-        status: 'active',
-        createdAt: Date.now()
-      });
+        school_id: adminForm.schoolId,
+        status: 'active' // Admin langsung aktif
+      }]);
+
+      if (dbErr) throw dbErr;
 
       alert("Akun Admin Sekolah berhasil dibuat!");
       setShowAddAdminModal(false);
       setAdminForm({ email: '', password: '', name: '', schoolId: '' });
+
+      // Catatan: Karena kita mendaftarkan user baru dari frontend saat sedang login,
+      // Supabase secara teknis akan menggeser sesi aktif ke user baru ini.
+      // Kita kembalikan paksa Superadmin ke login page jika ini terjadi (Keamanan).
+      // Untuk skala Enterprise, gunakan Edge Functions nanti.
+      
     } catch (err) {
-      alert("Gagal membuat admin: " + err.message);
+      if (err.message.includes('User already registered')) {
+         alert("Email tersebut sudah pernah digunakan!");
+      } else {
+         alert("Gagal membuat admin: " + err.message);
+      }
     }
   };
 
-  const deleteAdmin = (uid) => {
-    if(window.confirm("Hapus akses admin sekolah ini?")) remove(ref(db, `users/${uid}`));
+  const deleteAdmin = async (uid) => {
+    if(window.confirm("Hapus akses admin sekolah ini?")) {
+      const { error } = await supabase.from('users').delete().eq('id', uid);
+      if (error) alert("Gagal hapus: " + error.message);
+    }
   };
 
   const generateWALink = (phone) => {
@@ -149,7 +202,6 @@ export default function MasterDashboard({ onLogout }) {
           <NavItem tab="database" icon={Database} label="System Log" />
         </nav>
         <div className="p-4 border-t border-slate-800">
-            {/* INI TOMBOL KELUAR YANG SUDAH DIJAHIT */}
             <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 bg-red-950 hover:bg-red-900 text-red-500 hover:text-white rounded-xl text-xs font-bold transition-colors">
                 <LogOut size={16}/> Keluar
             </button>

@@ -1,8 +1,6 @@
 // src/pages/teacher/TeacherDashboard.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../../config/firebase';
-import { getAuth, signOut, onAuthStateChanged, updatePassword } from 'firebase/auth'; 
-import { ref as dbRef, onValue, push, remove, update, set } from 'firebase/database';
+import { supabase } from '../../config/supabase'; // 100% SUPABASE
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import 'katex/dist/katex.min.css';
@@ -19,11 +17,10 @@ import {
 export default function TeacherDashboard() {
   const APP_VERSION = "3.0.0 Hybrid";
   const navigate = useNavigate();
-  const auth = getAuth();
   
   const [teacherProfile, setTeacherProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isLoadingSchool, setIsLoadingSchool] = useState(true); // Barikade Penahan Suspend
+  const [isLoadingSchool, setIsLoadingSchool] = useState(true);
 
   const [tempProfileName, setTempProfileName] = useState('');
   const [newPassword, setNewPassword] = useState(''); 
@@ -85,86 +82,118 @@ export default function TeacherDashboard() {
   const [editSoalId, setEditSoalId] = useState(null);
   const [previewMode, setPreviewMode] = useState(false);
 
-  // 1. Tarik Data Profil Auth
+  // ==========================================
+  // TARIK DATA PROFIL AUTH (SUPABASE)
+  // ==========================================
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const userRef = dbRef(db, `users/${user.uid}`);
-        onValue(userRef, (snap) => {
-          if (snap.exists()) {
-            const profile = snap.val();
-            setTeacherProfile(profile);
-            setTempProfileName(profile?.name || '');
-          }
-          setIsLoadingProfile(false);
-        });
+    const fetchSessionAndProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile && !error) {
+           setTeacherProfile({ ...profile, schoolId: profile.school_id });
+           setTempProfileName(profile.name || '');
+        } else {
+           setTeacherProfile(null);
+        }
       } else {
         setTeacherProfile(null);
-        setIsLoadingProfile(false);
         setIsLoadingSchool(false); // Lepas barikade
       }
+      setIsLoadingProfile(false);
+    };
+
+    fetchSessionAndProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'SIGNED_OUT') setTeacherProfile(null);
     });
-    return () => unsubscribeAuth();
-  }, [auth]);
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const currentUserEmail = teacherProfile?.email || '';
   const schoolId = teacherProfile?.schoolId || '';
   const isSuperAdmin = currentUserEmail === 'admin@sekolah.com';
 
-  // 2. Tarik Data Global (Anti Blank Putih)
-  useEffect(() => {
-    if (!currentUserEmail) return;
-
-    const fetchData = (path, key) => onValue(dbRef(db, path), snap => {
-      const val = snap.val();
-      if (val && typeof val === 'object') {
-        const parsedData = Object.keys(val).map(k => {
-           if(val[k]) return { ...val[k], id: k };
-           return null;
-        }).filter(Boolean);
-        setData(prev => ({ ...prev, [key]: parsedData }));
-      } else {
-        setData(prev => ({ ...prev, [key]: [] }));
-      }
-    });
-    
-    fetchData('live_students', 'live'); 
-    fetchData('bank_soal', 'bank'); 
-    fetchData('leaderboard', 'lead'); 
-    fetchData('exam_sessions', 'sessions');
-    fetchData('master_classes', 'classes');
-    fetchData('master_subjects', 'subjects');
-  }, [currentUserEmail]);
-
-  // 3. Tarik Status Sekolah untuk Tembok Suspend (CRITICAL FIX)
+  // ==========================================
+  // TARIK DATA GLOBAL & SEKOLAH (SUPABASE)
+  // ==========================================
   useEffect(() => {
     if (!schoolId) {
        setIsLoadingSchool(false);
        return;
     }
-    const schoolRef = dbRef(db, `clients/${schoolId.toLowerCase()}`);
-    const unsubSchool = onValue(schoolRef, snap => {
-       if(snap.exists()) {
-          setSchoolInfo(snap.val());
-       } else {
-          setSchoolInfo(null);
-       }
-       setIsLoadingSchool(false); // Konfirmasi data selesai ditarik
-    });
-    return () => unsubSchool();
-  }, [schoolId]);
 
-  // --- FUNGSI LOGOUT INTERNAL ---
-  const handleLogout = () => {
-    signOut(auth).then(() => {
+    const fetchSchoolData = async () => {
+      const { data, error } = await supabase.from('schools').select('*').eq('id', schoolId.toLowerCase()).single();
+      if (data && !error) setSchoolInfo({ ...data, picName: data.pic_name, waNumber: data.wa_number, expiryDate: data.expiry_date, kepalaSekolah: data.kepala_sekolah, nipKepalaSekolah: data.nip_kepala_sekolah, logoUrl: data.logo_url });
+      else setSchoolInfo(null);
+      setIsLoadingSchool(false);
+    };
+
+    const fetchAllData = async () => {
+      try {
+        const sID = schoolId.toLowerCase();
+        
+        // Parallel fetching untuk optimasi kecepatan
+        const [liveReq, bankReq, leadReq, sessionsReq, classesReq, subjectsReq] = await Promise.all([
+           supabase.from('live_students').select('*').eq('teacher_email', currentUserEmail),
+           supabase.from('bank_soal').select('*').eq('teacher_email', currentUserEmail).order('created_at', { ascending: false }),
+           supabase.from('leaderboard').select('*').eq('teacher_email', currentUserEmail).order('score', { ascending: false }),
+           supabase.from('exam_sessions').select('*').eq('teacher_email', currentUserEmail).order('created_at', { ascending: false }),
+           supabase.from('master_classes').select('*').eq('school_id', sID),
+           supabase.from('master_subjects').select('*').eq('school_id', sID)
+        ]);
+
+        setData({
+           live: liveReq.data?.map(s => ({ ...s, subKelas: s.sub_kelas })) || [],
+           bank: bankReq.data?.map(q => ({ 
+               ...q, jenisSoal: q.jenis_soal, kodeWacana: q.kode_wacana, teksWacana: q.teks_wacana,
+               opsiA: q.opsi_a, opsiB: q.opsi_b, opsiC: q.opsi_c, opsiD: q.opsi_d
+           })) || [],
+           lead: leadReq.data?.map(l => ({ 
+               ...l, class: l.kelas, subKelas: l.sub_kelas, 
+               teacherEmail: l.teacher_email, studentName: l.student_name,
+               objectiveScore: l.objective_score, essayScores: l.essay_scores, isEssayGraded: l.is_essay_graded
+           })) || [],
+           sessions: sessionsReq.data?.map(s => ({ 
+               ...s, subKelas: s.sub_kelas, jamMulai: s.jam_mulai, jamSelesai: s.jam_selesai, 
+               teacherEmail: s.teacher_email, kuotaPG: s.kuota_pg, kuotaPGK: s.kuota_pgk, kuotaEsai: s.kuota_esai,
+               bobotPG: s.bobot_pg, bobotEsai: s.bobot_esai
+           })) || [],
+           classes: classesReq.data || [],
+           subjects: subjectsReq.data || []
+        });
+      } catch (err) {
+        console.error("Gagal menarik data dari Supabase", err);
+      }
+    };
+
+    fetchSchoolData();
+    if(currentUserEmail) fetchAllData();
+
+  }, [schoolId, currentUserEmail]);
+
+
+  // --- FUNGSI LOGOUT ---
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
       localStorage.clear();
       navigate('/login');
-    }).catch((error) => {
+    } catch (error) {
       alert("Gagal keluar: " + error.message);
-    });
+    }
   };
 
-  // --- FILTERING DATA BERDASARKAN GURU & SEKOLAH ---
+  // --- FILTERING DATA ---
   const safeLive = Array.isArray(data.live) ? data.live : [];
   const safeBank = Array.isArray(data.bank) ? data.bank : [];
   const safeLead = Array.isArray(data.lead) ? data.lead : [];
@@ -172,95 +201,83 @@ export default function TeacherDashboard() {
   const safeClasses = Array.isArray(data.classes) ? data.classes : [];
   const safeSubjects = Array.isArray(data.subjects) ? data.subjects : [];
 
-  const myQuestions = safeBank.filter(q => q?.teacherEmail === currentUserEmail);
-  const mySessions = safeSessions.filter(s => s?.teacherEmail === currentUserEmail).sort((a,b) => (b?.timestamp || 0) - (a?.timestamp || 0));
-  const myLeaderboard = safeLead.filter(s => s?.teacherEmail === currentUserEmail).sort((a,b) => (Number(b?.score) || 0) - (Number(a?.score) || 0));
-  const monitoredStudents = safeLive.filter(s => s?.token === activeMonitorToken);
+  const myQuestions = safeBank;
+  const mySessions = safeSessions;
+  const myLeaderboard = safeLead;
+  const monitoredStudents = safeLive.filter(s => s.token === activeMonitorToken);
 
-  // MENGGUNAKAN MASTER DATA DARI ADMIN SEKOLAH (Case-Insensitive)
-  const schoolClasses = safeClasses.filter(c => c?.schoolId?.toLowerCase() === schoolId.toLowerCase());
-  const schoolSubjects = safeSubjects.filter(s => s?.schoolId?.toLowerCase() === schoolId.toLowerCase());
+  const schoolClasses = safeClasses;
+  const schoolSubjects = safeSubjects;
 
-  // Filter untuk Bank Soal
   const availableBankMapel = [...new Set(myQuestions.map(q => q?.mapel).filter(Boolean))];
   const availableBankKelas = [...new Set(myQuestions.map(q => q?.kelas).filter(Boolean))];
   const filteredQuestions = myQuestions.filter(q => (bankMapel === '' || q?.mapel === bankMapel) && (bankKelas === '' || q?.kelas === bankKelas));
 
-  // Filter untuk Rekap Nilai
   const availableRecapMapel = [...new Set(myLeaderboard.map(s => s?.mapel).filter(Boolean))];
   const availableRecapKelas = [...new Set(myLeaderboard.map(s => s?.class).filter(Boolean))];
   const availableRecapTokens = [...new Set(myLeaderboard.map(s => s?.token).filter(Boolean))];
   const filteredLeaderboard = myLeaderboard.filter(s => (recapMapel === '' || s?.mapel === recapMapel) && (recapKelas === '' || s?.class === recapKelas) && (recapToken === '' || s?.token === recapToken));
 
   // --- EKSEKUSI GURU ---
-  const triggerGlobalUpdate = () => {
-    if(!isSuperAdmin) return;
-    if(window.confirm(`🚀 KONFIRMASI RILIS V2\nApakah Anda yakin ingin memaksa SEMUA HP SISWA beralih ke versi ${APP_VERSION}?`)) {
-      set(dbRef(db, 'settings/activeVersion'), APP_VERSION).then(() => alert("Sinyal Update Terkirim!")).catch(err => alert("Gagal: " + err.message));
-    }
-  };
-
-  const handleUpdateProfile = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if(auth.currentUser) {
-      update(dbRef(db, `users/${auth.currentUser.uid}`), { name: tempProfileName });
-      alert("Profil Anda berhasil diperbarui!");
+    if(teacherProfile?.id) {
+      const { error } = await supabase.from('users').update({ name: tempProfileName }).eq('id', teacherProfile.id);
+      if (!error) {
+         setTeacherProfile(prev => ({ ...prev, name: tempProfileName }));
+         alert("Profil Anda berhasil diperbarui!");
+      } else { alert("Gagal update profil: " + error.message); }
     }
   };
 
-  // --- UPDATE PASSWORD MANDIRI ---
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 6) {
-      return alert("Password baru minimal 6 karakter!");
-    }
+    if (!newPassword || newPassword.length < 6) return alert("Password baru minimal 6 karakter!");
     if (window.confirm("Yakin ingin mengubah kata sandi Anda?")) {
-      try {
-        await updatePassword(auth.currentUser, newPassword);
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (!error) {
         alert("Kata sandi berhasil diperbarui!");
         setNewPassword('');
-      } catch (error) {
-        if (error.code === 'auth/requires-recent-login') {
-          alert("Sistem mendeteksi Anda sudah lama login. Silakan Logout dan Login kembali terlebih dahulu untuk mengubah kata sandi demi keamanan.");
-        } else {
-          alert("Gagal mengubah kata sandi: " + error.message);
-        }
+      } else {
+        alert("Gagal mengubah kata sandi: " + error.message);
       }
     }
   };
 
-  const sendBroadcast = () => {
+  const sendBroadcast = async () => {
     if(!broadcastText) return;
     if(window.confirm(`Kirim pengumuman darurat ke semua siswa di Ruang Ujian (Token: ${activeMonitorToken})?`)) {
-      monitoredStudents.forEach(s => update(dbRef(db, `live_students/${s.id}`), { broadcast: broadcastText }));
+      await supabase.from('live_students').update({ broadcast: broadcastText }).eq('token', activeMonitorToken);
       setBroadcastText('');
       alert("Pengumuman berhasil disiarkan!");
+      window.location.reload(); // Refresh lokal untuk tarik data terbaru (karena tidak pakai realtime listener penuh)
     }
   };
 
-  const forceSubmitAll = () => {
+  const forceSubmitAll = async () => {
     if(window.confirm("🚨 PERINGATAN! Tarik paksa semua lembar jawaban siswa yang online di sesi ini?")) {
-      monitoredStudents.forEach(s => { if(s.status !== 'Selesai') update(dbRef(db, `live_students/${s.id}`), { forceSubmit: true }); });
+      await supabase.from('live_students').update({ force_submit: true }).eq('token', activeMonitorToken).neq('status', 'Selesai');
       alert("Perintah tarik paksa terkirim!");
+      window.location.reload();
     }
   };
 
   const handleDeleteMyRecap = async () => {
     if (myLeaderboard.length === 0) return alert("Belum ada data nilai.");
-    const konfirmasi = window.prompt("🚨 PERINGATAN BAHAYA!\nTindakan ini akan MENGHAPUS PERMANEN SEMUA NILAI mapel Anda.\n\nKetik kata 'HAPUS' (huruf besar semua) di bawah ini untuk melanjutkan:");
+    const konfirmasi = window.prompt("🚨 PERINGATAN BAHAYA!\nTindakan ini akan MENGHAPUS PERMANEN SEMUA NILAI Anda.\n\nKetik kata 'HAPUS' (huruf besar semua) di bawah ini untuk melanjutkan:");
     if (konfirmasi === "HAPUS") {
       try { 
-        await Promise.all(myLeaderboard.map(s => remove(dbRef(db, `leaderboard/${s.id}`)))); 
+        await supabase.from('leaderboard').delete().eq('teacher_email', currentUserEmail);
         alert("Data berhasil dibersihkan."); 
+        window.location.reload();
       } catch (error) { alert("Gagal: " + error.message); }
-    } else if (konfirmasi !== null) {
-      alert("❌ Dibatalkan: Kata konfirmasi salah.");
-    }
+    } else if (konfirmasi !== null) alert("❌ Dibatalkan: Kata konfirmasi salah.");
   };
 
-  const handleDeleteSingleRecap = (id, studentName) => {
+  const handleDeleteSingleRecap = async (id, studentName) => {
     if (window.confirm(`Yakin hapus data ujian "${studentName}"?`)) {
-      remove(dbRef(db, `leaderboard/${id}`)).then(() => alert("Data dihapus!")).catch(err => alert("Gagal: " + err.message));
+      await supabase.from('leaderboard').delete().eq('id', id);
+      alert("Data dihapus!"); window.location.reload();
     }
   };
 
@@ -274,9 +291,7 @@ export default function TeacherDashboard() {
     setEssayStudents(students);
 
     const initScores = {};
-    students.forEach(s => {
-       if(s.essayScores) { Object.assign(initScores, s.essayScores); }
-    });
+    students.forEach(s => { if(s.essayScores) { Object.assign(initScores, s.essayScores); } });
     setEssayScores(initScores);
     setShowKoreksiModal(true);
   };
@@ -300,18 +315,19 @@ export default function TeacherDashboard() {
             const objectiveScore = student.objectiveScore !== undefined ? student.objectiveScore : student.score;
             const finalScore = Math.round((objectiveScore * bPG / 100) + (avgEssayScore * bEsai / 100));
 
-            return update(dbRef(db, `leaderboard/${student.id}`), {
+            return supabase.from('leaderboard').update({
                 score: finalScore,
-                objectiveScore: objectiveScore,
-                essayScores: studentEssayScores,
-                isEssayGraded: true
-            });
+                objective_score: objectiveScore,
+                essay_scores: studentEssayScores,
+                is_essay_graded: true
+            }).eq('id', student.id);
         });
 
         try {
             await Promise.all(promises);
             alert(`✅ Koreksi berhasil disimpan!\nNilai akhir telah dikalkulasi dengan komposisi:\nObjektif (${bPG}%) + Esai (${bEsai}%)`);
             setShowKoreksiModal(false);
+            window.location.reload();
         } catch (error) {
             alert("Terjadi kesalahan saat menyimpan data: " + error.message);
         }
@@ -326,23 +342,43 @@ export default function TeacherDashboard() {
     setFormData({ ...formData, kunci: currentKeys.sort().join(',') });
   };
 
-  const handleAddOrEditSoal = (e) => { 
+  const handleAddOrEditSoal = async (e) => { 
     e.preventDefault(); 
     const finalData = { ...formData };
     if(finalData.jenisSoal === 'ESAI') {
         finalData.opsiA = ''; finalData.opsiB = ''; finalData.opsiC = ''; finalData.opsiD = ''; finalData.kunci = '';
     }
+
+    const payload = {
+        school_id: schoolId.toLowerCase(),
+        teacher_email: currentUserEmail,
+        mapel: finalData.mapel,
+        kelas: finalData.kelas,
+        jenis_soal: finalData.jenisSoal,
+        kode_wacana: finalData.kodeWacana,
+        teks_wacana: finalData.teksWacana,
+        pertanyaan: finalData.pertanyaan,
+        gambar: finalData.gambar,
+        opsi_a: finalData.opsiA,
+        opsi_b: finalData.opsiB,
+        opsi_c: finalData.opsiC,
+        opsi_d: finalData.opsiD,
+        kunci: finalData.kunci
+    };
+
     if (editSoalId) { 
-        update(dbRef(db, `bank_soal/${editSoalId}`), finalData); 
+        await supabase.from('bank_soal').update(payload).eq('id', editSoalId); 
         alert("Soal diperbarui!"); 
     } else { 
-        push(dbRef(db, 'bank_soal'), { ...finalData, teacherEmail: currentUserEmail }); 
+        await supabase.from('bank_soal').insert([payload]); 
         alert("Soal ditambahkan!"); 
     }
+
     setShowModal(false); 
     setEditSoalId(null); 
     setFormData(defaultForm); 
     setPreviewMode(false);
+    window.location.reload();
   };
 
   const openEditModal = (q) => { 
@@ -377,31 +413,42 @@ export default function TeacherDashboard() {
       const file = e.target.files[0]; 
       if (!file) return; 
       const reader = new FileReader(); 
-      reader.onload = (evt) => { 
+      reader.onload = async (evt) => { 
         const d = XLSX.utils.sheet_to_json(XLSX.read(evt.target.result, { type: 'binary' }).Sheets[XLSX.read(evt.target.result, { type: 'binary' }).SheetNames[0]]); 
-        let count = 0; 
+        const bulkData = [];
+        
         d.forEach(i => { 
           if (i.pertanyaan) { 
             const jenis = (i.Jenis_Soal || 'PG').toUpperCase();
-            push(dbRef(db, 'bank_soal'), { 
-              mapel: i.mapel, kelas: String(i.kelas), pertanyaan: i.pertanyaan, 
-              opsiA: String(i.opsiA || ''), opsiB: String(i.opsiB || ''), opsiC: String(i.opsiC || ''), opsiD: String(i.opsiD || ''), 
-              jenisSoal: jenis, kodeWacana: i.Kode_Wacana || '', teksWacana: i.Teks_Wacana || '',
-              kunci: i.Kunci_Jawaban ? String(i.Kunci_Jawaban).replace(/\s/g, '').toUpperCase() : '',
-              teacherEmail: currentUserEmail 
-            }); 
-            count++; 
+            bulkData.push({
+               school_id: schoolId.toLowerCase(),
+               teacher_email: currentUserEmail,
+               mapel: String(i.mapel),
+               kelas: String(i.kelas),
+               pertanyaan: String(i.pertanyaan),
+               opsi_a: String(i.opsiA || ''), opsi_b: String(i.opsiB || ''), opsi_c: String(i.opsiC || ''), opsi_d: String(i.opsiD || ''),
+               jenis_soal: jenis,
+               kode_wacana: String(i.Kode_Wacana || ''), teks_wacana: String(i.Teks_Wacana || ''),
+               kunci: i.Kunci_Jawaban ? String(i.Kunci_Jawaban).replace(/\s/g, '').toUpperCase() : ''
+            });
           } 
         }); 
-        alert(`${count} Soal berhasil di-import!`); 
-        if(fileInputRef.current) fileInputRef.current.value = ''; 
+
+        if (bulkData.length > 0) {
+            const { error } = await supabase.from('bank_soal').insert(bulkData);
+            if (!error) {
+                alert(`${bulkData.length} Soal berhasil di-import!`); 
+                if(fileInputRef.current) fileInputRef.current.value = ''; 
+                window.location.reload();
+            } else alert(error.message);
+        }
       }; 
       reader.readAsBinaryString(file); 
     } catch(err) { alert("Gagal: " + err.message); } 
   };
   
   // --- SESI UJIAN ---
-  const handleCreateSession = (e) => { 
+  const handleCreateSession = async (e) => { 
     e.preventDefault(); 
     const t = document.getElementById('token_input').value; 
     const sk = document.getElementById('subkelas_session').value.toUpperCase(); 
@@ -411,21 +458,25 @@ export default function TeacherDashboard() {
     const bEsai = parseInt(bobotEsai) || 0;
     if (bPG + bEsai !== 100) return alert("Peringatan: Total Bobot PG dan Esai harus tepat 100%!");
     
-    push(dbRef(db, 'exam_sessions'), { 
-      token: t, mapel: selectedMapelSesi, kelas: selectedKelasSesi, subKelas: sk, status: 'open', 
-      kuotaPG: parseInt(kuotaPG) || 0, kuotaPGK: parseInt(kuotaPGK) || 0, kuotaEsai: parseInt(kuotaEsai) || 0,
-      bobotPG: bPG, bobotEsai: bEsai, jamMulai: jamMulai, jamSelesai: jamSelesai,
-      teacherEmail: currentUserEmail, timestamp: Date.now() 
-    }); 
-    
-    document.getElementById('token_input').value = ''; 
-    setKuotaPG(0); setKuotaPGK(0); setKuotaEsai(0);
-    setBobotPG(70); setBobotEsai(30); setJamMulai("07:30"); setJamSelesai("09:00");
-    alert("Sesi Ujian Resmi Dibuka!"); 
+    const { error } = await supabase.from('exam_sessions').insert([{
+       school_id: schoolId.toLowerCase(),
+       token: t, mapel: selectedMapelSesi, kelas: selectedKelasSesi, sub_kelas: sk, status: 'open',
+       kuota_pg: parseInt(kuotaPG) || 0, kuota_pgk: parseInt(kuotaPGK) || 0, kuota_esai: parseInt(kuotaEsai) || 0,
+       bobot_pg: bPG, bobot_esai: bEsai, jam_mulai: jamMulai, jam_selesai: jamSelesai,
+       teacher_email: currentUserEmail
+    }]);
+
+    if (!error) {
+        document.getElementById('token_input').value = ''; 
+        setKuotaPG(0); setKuotaPGK(0); setKuotaEsai(0);
+        setBobotPG(70); setBobotEsai(30); setJamMulai("07:30"); setJamSelesai("09:00");
+        alert("Sesi Ujian Resmi Dibuka!"); 
+        window.location.reload();
+    } else alert(error.message);
   };
 
-  const toggleSession = (id, s) => update(dbRef(db, `exam_sessions/${id}`), { status: s === 'open' ? 'closed' : 'open' });
-  const delSession = (id) => { if(window.confirm("Hapus sesi ini?")) remove(dbRef(db, `exam_sessions/${id}`)); };
+  const toggleSession = async (id, s) => { await supabase.from('exam_sessions').update({ status: s === 'open' ? 'closed' : 'open' }).eq('id', id); window.location.reload(); };
+  const delSession = async (id) => { if(window.confirm("Hapus sesi ini?")) { await supabase.from('exam_sessions').delete().eq('id', id); window.location.reload(); } };
   const setMonitor = (t) => { setActiveMonitorToken(t); localStorage.setItem('activeMonitorToken', t); setActiveTab('proctor'); };
   const openQR = (token) => { setActiveQRToken(token); setShowQRModal(true); };
 
@@ -447,12 +498,12 @@ export default function TeacherDashboard() {
     if (bPG + bEsai !== 100) return alert("Peringatan: Total Bobot PG dan Esai harus tepat 100%!");
 
     try {
-        await update(dbRef(db, `exam_sessions/${editSesiData.id}`), {
-            bobotPG: bPG,
-            bobotEsai: bEsai,
-            jamMulai: editSesiData.jamMulai,
-            jamSelesai: editSesiData.jamSelesai
-        });
+        await supabase.from('exam_sessions').update({
+            bobot_pg: bPG,
+            bobot_esai: bEsai,
+            jam_mulai: editSesiData.jamMulai,
+            jam_selesai: editSesiData.jamSelesai
+        }).eq('id', editSesiData.id);
 
         const studentsInSession = myLeaderboard.filter(s => s.token === editSesiData.token);
         
@@ -470,10 +521,10 @@ export default function TeacherDashboard() {
                 const objectiveScore = student.objectiveScore !== undefined ? student.objectiveScore : student.score;
                 const finalScore = Math.round((objectiveScore * bPG / 100) + (avgEssayScore * bEsai / 100));
 
-                return update(dbRef(db, `leaderboard/${student.id}`), {
+                return supabase.from('leaderboard').update({
                     score: finalScore,
-                    objectiveScore: objectiveScore
-                });
+                    objective_score: objectiveScore
+                }).eq('id', student.id);
             });
             
             await Promise.all(promises);
@@ -481,6 +532,7 @@ export default function TeacherDashboard() {
 
         setShowEditSesiModal(false);
         alert("✅ Ajaib! Sesi Diperbarui & Semua Nilai Siswa Otomatis Dihitung Ulang!");
+        window.location.reload();
     } catch (err) {
         alert("Gagal menyimpan: " + err.message);
     }
@@ -500,7 +552,7 @@ export default function TeacherDashboard() {
     </div>
   );
 
-  // --- LOADING DAN PENDING SCREEN (DENGAN PENAHAN SUSPEND) ---
+  // --- LOADING DAN PENDING SCREEN ---
   if (isLoadingProfile || isLoadingSchool) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
@@ -532,7 +584,6 @@ export default function TeacherDashboard() {
     );
   }
 
-  // --- PENANGKAL GERBANG SUSPEND (FIXED) ---
   if (schoolInfo && schoolInfo.status === 'suspended') {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center animate-in fade-in duration-500">
@@ -593,11 +644,6 @@ export default function TeacherDashboard() {
           <div className="my-3 border-t border-slate-100"></div>
           <NavItem tab="profile" icon={User} label="Profil Saya" />
         </nav>
-        {isSuperAdmin && (
-          <div className="px-3 mb-2">
-            <button onClick={triggerGlobalUpdate} className="w-full flex items-center justify-center gap-2 p-2.5 bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-600 rounded-lg font-black text-[10px] shadow-sm transition-all active:scale-95 uppercase tracking-tighter"><Zap size={14}/> Rilis Update</button>
-          </div>
-        )}
         <div className="p-4 border-t border-slate-100">
             <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 rounded-xl font-bold text-sm transition-colors shadow-sm">
                 <LogOut size={16}/> Keluar Akun
@@ -609,7 +655,7 @@ export default function TeacherDashboard() {
         <header className="bg-white border-b border-slate-200 p-3 lg:p-4 flex justify-between items-center z-10 print:hidden pr-16 md:pr-6 shadow-sm">
           <div className="flex items-center gap-3">
             <button className="md:hidden p-1.5 bg-slate-100 rounded-lg text-emerald-600" onClick={() => setIsMobileMenuOpen(true)}><Menu size={20}/></button>
-            <h2 className="text-lg lg:text-xl font-black text-slate-800 hidden sm:flex items-center gap-2 tracking-wide">Teacher Center <span className="bg-slate-100 text-slate-500 text-[9px] px-1.5 py-0.5 rounded uppercase font-black">V2.1 STABLE</span></h2>
+            <h2 className="text-lg lg:text-xl font-black text-slate-800 hidden sm:flex items-center gap-2 tracking-wide">Teacher Center <span className="bg-slate-100 text-slate-500 text-[9px] px-1.5 py-0.5 rounded uppercase font-black">V3 POSTGRES</span></h2>
           </div>
           <div className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
             <ShieldCheck size={14} className="text-emerald-500" />
@@ -799,9 +845,9 @@ export default function TeacherDashboard() {
                         </div>
 
                         <div className="flex gap-2 pt-2 border-t border-slate-100 mt-1">
-                          <button onClick={() => update(dbRef(db, `live_students/${s.id}`), { forceSubmit: true })} disabled={s.status === 'Selesai'} className="flex-1 text-[10px] bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 py-2 rounded-lg font-bold disabled:opacity-50 active:scale-95 transition-all shadow-sm">Tarik Mandiri</button>
+                          <button onClick={async () => { await supabase.from('live_students').update({ force_submit: true }).eq('id', s.id); window.location.reload(); }} disabled={s.status === 'Selesai'} className="flex-1 text-[10px] bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 py-2 rounded-lg font-bold disabled:opacity-50 active:scale-95 transition-all shadow-sm">Tarik Mandiri</button>
                           {(s?.warnings || 0) >= 3 && s?.status !== 'Selesai' && (
-                            <button onClick={() => update(dbRef(db, `live_students/${s.id}`), { warnings: 0, status: 'Online' })} className="flex-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 py-2 rounded-lg font-bold active:scale-95 transition-all shadow-sm">Buka Kunci</button>
+                            <button onClick={async () => { await supabase.from('live_students').update({ warnings: 0, status: 'Online' }).eq('id', s.id); window.location.reload(); }} className="flex-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 py-2 rounded-lg font-bold active:scale-95 transition-all shadow-sm">Buka Kunci</button>
                           )}
                         </div>
                       </div>
@@ -867,10 +913,7 @@ export default function TeacherDashboard() {
                       {(!q.jenisSoal || q.jenisSoal !== 'ESAI') && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600 font-medium">
                             {['A','B','C','D'].map(opt => {
-                              const isKey = q.jenisSoal === 'PGK' 
-                                ? (q.kunci && q.kunci.includes(opt)) 
-                                : q.kunci === opt;
-
+                              const isKey = q.jenisSoal === 'PGK' ? (q.kunci && q.kunci.includes(opt)) : q.kunci === opt;
                               return (
                               <div key={opt} className={`p-3 rounded-xl border flex break-words ${isKey ?'bg-emerald-50 border-emerald-300 font-bold text-emerald-900 shadow-sm':'bg-slate-50 border-slate-200'}`}>
                                  <span className="mr-2 font-black">{opt}.</span>
@@ -882,7 +925,7 @@ export default function TeacherDashboard() {
                     </div>
                     <div className="flex gap-2 self-end md:self-start mt-3 md:mt-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5 w-full md:w-auto">
                       <button onClick={() => openEditModal(q)} className="flex-1 md:flex-none flex justify-center items-center bg-blue-50 hover:bg-blue-100 text-blue-600 p-3 rounded-xl transition-colors"><Edit size={18}/></button>
-                      <button onClick={() => {if(window.confirm("Hapus soal ini?")) remove(dbRef(db, `bank_soal/${q.id}`))}} className="flex-1 md:flex-none flex justify-center items-center bg-red-50 hover:bg-red-100 text-red-600 p-3 rounded-xl transition-colors"><Trash2 size={18}/></button>
+                      <button onClick={async () => {if(window.confirm("Hapus soal ini?")) { await supabase.from('bank_soal').delete().eq('id', q.id); window.location.reload(); } }} className="flex-1 md:flex-none flex justify-center items-center bg-red-50 hover:bg-red-100 text-red-600 p-3 rounded-xl transition-colors"><Trash2 size={18}/></button>
                     </div>
                   </div>
                 ))}
@@ -932,7 +975,7 @@ export default function TeacherDashboard() {
                     {filteredLeaderboard.map((s, i) => (
                       <tr key={s?.id || i}>
                         <td className="py-2 px-3 text-center">{i+1}</td>
-                        <td className="py-2 px-3 font-bold uppercase">{s?.name || 'Anonim'}</td>
+                        <td className="py-2 px-3 font-bold uppercase">{s?.studentName || s?.name || 'Anonim'}</td>
                         <td className="py-2 px-3">{s?.mapel || '-'}</td>
                         <td className="py-2 px-3 text-center">{s?.class}-{s?.subKelas}</td>
                         <td className="py-2 px-3 text-center font-black">{s?.score || 0}</td>
@@ -990,7 +1033,7 @@ export default function TeacherDashboard() {
                     {filteredLeaderboard.map((s, i) => (
                       <tr key={s?.id || i}>
                          <td className="py-3 px-3 text-center">{i+1}</td>
-                         <td className="py-3 px-3 font-bold uppercase">{s?.name || 'Anonim'}</td>
+                         <td className="py-3 px-3 font-bold uppercase">{s?.studentName || s?.name || 'Anonim'}</td>
                          <td className="py-3 px-3 text-center">{s?.class}-{s?.subKelas}</td>
                          <td className="py-3 px-3"><span className="text-xs text-gray-400">{i+1}. </span></td>
                       </tr>
@@ -1002,7 +1045,6 @@ export default function TeacherDashboard() {
                 </table>
               </div>
               
-              {/* === TAMPILAN UI TABEL NILAI GURU BROWSER === */}
               <div className="print:hidden">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3 rounded-t-xl border border-b-0 border-slate-200 gap-3">
                   <div className="text-xs font-bold text-slate-500">
@@ -1027,7 +1069,7 @@ export default function TeacherDashboard() {
                         <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                           <td className="py-2.5 px-4 text-center font-bold text-slate-500">{i+1}</td>
                           <td className="py-2.5 px-4">
-                            <p className="font-black text-slate-800 text-sm truncate max-w-[200px]">{s.name}</p>
+                            <p className="font-black text-slate-800 text-sm truncate max-w-[200px]">{s?.studentName || s?.name || '-'}</p>
                             {s.isEssayGraded && <span className="text-[8px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 mt-0.5 inline-block">ESAI DINILAI</span>}
                           </td>
                           <td className="py-2.5 px-4 text-center font-bold text-slate-600">{s.class}-{s.subKelas}</td>
@@ -1039,7 +1081,7 @@ export default function TeacherDashboard() {
                             <span className="text-lg font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100 shadow-inner">{s.score}</span>
                           </td>
                           <td className="py-2.5 px-4 text-center">
-                            <button onClick={() => handleDeleteSingleRecap(s.id, s.name)} title="Hapus Data Ini" className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors active:scale-95">
+                            <button onClick={() => handleDeleteSingleRecap(s.id, s.studentName || s.name)} title="Hapus Data Ini" className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors active:scale-95">
                               <Trash2 size={16} />
                             </button>
                           </td>
@@ -1174,7 +1216,7 @@ export default function TeacherDashboard() {
                        {essayStudents.map((siswa, idx) => (
                            <div key={siswa.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm">
                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-3 mb-3 gap-3">
-                                  <h3 className="text-base font-black text-slate-800">{idx+1}. {siswa.name} <span className="text-xs text-slate-500 font-bold ml-1">({siswa.class}-{siswa.subKelas})</span></h3>
+                                  <h3 className="text-base font-black text-slate-800">{idx+1}. {siswa.studentName || siswa.name} <span className="text-xs text-slate-500 font-bold ml-1">({siswa.class}-{siswa.subKelas})</span></h3>
                                   <div className="bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-lg font-black text-xs border border-emerald-200 flex flex-col items-end">
                                      <span>Skor Objektif: {siswa.objectiveScore !== undefined ? siswa.objectiveScore : siswa.score}</span>
                                      <span className="text-[8px] text-emerald-600 mt-0.5">Dikali Bobot {koreksiSession?.bobotPG || 70}%</span>
@@ -1190,7 +1232,7 @@ export default function TeacherDashboard() {
                                              
                                              <p className="text-xs font-bold text-blue-500 mb-1.5 flex items-center gap-1.5"><MessageSquare size={14}/> Jawaban Siswa:</p>
                                              <div className="bg-blue-50 p-3 rounded-lg text-sm text-slate-700 font-medium min-h-[50px] border border-blue-100 whitespace-pre-wrap">
-                                                {siswa.answers && siswa.answers[q.id] ? siswa.answers[q.id] : <span className="text-slate-400 italic">Kosong (Tidak dijawab)</span>}
+                                                {siswa.essayAnswers && siswa.essayAnswers[q.id] ? siswa.essayAnswers[q.id] : <span className="text-slate-400 italic">Kosong (Tidak dijawab)</span>}
                                              </div>
                                           </div>
                                           <div className="w-full md:w-40 bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-col justify-center items-center shrink-0">

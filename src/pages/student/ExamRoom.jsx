@@ -1,7 +1,6 @@
 // src/pages/student/ExamRoom.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../../config/firebase'; // Jalur baru V3
-import { ref, onValue, update, push } from 'firebase/database';
+import { supabase } from '../../config/supabase'; // 100% SUPABASE, NO FIREBASE!
 import { Timer, AlertTriangle, Book, ChevronLeft, ChevronRight, HelpCircle, Maximize, ShieldAlert, Landmark, Bell, Wifi, WifiOff, Check } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
@@ -12,13 +11,14 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   const sid = studentData?.id || 'guest';
   const storageKey = `cbt_exam_${sid}`;
 
+  const schoolIdRef = useRef(null); // Menyimpan ID Instansi untuk Submit Nilai
+
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   
   const [answers, setAnswers] = useState(() => JSON.parse(localStorage.getItem(`${storageKey}_ans`)) || {});
   const [ragu, setRagu] = useState(() => JSON.parse(localStorage.getItem(`${storageKey}_ragu`)) || {});
   
-  // Waktu awal default 5400 (Akan ditimpa oleh data Jam Selesai Sesi nanti)
   const [timeLeft, setTimeLeft] = useState(() => { const t = localStorage.getItem(`${storageKey}_time`); return t ? parseInt(t) : 5400; });
   const [warnings, setWarnings] = useState(() => parseInt(localStorage.getItem(`${storageKey}_warn`)) || 0);
   const [isLocked, setIsLocked] = useState(() => localStorage.getItem(`${storageKey}_lock`) === 'true');
@@ -33,9 +33,12 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   const [showBroadcast, setShowBroadcast] = useState(false);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
   const answersRef = useRef(answers);
+  const isLockedRef = useRef(isLocked);
 
   useEffect(() => { answersRef.current = answers; }, [answers]);
+  useEffect(() => { isLockedRef.current = isLocked; }, [isLocked]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -50,48 +53,70 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
     };
   }, []);
 
+  // ==========================================
+  // TARIK NASKAH SOAL & INFO SESI (SUPABASE)
+  // ==========================================
   useEffect(() => {
     if (!studentData?.token) return;
 
-    onValue(ref(db, 'exam_sessions'), (sessionSnap) => {
-      let sessionInfo = null;
-      sessionSnap.forEach(s => { if (s.val().token === studentData.token) sessionInfo = s.val(); });
-      
-      // ==========================================
-      // LOGIKA SINKRONISASI JENDELA WAKTU (V2.1)
-      // ==========================================
-      if (sessionInfo && sessionInfo.jamSelesai) {
-        const calculateRemaining = () => {
+    const loadExamData = async () => {
+      // 1. Dapatkan Info Sesi
+      const { data: sessionInfo, error: errSession } = await supabase
+        .from('exam_sessions')
+        .select('*')
+        .eq('token', studentData.token)
+        .single();
+
+      if (sessionInfo) {
+        schoolIdRef.current = sessionInfo.school_id;
+
+        // Sinkronisasi Waktu
+        if (sessionInfo.jam_selesai) {
           const now = new Date();
-          const [h, m] = sessionInfo.jamSelesai.split(':');
+          const [h, m] = sessionInfo.jam_selesai.split(':');
           const target = new Date();
           target.setHours(parseInt(h, 10), parseInt(m, 10), 0);
           
-          // Hitung selisih detik antara target Jam Selesai dengan Jam Sekarang
           const diffSeconds = Math.floor((target.getTime() - now.getTime()) / 1000);
-          return diffSeconds > 0 ? diffSeconds : 0;
-        };
-
-        const remaining = calculateRemaining();
-        setTimeLeft(remaining);
-        
-        // Auto-Submit jika siswa telat dan waktu sudah habis
-        if (remaining <= 0) {
-           alert("Waktu ujian telah berakhir berdasarkan Jendela Waktu Sesi!");
-           submitExam();
-        }
-      }
-
-      const kPG = sessionInfo?.kuotaPG || 0;
-      const kPGK = sessionInfo?.kuotaPGK || 0;
-      const kEsai = sessionInfo?.kuotaEsai || 0;
-      const hasQuota = kPG > 0 || kPGK > 0 || kEsai > 0; 
-
-      onValue(ref(db, 'bank_soal'), (snap) => {
-        if (snap.val()) {
-          const allQ = Object.keys(snap.val()).map(k => ({ id: k, ...snap.val()[k] }));
-          const filtered = allQ.filter(q => q.mapel === studentData?.mapel && q.kelas === studentData?.class && q.teacherEmail === studentData?.teacherEmail);
+          const remaining = diffSeconds > 0 ? diffSeconds : 0;
+          setTimeLeft(remaining);
           
+          if (remaining <= 0) {
+             alert("Waktu ujian telah berakhir berdasarkan Jendela Waktu Sesi!");
+             submitExam();
+             return;
+          }
+        }
+
+        const kPG = sessionInfo.kuota_pg || 0;
+        const kPGK = sessionInfo.kuota_pgk || 0;
+        const kEsai = sessionInfo.kuota_esai || 0;
+        const hasQuota = kPG > 0 || kPGK > 0 || kEsai > 0; 
+
+        // 2. Dapatkan Soal
+        const { data: qData, error: qErr } = await supabase
+          .from('bank_soal')
+          .select('*')
+          .eq('mapel', studentData.mapel)
+          .eq('kelas', studentData.class)
+          .eq('teacher_email', studentData.teacherEmail);
+
+        if (qData) {
+          // Normalisasi nama kolom ke camelCase untuk UI
+          const filtered = qData.map(q => ({
+             id: q.id,
+             jenisSoal: q.jenis_soal,
+             kodeWacana: q.kode_wacana,
+             teksWacana: q.teks_wacana,
+             pertanyaan: q.pertanyaan,
+             gambar: q.gambar,
+             opsiA: q.opsi_a, opsiB: q.opsi_b, opsiC: q.opsi_c, opsiD: q.opsi_d,
+             kunci: q.kunci,
+             mapel: q.mapel,
+             kelas: q.kelas,
+             teacherEmail: q.teacher_email
+          }));
+
           const savedOrder = localStorage.getItem(`${storageKey}_order`);
 
           if (savedOrder) {
@@ -99,6 +124,7 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
             const finalQuestions = orderIds.map(id => filtered.find(q => q.id === id)).filter(Boolean);
             setQuestions(finalQuestions);
           } else {
+            // Logika Pengelompokan & Kuota Soal (V3)
             const groups = {};
             filtered.forEach(q => {
               const kw = q.kodeWacana || `single_${q.id}`;
@@ -145,42 +171,64 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
             setQuestions(finalQuestions);
           }
         }
-      }, { onlyOnce: true });
-    }, { onlyOnce: true });
+      }
+    };
+
+    loadExamData();
   }, [studentData, storageKey]);
 
+  // ==========================================
+  // PANTAU INSTRUKSI PENGAWAS (SUPABASE REALTIME)
+  // ==========================================
   useEffect(() => {
     if (!sid || sid === 'guest') return;
-    const unsub = onValue(ref(db, `live_students/${sid}`), (snap) => {
-      if (snap.exists()) {
-        const data = snap.val();
-        
-        if (data.warnings === 0 && isLocked) {
-          setWarnings(0); setIsLocked(false);
-          localStorage.setItem(`${storageKey}_warn`, 0); localStorage.setItem(`${storageKey}_lock`, 'false');
-          alert("PEMBERITAHUAN!\nPengawas telah memberikan dispensasi. Layar Anda telah dibuka.");
-        }
-        
-        if (data.forceSubmit === true) setShouldForceSubmit(true);
 
-        if (data.broadcast && data.broadcast !== lastBroadcast) {
-          setLastBroadcast(data.broadcast);
-          setShowBroadcast(true);
-        }
+    const processLiveData = (data) => {
+      // Dispensasi Buka Kunci dari Pengawas
+      if (data.warnings === 0 && isLockedRef.current) {
+        setWarnings(0); setIsLocked(false);
+        localStorage.setItem(`${storageKey}_warn`, 0); localStorage.setItem(`${storageKey}_lock`, 'false');
+        alert("PEMBERITAHUAN!\nPengawas telah memberikan dispensasi. Layar Anda telah dibuka.");
       }
-    });
-    return () => unsub();
-  }, [sid, isLocked, storageKey, lastBroadcast]);
+      
+      // Tarik Paksa dari Pengawas
+      if (data.force_submit === true) setShouldForceSubmit(true);
 
-  // === REVISI DARURAT SENSOR ANTI-CHEAT (V3.1) ===
-  const triggerWarning = (reason) => {
-    // PROTEKSI 1: Jangan hukum siswa jika mereka BELUM masuk ke soal.
+      // Pengumuman Darurat
+      if (data.broadcast && data.broadcast !== lastBroadcast) {
+        setLastBroadcast(data.broadcast);
+        setShowBroadcast(true);
+      }
+    };
+
+    // Panggilan Pertama
+    supabase.from('live_students').select('*').eq('id', sid).single().then(({ data }) => {
+       if (data) processLiveData(data);
+    });
+
+    // Berlangganan Socket
+    const channel = supabase.channel(`public:live_students:id=${sid}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'live_students', filter: `id=eq.${sid}` }, payload => {
+         processLiveData(payload.new);
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [sid, storageKey, lastBroadcast]);
+
+  // ==========================================
+  // SENSOR ANTI-CHEAT (V3.1)
+  // ==========================================
+  const triggerWarning = async (reason) => {
     if (!isFullscreen && !forceAllowFullscreen) return;
 
     const newWarn = warnings + 1;
     setWarnings(newWarn);
     localStorage.setItem(`${storageKey}_warn`, newWarn);
-    update(ref(db, `live_students/${sid}`), { warnings: newWarn, status: reason }); 
+    
+    // Update ke Supabase
+    await supabase.from('live_students').update({ warnings: newWarn, status: reason }).eq('id', sid);
+    
     if(newWarn >= 3) { setIsLocked(true); localStorage.setItem(`${storageKey}_lock`, 'true'); } 
     alert(`PERINGATAN KECURANGAN ${newWarn}/3!\nPelanggaran: ${reason}`);
   };
@@ -188,18 +236,14 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     
-    // PROTEKSI 2: Hanya hukum jika benar-benar minimize/keluar aplikasi sepenuhnya
     const handleVisibilityChange = () => { 
         if(document.hidden && !isLocked && (isFullscreen || forceAllowFullscreen)) {
             triggerWarning("Meninggalkan Halaman/Aplikasi"); 
         }
     };
     
-    // PROTEKSI 3: Blur tidak menambah hukuman, hanya efek visual saja (aman untuk Exambro)
     const handleBlur = () => { if(!isLocked && !document.hidden) setIsBlurred(true); };
     const handleFocus = () => { setIsBlurred(false); };
-
-    // SENSOR RESIZE DIHAPUS TOTAL AGAR KEYBOARD HP UNTUK ESAI TIDAK DIANGGAP CURANG!
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -235,14 +279,17 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
     else if ((timeLeft <= 0 || shouldForceSubmit) && questions.length > 0) submitExam();
   }, [timeLeft, isLocked, questions, isFullscreen, forceAllowFullscreen, shouldForceSubmit, storageKey]);
 
-  const updateAnswer = (qId, value) => {
+  // ==========================================
+  // JAWAB & SUBMIT UJIAN
+  // ==========================================
+  const updateAnswer = async (qId, value) => {
     const newAns = { ...answers, [qId]: value }; 
     setAnswers(newAns); 
     localStorage.setItem(`${storageKey}_ans`, JSON.stringify(newAns));
     
     if (isOnline) {
-      update(ref(db, `live_students/${sid}`), { progress: Math.round((Object.keys(newAns).length / questions.length) * 100) })
-        .catch(() => { /* Abaikan error koneksi sementara */ });
+      const prog = Math.round((Object.keys(newAns).length / questions.length) * 100);
+      supabase.from('live_students').update({ progress: prog }).eq('id', sid).catch(()=>{});
     }
   };
 
@@ -267,6 +314,11 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   const submitExam = async () => {
     if (!isOnline) {
       alert("🚨 KONEKSI TERPUTUS!\nSistem tidak dapat mengumpulkan jawaban karena Anda sedang offline. Mohon periksa kembali koneksi internet/WiFi Anda.\n\nSemua jawaban Anda aman tersimpan di perangkat.");
+      return;
+    }
+
+    if (!schoolIdRef.current) {
+      alert("⚠️ Gagal menyimpan data sesi! Mohon refresh halaman dan coba kumpulkan lagi.");
       return;
     }
 
@@ -298,11 +350,27 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
         }
     });
 
-    const score = totalObjective > 0 ? Math.round((earnedPoints / totalObjective) * 100) : 0;
+    const finalScore = totalObjective > 0 ? Math.round((earnedPoints / totalObjective) * 100) : 0;
     
     try {
-      await push(ref(db, 'leaderboard'), { ...studentData, score, answers: finalAnswers, timestamp: Date.now() });
-      await update(ref(db, `live_students/${sid}`), { status: 'Selesai' });
+      // Insert Nilai ke Tabel Leaderboard
+      await supabase.from('leaderboard').insert([{
+         school_id: schoolIdRef.current,
+         student_name: studentData.name,
+         token: studentData.token,
+         mapel: studentData.mapel,
+         kelas: studentData.class,
+         sub_kelas: studentData.subKelas,
+         teacher_email: studentData.teacherEmail,
+         score: finalScore,
+         objective_score: finalScore,
+         essay_scores: {},
+         is_essay_graded: false,
+         answers: finalAnswers
+      }]);
+
+      // Tandai Selesai
+      await supabase.from('live_students').update({ status: 'Selesai' }).eq('id', sid);
       
       localStorage.removeItem(`${storageKey}_ans`); 
       localStorage.removeItem(`${storageKey}_ragu`);
@@ -313,13 +381,15 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
       
       if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
       
-      // Navigasi via Prop
-      if(onFinish) onFinish(score);
+      if(onFinish) onFinish(finalScore);
     } catch (error) {
       alert("Gagal mengumpulkan ujian. Pastikan koneksi stabil dan coba lagi.");
     }
   };
 
+  // ==========================================
+  // RENDER TAMPILAN
+  // ==========================================
   if (isLocked) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-slate-900 p-6 text-center select-none relative overflow-hidden">
@@ -357,7 +427,6 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   const qType = q.jenisSoal || 'PG';
 
   return (
-    // TAMBAHAN: translate="no" class="notranslate" UNTUK MEMBLOKIR GOOGLE TRANSLATE 
     <div 
       translate="no"
       onCopy={(e) => { e.preventDefault(); alert("Tindakan disalin telah diblokir!"); }} 
@@ -505,7 +574,6 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
               })}
             </div>
 
-            {/* LOGIKA TOMBOL KUMPUL MUNCUL DI 10 MENIT TERAKHIR (600 DETIK) */}
             {timeLeft <= 600 ? (
               <button onClick={() => { if(window.confirm("Peringatan!\nAnda yakin ingin mengakhiri ujian dan mengumpulkan jawaban secara permanen?")) submitExam() }} className="w-full p-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-emerald-600/20 active:scale-95 transition-all tracking-widest text-lg animate-in fade-in zoom-in duration-500"><ShieldAlert size={24}/> KUMPULKAN UJIAN SEKARANG</button>
             ) : (

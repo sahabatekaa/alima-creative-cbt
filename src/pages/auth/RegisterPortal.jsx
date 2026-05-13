@@ -1,9 +1,7 @@
 // src/pages/auth/RegisterPortal.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db, auth } from '../../config/firebase';
-import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { ref, get, set } from 'firebase/database';
+import { supabase } from '../../config/supabase'; // 100% SUPABASE
 import { UserPlus, Loader2, ArrowLeft } from 'lucide-react';
 
 export default function RegisterPortal() {
@@ -37,38 +35,58 @@ export default function RegisterPortal() {
     try {
       const cleanSchoolCode = schoolCode.trim().toLowerCase();
 
-      // 1. Validasi Kode Sekolah di Firebase
-      const schoolSnap = await get(ref(db, `clients/${cleanSchoolCode}`));
-      if (!schoolSnap.exists()) {
+      // 1. Validasi Kode Sekolah di Supabase (PostgreSQL)
+      const { data: schoolData, error: schoolErr } = await supabase
+        .from('schools')
+        .select('id')
+        .eq('id', cleanSchoolCode)
+        .single();
+
+      if (schoolErr || !schoolData) {
         throw new Error(`Kode Sekolah "${schoolCode}" tidak terdaftar. Hubungi Admin TU Anda.`);
       }
 
-      // 2. Buat Akun Firebase Auth
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // 3. Simpan Profil dengan status PENDING
-      await set(ref(db, `users/${userCred.user.uid}`), { 
-          name: name, 
-          email: email, 
-          role: 'teacher', 
-          schoolId: cleanSchoolCode,
-          status: 'pending', 
-          createdAt: Date.now() 
+      // 2. Buat Akun Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
       });
+
+      if (authError) throw authError;
+
+      const user = authData.user;
+      if (!user) throw new Error("Gagal membuat akun autentikasi.");
+
+      // 3. Simpan Profil dengan status PENDING ke tabel 'users'
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert([
+          { 
+            id: user.id, // ID relasi langsung dari Supabase Auth
+            name: name, 
+            email: email, 
+            role: 'teacher', 
+            school_id: cleanSchoolCode, // Menggunakan snake_case sesuai skema DDL SQL kita
+            status: 'pending'
+          }
+        ]);
+        
+      if (dbError) throw dbError;
       
       // Auto-logout supaya guru dipaksa masuk ke layar login
-      await signOut(auth); 
+      await supabase.auth.signOut(); 
       
       alert(`DAFTAR BERHASIL!\n\nAkun Anda telah terhubung dengan Instansi:\n[ ${cleanSchoolCode.toUpperCase()} ]\n\nSilakan tunggu konfirmasi (Approval) dari Admin Tata Usaha sekolah Anda sebelum bisa login.`); 
       navigate('/login');
       
     } catch (err) { 
-      if (err.code === 'auth/email-already-in-use') {
+      // Handle Supabase specific error messages
+      if (err.message.includes('User already registered') || err.message.includes('already exists')) {
         setErrorMsg('Email ini sudah pernah didaftarkan. Gunakan email lain atau silakan Login.');
-      } else if (err.code === 'auth/weak-password') {
+      } else if (err.message.includes('Password should be at least')) {
         setErrorMsg('Password terlalu lemah. Minimal harus 6 karakter.');
       } else {
-        setErrorMsg(err.message.replace("Firebase: ", ""));
+        setErrorMsg(err.message);
       }
     } finally {
       setIsLoading(false);

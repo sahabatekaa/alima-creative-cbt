@@ -1,8 +1,7 @@
 // src/pages/student/ResultPage.jsx
 import React, { useState, useEffect } from 'react';
-import { db } from '../../config/firebase'; // Jalur database V3
-import { ref, onValue } from 'firebase/database';
-import { CheckCircle, Trophy, Home, LogOut } from 'lucide-react';
+import { supabase } from '../../config/supabase'; // 100% SUPABASE POSTGRESQL
+import { CheckCircle, Trophy, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function ResultPage({ score: propScore, studentData: propStudentData, onLogout }) {
@@ -17,40 +16,72 @@ export default function ResultPage({ score: propScore, studentData: propStudentD
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!studentData?.name) return;
+    if (!studentData?.name || !studentData?.token) {
+        setIsLoading(false);
+        return;
+    }
 
-    // Tembak ke Root Database V2
-    const leadRef = ref(db, 'leaderboard');
-    const unsub = onValue(leadRef, (snapshot) => {
-      setIsLoading(false);
-      if (snapshot.val()) {
-        const allData = Object.values(snapshot.val());
-        
-        // 1. Cari skor siswa (Jika router gagal melempar props)
-        let currentScore = score;
-        if (currentScore === null) {
-           // Cari berdasarkan Nama dan Token di Leaderboard
-           const myData = allData.find(s => s.name === studentData.name && s.token === studentData.token && s.class === studentData.class);
-           if (myData) {
-               currentScore = myData.score;
-               setScore(currentScore);
-           }
+    const fetchLeaderboard = async () => {
+      try {
+        // Tembak langsung ke PostgreSQL, filter hanya data teman sekelas di sesi ini
+        const { data: allData, error } = await supabase
+          .from('leaderboard')
+          .select('*')
+          .eq('token', studentData.token)
+          .eq('kelas', studentData.class)
+          .eq('sub_kelas', studentData.subKelas)
+          .eq('mapel', studentData.mapel);
+
+        if (error) throw error;
+
+        if (allData && allData.length > 0) {
+          // 1. Cari skor siswa (Jika router gagal melempar props)
+          let currentScore = score;
+          
+          // Pencarian case-insensitive untuk meminimalisir bug huruf besar/kecil
+          const myData = allData.find(s => s.student_name.toLowerCase() === studentData.name.toLowerCase());
+          
+          if (myData) {
+             currentScore = myData.score;
+             setScore(currentScore);
+          }
+
+          // 2. Kalkulasi Peringkat Kelas Real-time
+          // Urutkan dari nilai tertinggi ke terendah
+          const classmates = [...allData].sort((a, b) => b.score - a.score);
+          setTotalStudents(classmates.length);
+          
+          // Cari indeks peringkat siswa ini
+          if (currentScore !== null) {
+              const myIndex = classmates.findIndex(s => s.student_name.toLowerCase() === studentData.name.toLowerCase() && s.score === currentScore);
+              if (myIndex !== -1) setRank(myIndex + 1);
+          }
         }
-
-        // 2. Kalkulasi Peringkat Kelas Real-time
-        const classmates = allData.filter(s => s.mapel === studentData?.mapel && s.class === studentData?.class && s.subKelas === studentData?.subKelas && s.token === studentData?.token);
-        
-        // Urutkan dari nilai tertinggi ke terendah
-        classmates.sort((a, b) => b.score - a.score);
-        setTotalStudents(classmates.length);
-        
-        // Cari indeks peringkat siswa ini
-        const myIndex = classmates.findIndex(s => s.name === studentData?.name && s.score === currentScore);
-        if (myIndex !== -1) setRank(myIndex + 1);
+      } catch (err) {
+        console.error("Gagal menarik data Papan Peringkat:", err.message);
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
 
-    return () => unsub();
+    // Panggilan Perdana
+    fetchLeaderboard();
+
+    // Berlangganan Realtime: Jika ada teman sekelas yang baru mengumpulkan (atau guru mengoreksi esai), peringkat otomatis bergeser!
+    const channel = supabase.channel(`public:leaderboard:token=${studentData.token}`)
+      .on('postgres_changes', { 
+         event: '*', 
+         schema: 'public', 
+         table: 'leaderboard',
+         filter: `token=eq.${studentData.token}`
+      }, payload => {
+         fetchLeaderboard();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [studentData, score]);
 
   const handleExit = () => {

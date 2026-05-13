@@ -1,26 +1,21 @@
 // src/pages/teacher/SchoolAdminDashboard.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../../config/firebase';
-import { ref, onValue, update, remove, set, push } from 'firebase/database';
-import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from 'firebase/auth'; 
+import { supabase } from '../../config/supabase'; // 100% SUPABASE
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { 
   Users, ClipboardList, LogOut, Plus, Trash2, Edit, CheckCircle, 
   XCircle, KeyRound, Menu, X, ShieldCheck, UserCog, BarChart, 
   FileText, Download, Loader2, AlertTriangle, LayoutDashboard, 
-  Building2, MapPin, Briefcase, Phone, Crown, GraduationCap, 
-  Database, BookOpen, Radio, Upload, Image as ImageIcon, MessageCircle, ShieldAlert 
+  Building2, Phone, GraduationCap, Database, Radio, Upload, MessageCircle, ShieldAlert 
 } from 'lucide-react';
 
 export default function SchoolAdminDashboard() {
   const navigate = useNavigate();
-  const auth = getAuth();
   const fileInputRef = useRef(null);
   
   const [adminProfile, setAdminProfile] = useState(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true); 
-  // PERBAIKAN: Barikade penahan agar Dashboard tidak bocor sebelum data suspend ditarik
   const [isLoadingSchool, setIsLoadingSchool] = useState(true); 
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -32,7 +27,7 @@ export default function SchoolAdminDashboard() {
   
   // Forms
   const [schoolForm, setSchoolForm] = useState({ alamat: '', kepalaSekolah: '', nipKepalaSekolah: '', telepon: '', logoUrl: '' });
-  const [guruForm, setGuruForm] = useState({ name: '', email: '', password: '' });
+  const [guruForm, setGuruForm] = useState({ name: '', email: '', password: '', role: 'teacher' }); // Tambahkan state role default
   const [studentForm, setStudentForm] = useState({ name: '', nisn: '', kelas: '', subKelas: '' });
   const [classForm, setClassForm] = useState('');
   const [subjectForm, setSubjectForm] = useState('');
@@ -48,84 +43,144 @@ export default function SchoolAdminDashboard() {
   const [recapKelas, setRecapKelas] = useState('');
   const [printMode, setPrintMode] = useState('rekap');
 
-  // 1. Tarik Data Profil dengan Aman
+  // ==========================================
+  // TARIK DATA PROFIL ADMIN (SUPABASE AUTH)
+  // ==========================================
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const userRef = ref(db, `users/${user.uid}`);
-        onValue(userRef, (snap) => {
-          if (snap.exists()) setAdminProfile(snap.val());
-          setIsLoadingProfile(false);
-        });
+    const fetchSessionAndProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile && !error) {
+           setAdminProfile({ ...profile, schoolId: profile.school_id });
+        } else {
+           setAdminProfile(null);
+        }
       } else {
         setAdminProfile(null);
-        setIsLoadingProfile(false);
       }
+      setIsLoadingProfile(false);
+    };
+
+    fetchSessionAndProfile();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'SIGNED_OUT') setAdminProfile(null);
     });
-    return () => unsubscribeAuth();
-  }, [auth]);
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const schoolId = adminProfile?.schoolId || 'UNREGISTERED';
   const adminName = adminProfile?.name || 'Admin Sekolah';
 
-  // 2. Tarik Data Global Terpadu 
+  // ==========================================
+  // TARIK DATA GLOBAL & STATUS SEKOLAH (SUPABASE)
+  // ==========================================
   useEffect(() => {
     if (schoolId === 'UNREGISTERED') {
-      setIsLoadingSchool(false); // Lepas loading jika tidak punya sekolah
+      setIsLoadingSchool(false); 
       return; 
     }
 
-    const fetchData = (path, key) => onValue(ref(db, path), snap => {
-      const val = snap.val();
-      if (val && typeof val === 'object') {
-        const parsedData = Object.keys(val).map(k => {
-           if(val[k]) return { ...val[k], id: k };
-           return null;
-        }).filter(Boolean);
-        setData(prev => ({ ...prev, [key]: parsedData }));
+    const fetchSchoolData = async () => {
+      const { data, error } = await supabase
+        .from('schools')
+        .select('*')
+        .eq('id', schoolId.toLowerCase())
+        .single();
+
+      if (data && !error) {
+        setSchoolInfo({
+          ...data,
+          picName: data.pic_name,
+          waNumber: data.wa_number,
+          expiryDate: data.expiry_date,
+          kepalaSekolah: data.kepala_sekolah,
+          nipKepalaSekolah: data.nip_kepala_sekolah,
+          logoUrl: data.logo_url
+        });
+        setSchoolForm({
+          alamat: data.alamat || '', 
+          kepalaSekolah: data.kepala_sekolah || '',
+          nipKepalaSekolah: data.nip_kepala_sekolah || '', 
+          telepon: data.telepon || data.wa_number || '', 
+          logoUrl: data.logo_url || ''
+        });
       } else {
-        setData(prev => ({ ...prev, [key]: [] }));
+        setSchoolInfo(null);
       }
-    });
+      setIsLoadingSchool(false);
+    };
 
-    fetchData('users', 'users');
-    fetchData('leaderboard', 'lead');
-    fetchData('students', 'students');
-    fetchData('master_classes', 'classes');
-    fetchData('master_subjects', 'subjects');
-    fetchData('exam_sessions', 'sessions');
+    const fetchAllData = async () => {
+      try {
+        const sID = schoolId.toLowerCase();
 
-    const schoolRef = ref(db, `clients/${schoolId.toLowerCase()}`);
-    const unsubSchool = onValue(schoolRef, snap => {
-       if(snap.exists()) {
-          const sData = snap.val();
-          setSchoolInfo(sData);
-          setSchoolForm({
-             alamat: sData?.alamat || '', kepalaSekolah: sData?.kepalaSekolah || '',
-             nipKepalaSekolah: sData?.nipKepalaSekolah || '', telepon: sData?.telepon || sData?.waNumber || '', logoUrl: sData?.logoUrl || ''
-          });
-       } else {
-          setSchoolInfo(null);
-       }
-       // PERBAIKAN: Konfirmasi data selesai ditarik, izinkan sistem memproses (Suspend atau Normal)
-       setIsLoadingSchool(false); 
-    });
+        const [usersReq, leadReq, studentsReq, classesReq, subjectsReq, sessionsReq] = await Promise.all([
+           supabase.from('users').select('*').eq('school_id', sID),
+           supabase.from('leaderboard').select('*').eq('school_id', sID).order('score', { ascending: false }),
+           supabase.from('students').select('*').eq('school_id', sID).order('created_at', { ascending: false }),
+           supabase.from('master_classes').select('*').eq('school_id', sID),
+           supabase.from('master_subjects').select('*').eq('school_id', sID),
+           supabase.from('exam_sessions').select('*').eq('school_id', sID).order('created_at', { ascending: false })
+        ]);
 
-    return () => unsubSchool();
+        setData({
+           users: usersReq.data?.map(u => ({ ...u, schoolId: u.school_id })) || [],
+           lead: leadReq.data?.map(l => ({ ...l, class: l.kelas, subKelas: l.sub_kelas, teacherEmail: l.teacher_email, studentName: l.student_name })) || [],
+           students: studentsReq.data?.map(s => ({ ...s, subKelas: s.sub_kelas })) || [],
+           classes: classesReq.data || [],
+           subjects: subjectsReq.data || [],
+           sessions: sessionsReq.data?.map(s => ({ ...s, subKelas: s.sub_kelas, jamMulai: s.jam_mulai, jamSelesai: s.jam_selesai, teacherEmail: s.teacher_email })) || []
+        });
+
+      } catch (err) {
+        console.error("Gagal menarik data dari Supabase", err);
+      }
+    };
+
+    fetchSchoolData();
+    fetchAllData();
   }, [schoolId]);
 
-  // --- FUNGSI LOGOUT INTERNAL ---
-  const handleLogout = () => {
-    signOut(auth).then(() => {
+  // --- FUNGSI LOGOUT ---
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
       localStorage.clear();
       navigate('/login');
-    }).catch((error) => alert("Gagal keluar: " + error.message));
+    } catch (error) {
+      alert("Gagal keluar: " + error.message);
+    }
   };
 
   // --- MANAJEMEN PROFIL SEKOLAH ---
-  const handleUpdateSchool = (e) => {
+  const handleUpdateSchool = async (e) => {
     e.preventDefault();
-    update(ref(db, `clients/${schoolId.toLowerCase()}`), schoolForm).then(() => alert("Profil Diperbarui!")).catch(err => alert("Gagal: " + err.message));
+    try {
+      const { error } = await supabase
+        .from('schools')
+        .update({
+           alamat: schoolForm.alamat,
+           kepala_sekolah: schoolForm.kepalaSekolah,
+           nip_kepala_sekolah: schoolForm.nipKepalaSekolah,
+           telepon: schoolForm.telepon,
+           logo_url: schoolForm.logoUrl
+        })
+        .eq('id', schoolId.toLowerCase());
+        
+      if (error) throw error;
+      alert("Profil Diperbarui!");
+    } catch (err) {
+      alert("Gagal: " + err.message);
+    }
   };
 
   const safeUsers = Array.isArray(data.users) ? data.users : [];
@@ -135,57 +190,142 @@ export default function SchoolAdminDashboard() {
   const safeClasses = Array.isArray(data.classes) ? data.classes : [];
   const safeSubjects = Array.isArray(data.subjects) ? data.subjects : [];
 
-  const schoolTeachers = safeUsers.filter(u => u?.schoolId?.toLowerCase() === schoolId.toLowerCase() && u?.role === 'teacher');
-  const pendingTeachers = schoolTeachers.filter(u => u?.status === 'pending');
-  const activeTeachers = schoolTeachers.filter(u => u?.status !== 'pending');
-  const schoolTeacherEmails = schoolTeachers.map(t => t?.email).filter(Boolean);
+  // Update: Ambil Guru ATAU Pengawas (keduanya akan di-manage di tab yang sama oleh TU)
+  const schoolStaffs = safeUsers.filter(u => u.role === 'teacher' || u.role === 'proctor');
+  const pendingTeachers = schoolStaffs.filter(u => u.status === 'pending');
+  const activeTeachers = schoolStaffs.filter(u => u.status !== 'pending');
   
-  const schoolSessionsTokens = safeSessions.filter(s => schoolTeacherEmails.includes(s?.teacherEmail)).map(s => s?.token).filter(Boolean);
-  const schoolLeaderboard = safeLead.filter(l => schoolTeacherEmails.includes(l?.teacherEmail) || schoolSessionsTokens.includes(l?.token));
-  
-  const schoolStudents = safeStudents.filter(s => s?.schoolId?.toLowerCase() === schoolId.toLowerCase());
-  const schoolClasses = safeClasses.filter(c => c?.schoolId?.toLowerCase() === schoolId.toLowerCase());
-  const schoolSubjects = safeSubjects.filter(s => s?.schoolId?.toLowerCase() === schoolId.toLowerCase());
-  const schoolSessions = safeSessions.filter(s => schoolTeacherEmails.includes(s?.teacherEmail)).sort((a,b) => (b?.timestamp || 0) - (a?.timestamp || 0));
+  const schoolStudents = safeStudents;
+  const schoolClasses = safeClasses;
+  const schoolSubjects = safeSubjects;
+  const schoolSessions = safeSessions;
+  const schoolLeaderboard = safeLead; 
 
-  const handleAddClass = (e) => { e.preventDefault(); if(!classForm) return; push(ref(db, 'master_classes'), { name: classForm, schoolId: schoolId.toLowerCase() }).then(() => setClassForm('')); };
-  const handleDeleteClass = (id) => { if(window.confirm("Hapus kelas ini?")) remove(ref(db, `master_classes/${id}`)); };
-  const handleAddSubject = (e) => { e.preventDefault(); if(!subjectForm) return; push(ref(db, 'master_subjects'), { name: subjectForm, schoolId: schoolId.toLowerCase() }).then(() => setSubjectForm('')); };
-  const handleDeleteSubject = (id) => { if(window.confirm("Hapus Mapel ini?")) remove(ref(db, `master_subjects/${id}`)); };
-
-  const handleAddStudent = (e) => {
-    e.preventDefault();
-    push(ref(db, 'students'), { ...studentForm, schoolId: schoolId.toLowerCase(), createdAt: Date.now() }).then(() => { alert("Siswa ditambahkan!"); setShowAddStudentModal(false); setStudentForm({ name: '', nisn: '', kelas: '', subKelas: '' }); });
+  // --- MANAJEMEN MASTER DATA ---
+  const handleAddClass = async (e) => { 
+    e.preventDefault(); 
+    if(!classForm) return; 
+    const { error } = await supabase.from('master_classes').insert([{ name: classForm, school_id: schoolId.toLowerCase() }]);
+    if (!error) { setClassForm(''); window.location.reload(); } else alert(error.message);
   };
-  const handleDeleteStudent = (id) => { if(window.confirm("Hapus siswa ini?")) remove(ref(db, `students/${id}`)); };
+  const handleDeleteClass = async (id) => { 
+    if(window.confirm("Hapus kelas ini?")) { await supabase.from('master_classes').delete().eq('id', id); window.location.reload(); }
+  };
+  const handleAddSubject = async (e) => { 
+    e.preventDefault(); 
+    if(!subjectForm) return; 
+    const { error } = await supabase.from('master_subjects').insert([{ name: subjectForm, school_id: schoolId.toLowerCase() }]);
+    if (!error) { setSubjectForm(''); window.location.reload(); } else alert(error.message);
+  };
+  const handleDeleteSubject = async (id) => { 
+    if(window.confirm("Hapus Mapel ini?")) { await supabase.from('master_subjects').delete().eq('id', id); window.location.reload(); } 
+  };
+
+  // --- MANAJEMEN SISWA ---
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('students').insert([{ 
+        name: studentForm.name, 
+        nisn: studentForm.nisn || '', 
+        kelas: studentForm.kelas, 
+        sub_kelas: studentForm.subKelas,
+        school_id: schoolId.toLowerCase() 
+      }]);
+      if (error) throw error;
+      alert("Siswa ditambahkan!"); 
+      setShowAddStudentModal(false); 
+      setStudentForm({ name: '', nisn: '', kelas: '', subKelas: '' });
+      window.location.reload();
+    } catch (err) { alert(err.message); }
+  };
+  
+  const handleDeleteStudent = async (id) => { 
+    if(window.confirm("Hapus siswa ini?")) { await supabase.from('students').delete().eq('id', id); window.location.reload(); }
+  };
+
   const handleImportStudents = (e) => {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const d = XLSX.utils.sheet_to_json(XLSX.read(evt.target.result, { type: 'binary' }).Sheets[XLSX.read(evt.target.result, { type: 'binary' }).SheetNames[0]]);
-        let count = 0;
-        d.forEach(row => { if (row.Nama && row.Kelas) { push(ref(db, 'students'), { name: String(row.Nama), nisn: String(row.NISN || ''), kelas: String(row.Kelas), subKelas: String(row.SubKelas || ''), schoolId: schoolId.toLowerCase(), createdAt: Date.now() }); count++; } });
-        alert(`${count} Siswa berhasil di-import!`); if(fileInputRef.current) fileInputRef.current.value = '';
-      } catch(err) { alert("Gagal Import: Format Excel salah."); }
+        const bulkData = [];
+        
+        d.forEach(row => { 
+          if (row.Nama && row.Kelas) { 
+            bulkData.push({ 
+              name: String(row.Nama), 
+              nisn: String(row.NISN || ''), 
+              kelas: String(row.Kelas), 
+              sub_kelas: String(row.SubKelas || ''), 
+              school_id: schoolId.toLowerCase() 
+            });
+          } 
+        });
+
+        if (bulkData.length > 0) {
+           const { error } = await supabase.from('students').insert(bulkData);
+           if (error) throw error;
+           alert(`${bulkData.length} Siswa berhasil di-import!`); 
+           if(fileInputRef.current) fileInputRef.current.value = '';
+           window.location.reload();
+        }
+      } catch(err) { alert("Gagal Import: Format Excel salah atau bermasalah.\n" + err.message); }
     }; reader.readAsBinaryString(file);
   };
+
   const downloadStudentTemplate = () => {
     const ws = XLSX.utils.json_to_sheet([ { Nama: "Budi Santoso", NISN: "0012345678", Kelas: "10", SubKelas: "A" } ]);
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Format_Siswa"); XLSX.writeFile(wb, "Template_Import_Siswa.xlsx");
   };
 
+  // --- MANAJEMEN GURU / PENGAWAS ---
   const handleAddGuru = async (e) => {
     e.preventDefault(); if (schoolId === 'UNREGISTERED') return alert("Akses dibatasi.");
-    try { const newAuth = getAuth(); const userCred = await createUserWithEmailAndPassword(newAuth, guruForm.email, guruForm.password); await set(ref(db, `users/${userCred.user.uid}`), { name: guruForm.name, email: guruForm.email, role: 'teacher', schoolId: schoolId.toLowerCase(), status: 'active', createdAt: Date.now() }); alert("Guru dibuat!"); setShowAddGuruModal(false); setGuruForm({ name: '', email: '', password: '' }); } catch (err) { alert("Gagal: " + err.message); }
+    try { 
+      const { data: authData, error: authErr } = await supabase.auth.signUp({ email: guruForm.email, password: guruForm.password });
+      if (authErr) throw authErr;
+      
+      const { error: dbErr } = await supabase.from('users').insert([{
+         id: authData.user.id,
+         name: guruForm.name,
+         email: guruForm.email,
+         role: guruForm.role, // TANGKAP ROLE YANG DIPILIH
+         school_id: schoolId.toLowerCase(),
+         status: 'active'
+      }]);
+      if (dbErr) throw dbErr;
+
+      alert("Akun berhasil dibuat! (Silakan relogin jika sesi tertimpa)."); 
+      setShowAddGuruModal(false); 
+      setGuruForm({ name: '', email: '', password: '', role: 'teacher' }); 
+      window.location.reload();
+    } catch (err) { alert("Gagal: " + err.message); }
   };
-  const handleUpdateGuru = (e) => { e.preventDefault(); update(ref(db, `users/${editGuruId}`), { name: guruForm.name }); alert("Diperbarui!"); setShowEditGuruModal(false); };
+
+  const handleUpdateGuru = async (e) => { 
+    e.preventDefault(); 
+    const { error } = await supabase.from('users').update({ name: guruForm.name }).eq('id', editGuruId);
+    if (!error) { alert("Diperbarui!"); setShowEditGuruModal(false); window.location.reload(); } else alert(error.message);
+  };
   
-  // FUNGSI APPROVE & REJECT GURU PENDING
-  const approveTeacher = (id) => update(ref(db, `users/${id}`), { status: 'active' });
-  const rejectTeacher = (id) => { if(window.confirm("Tolak dan hapus data guru ini?")) remove(ref(db, `users/${id}`)); };
-  const deleteTeacher = (id) => { if(window.confirm("Hapus akun guru ini dari instansi Anda?")) remove(ref(db, `users/${id}`)); };
-  const handleResetPassword = (email) => { if (window.confirm(`Kirim instruksi reset ke ${email}?`)) sendPasswordResetEmail(auth, email).then(() => alert("Terkirim!")).catch(err => alert("Gagal: " + err.message)); };
+  // FUNGSI APPROVE & REJECT PENDING
+  const approveTeacher = async (id) => {
+     await supabase.from('users').update({ status: 'active' }).eq('id', id); window.location.reload();
+  };
+  const rejectTeacher = async (id) => { 
+     if(window.confirm("Tolak dan hapus data akun ini?")) { await supabase.from('users').delete().eq('id', id); window.location.reload(); }
+  };
+  const deleteTeacher = async (id) => { 
+     if(window.confirm("Hapus akun ini dari instansi Anda?")) { await supabase.from('users').delete().eq('id', id); window.location.reload(); }
+  };
+  const handleResetPassword = async (email) => { 
+     if (window.confirm(`Kirim instruksi reset ke ${email}?`)) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (!error) alert("Instruksi Reset Terkirim!"); else alert("Gagal: " + error.message);
+     }
+  };
 
   const availableGurus = [...new Set(schoolLeaderboard.map(s => s?.teacherEmail).filter(Boolean))];
   const availableMapels = [...new Set(schoolLeaderboard.filter(s => recapGuru === '' || s?.teacherEmail === recapGuru).map(s => s?.mapel).filter(Boolean))];
@@ -195,12 +335,20 @@ export default function SchoolAdminDashboard() {
     (recapGuru === '' || s?.teacherEmail === recapGuru) && 
     (recapMapel === '' || s?.mapel === recapMapel) && 
     (recapKelas === '' || s?.class === recapKelas)
-  ).sort((a, b) => (Number(b?.score) || 0) - (Number(a?.score) || 0)); 
+  ); 
 
   const downloadRecap = () => {
     if (!filteredLeaderboard || filteredLeaderboard.length === 0) return alert("Belum ada data nilai.");
     try {
-       const ws = XLSX.utils.json_to_sheet(filteredLeaderboard); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Rekap Sekolah"); XLSX.writeFile(wb, `REKAP_${schoolId.toUpperCase()}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
+       const ws = XLSX.utils.json_to_sheet(filteredLeaderboard.map(l => ({
+          'Nama Siswa': l.studentName || l.student_name,
+          'Kelas': `${l.class}-${l.subKelas}`,
+          'Mapel': l.mapel,
+          'Guru': l.teacherEmail,
+          'Skor Akhir': l.score
+       }))); 
+       const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Rekap Sekolah"); 
+       XLSX.writeFile(wb, `REKAP_${schoolId.toUpperCase()}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
     } catch(err) { alert("Gagal mengunduh: " + err.message); }
   };
 
@@ -221,11 +369,9 @@ export default function SchoolAdminDashboard() {
   );
 
   // --- LAYAR PERLINDUNGAN AKSES ---
-  // PERBAIKAN: Menambahkan isLoadingSchool untuk menahan UI
   if (isLoadingProfile || isLoadingSchool) return (<div className="h-screen flex flex-col items-center justify-center bg-slate-50 gap-4"><Loader2 size={40} className="text-blue-500 animate-spin" /><p className="text-sm font-bold text-slate-500 tracking-widest uppercase animate-pulse">Memverifikasi Status Instansi...</p></div>);
   if (!adminProfile) return (<div className="h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center"><AlertTriangle size={60} className="text-red-500 mb-4" /><p className="text-xl font-black text-slate-700 mb-2">Sesi Terputus</p><p className="text-sm font-bold text-slate-500 max-w-md mb-6">Autentikasi gagal. Silakan login kembali.</p><button onClick={() => navigate('/login')} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm">Kembali ke Login</button></div>);
 
-  // PENANGKAL 1: CEK STATUS SUSPEND DARI MASTER
   if (schoolInfo && schoolInfo.status === 'suspended') {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center animate-in fade-in duration-500">
@@ -286,7 +432,7 @@ export default function SchoolAdminDashboard() {
           <div className="my-4 border-t border-slate-100"></div>
           <NavItem tab="master-data" icon={Database} label="Master Kelas & Mapel" />
           <NavItem tab="siswa" icon={GraduationCap} label="Database Siswa" />
-          <NavItem tab="guru" icon={Users} label="Manajemen Guru" badge={pendingTeachers.length} />
+          <NavItem tab="guru" icon={Users} label="Manajemen Staf (Guru/Pengawas)" badge={pendingTeachers.length} />
           <div className="my-4 border-t border-slate-100"></div>
           <NavItem tab="monitor" icon={Radio} label="Monitor Ujian Global" />
           <NavItem tab="recap" icon={ClipboardList} label="Rekapitulasi Nilai" />
@@ -335,7 +481,7 @@ export default function SchoolAdminDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                    <div className="bg-white p-6 rounded-[20px] border border-slate-200 shadow-sm flex flex-col justify-between h-32">
                       <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><Users size={16}/></div></div>
-                      <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Guru Aktif</p><p className="text-3xl font-black text-slate-800">{activeTeachers.length}</p></div>
+                      <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Staf Aktif</p><p className="text-3xl font-black text-slate-800">{activeTeachers.length}</p></div>
                    </div>
                    <div className="bg-white p-6 rounded-[20px] border border-slate-200 shadow-sm flex flex-col justify-between h-32">
                       <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><GraduationCap size={16}/></div></div>
@@ -399,10 +545,10 @@ export default function SchoolAdminDashboard() {
             <div className="max-w-6xl mx-auto animate-in fade-in duration-300">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-[24px] shadow-sm border border-slate-200 mb-6">
                  <div>
-                    <h3 className="text-xl font-black text-slate-800 flex items-center gap-2"><Users className="text-blue-600"/> Manajemen Guru</h3>
-                    <p className="text-sm text-slate-500 mt-1">Kelola staf pengajar instansi Anda.</p>
+                    <h3 className="text-xl font-black text-slate-800 flex items-center gap-2"><Users className="text-blue-600"/> Manajemen Staf</h3>
+                    <p className="text-sm text-slate-500 mt-1">Kelola Guru Bidang Studi & Pengawas Ruangan.</p>
                  </div>
-                 <button onClick={() => { setGuruForm({name:'', email:'', password:''}); setShowAddGuruModal(true); }} disabled={schoolId === 'UNREGISTERED'} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center gap-2"><Plus size={18}/> Tambah Guru Baru</button>
+                 <button onClick={() => { setGuruForm({name:'', email:'', password:'', role: 'teacher'}); setShowAddGuruModal(true); }} disabled={schoolId === 'UNREGISTERED'} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-black flex items-center gap-2"><Plus size={18}/> Tambah Staf Baru</button>
               </div>
 
               {pendingTeachers.length > 0 && (
@@ -411,7 +557,11 @@ export default function SchoolAdminDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {pendingTeachers.map(t => (
                       <div key={t.id} className="bg-white p-4 rounded-xl border border-orange-200 flex flex-col justify-between gap-3 shadow-sm">
-                        <div><p className="font-black text-slate-800 text-sm">{t?.name || 'Tanpa Nama'}</p><p className="font-medium text-slate-500 text-xs mt-0.5">{t?.email || '-'}</p></div>
+                        <div>
+                          <p className="font-black text-slate-800 text-sm">{t?.name || 'Tanpa Nama'}</p>
+                          <p className="font-medium text-slate-500 text-xs mt-0.5">{t?.email || '-'}</p>
+                          <p className="mt-1 text-[10px] font-black uppercase px-2 py-0.5 rounded inline-block bg-slate-100 text-slate-600 border border-slate-200">{t.role === 'proctor' ? 'Pengawas Ruangan' : 'Guru Bidang Studi'}</p>
+                        </div>
                         <div className="flex gap-2 w-full border-t border-slate-100 pt-3">
                           <button onClick={() => approveTeacher(t.id)} className="flex-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-1"><CheckCircle size={16}/> Terima</button>
                           <button onClick={() => rejectTeacher(t.id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-1"><XCircle size={16}/> Tolak</button>
@@ -427,8 +577,8 @@ export default function SchoolAdminDashboard() {
                   <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                     <tr>
                       <th className="py-4 px-6 w-16 text-center">No</th>
-                      <th className="py-4 px-6 font-bold uppercase text-xs">Nama Guru</th>
-                      <th className="py-4 px-6 font-bold uppercase text-xs">Email Login</th>
+                      <th className="py-4 px-6 font-bold uppercase text-xs">Nama Staf</th>
+                      <th className="py-4 px-6 font-bold uppercase text-xs">Hak Akses / Jabatan</th>
                       <th className="py-4 px-6 text-center font-bold uppercase text-xs w-48">Aksi</th>
                     </tr>
                   </thead>
@@ -436,17 +586,24 @@ export default function SchoolAdminDashboard() {
                     {activeTeachers.map((t, i) => (
                       <tr key={t?.id || i} className="hover:bg-slate-50">
                         <td className="py-4 px-6 text-center font-bold text-slate-500">{i + 1}</td>
-                        <td className="py-4 px-6 font-black text-slate-800">{t?.name || 'Guru'}</td>
-                        <td className="py-4 px-6 text-slate-500 font-medium">{t?.email || '-'}</td>
+                        <td className="py-4 px-6 font-black text-slate-800">
+                          {t?.name || 'Staf'}
+                          <div className="text-[10px] text-slate-500 font-medium font-mono mt-0.5">{t?.email || '-'}</div>
+                        </td>
+                        <td className="py-4 px-6">
+                           <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded border ${t.role === 'proctor' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+                              {t.role === 'proctor' ? 'Pengawas Ruangan' : 'Guru Bidang Studi'}
+                           </span>
+                        </td>
                         <td className="py-4 px-6">
                           <div className="flex justify-center gap-2">
-                            <button onClick={() => { setEditGuruId(t.id); setGuruForm({name: t?.name, email: t?.email}); setShowEditGuruModal(true); }} className="text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 border border-slate-200 p-2 rounded-lg" title="Edit Nama">
+                            <button onClick={() => { setEditGuruId(t.id); setGuruForm({name: t?.name, email: t?.email, role: t?.role}); setShowEditGuruModal(true); }} className="text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 border border-slate-200 p-2 rounded-lg" title="Edit Nama">
                               <UserCog size={16}/>
                             </button>
                             <button onClick={() => handleResetPassword(t?.email)} className="text-slate-400 hover:text-amber-500 bg-slate-50 hover:bg-amber-50 border border-slate-200 p-2 rounded-lg" title="Reset Password">
                               <KeyRound size={16}/>
                             </button>
-                            <button onClick={() => deleteTeacher(t.id)} className="text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 border border-slate-200 p-2 rounded-lg" title="Hapus Guru">
+                            <button onClick={() => deleteTeacher(t.id)} className="text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 border border-slate-200 p-2 rounded-lg" title="Hapus Akun">
                               <Trash2 size={16}/>
                             </button>
                           </div>
@@ -455,7 +612,7 @@ export default function SchoolAdminDashboard() {
                     ))}
                     {activeTeachers.length === 0 && (
                       <tr>
-                        <td colSpan="4" className="p-8 text-center text-slate-400 font-medium">Belum ada guru yang aktif.</td>
+                        <td colSpan="4" className="p-8 text-center text-slate-400 font-medium">Belum ada staf yang aktif.</td>
                       </tr>
                     )}
                   </tbody>
@@ -516,7 +673,7 @@ export default function SchoolAdminDashboard() {
                 <p className="mb-4 text-sm font-bold">Instansi: {schoolId.toUpperCase()} <br/> Guru Mapel: {recapGuru || 'Semua'} | Mapel: {recapMapel || 'Semua'} | Kelas: {recapKelas || 'Semua'}</p>
                 <table className="w-full text-left text-sm">
                   <thead><tr><th className="py-2 px-3 text-center">No</th><th className="py-2 px-3">Nama Siswa</th><th className="py-2 px-3 text-center">Kelas</th><th className="py-2 px-3">Mapel</th><th className="py-2 px-3 text-center">Nilai Akhir</th></tr></thead>
-                  <tbody>{filteredLeaderboard.map((s, i) => (<tr key={s?.id || i}><td className="py-2 px-3 text-center">{i+1}</td><td className="py-2 px-3 font-bold uppercase">{s?.name || 'Anonim'}</td><td className="py-2 px-3 text-center">{s?.class}-{s?.subKelas}</td><td className="py-2 px-3">{s?.mapel}</td><td className="py-2 px-3 text-center font-black">{s?.score || 0}</td></tr>))}</tbody>
+                  <tbody>{filteredLeaderboard.map((s, i) => (<tr key={s?.id || i}><td className="py-2 px-3 text-center">{i+1}</td><td className="py-2 px-3 font-bold uppercase">{s?.studentName || s?.student_name || 'Anonim'}</td><td className="py-2 px-3 text-center">{s?.class}-{s?.subKelas}</td><td className="py-2 px-3">{s?.mapel}</td><td className="py-2 px-3 text-center font-black">{s?.score || 0}</td></tr>))}</tbody>
                 </table>
                 <div className="flex justify-end mt-12 text-center"><div className="w-64"><p>Kepala Sekolah,</p><br/><br/><br/><p className="font-bold uppercase border-b border-black pb-1">{schoolInfo?.kepalaSekolah || '_________________________'}</p><p className="text-xs">NIP. {schoolInfo?.nipKepalaSekolah || '_________________'}</p></div></div>
               </div>
@@ -534,7 +691,7 @@ export default function SchoolAdminDashboard() {
                 <p className="mb-4 text-sm font-bold">Mapel: {recapMapel || '___________'} | Kelas: {recapKelas || '____'}</p>
                 <table className="w-full text-left text-sm">
                   <thead><tr><th className="py-3 px-3 text-center w-12">No</th><th className="py-3 px-3">Nama Lengkap</th><th className="py-3 px-3 text-center w-24">Kelas</th><th className="py-3 px-3 w-48 text-center">TTD</th></tr></thead>
-                  <tbody>{filteredLeaderboard.map((s, i) => (<tr key={s?.id || i}><td className="py-3 px-3 text-center">{i+1}</td><td className="py-3 px-3 font-bold uppercase">{s?.name || 'Anonim'}</td><td className="py-3 px-3 text-center">{s?.class}-{s?.subKelas}</td><td className="py-3 px-3 text-slate-400 text-xs">{i+1}.</td></tr>))}{[...Array(Math.max(0, 15 - filteredLeaderboard.length))].map((_, i) => (<tr key={`e-${i}`}><td className="py-4"></td><td></td><td></td><td></td></tr>))}</tbody>
+                  <tbody>{filteredLeaderboard.map((s, i) => (<tr key={s?.id || i}><td className="py-3 px-3 text-center">{i+1}</td><td className="py-3 px-3 font-bold uppercase">{s?.studentName || s?.student_name || 'Anonim'}</td><td className="py-3 px-3 text-center">{s?.class}-{s?.subKelas}</td><td className="py-3 px-3 text-slate-400 text-xs">{i+1}.</td></tr>))}{[...Array(Math.max(0, 15 - filteredLeaderboard.length))].map((_, i) => (<tr key={`e-${i}`}><td className="py-4"></td><td></td><td></td><td></td></tr>))}</tbody>
                 </table>
               </div>
 
@@ -553,7 +710,7 @@ export default function SchoolAdminDashboard() {
                     {filteredLeaderboard.map((s, i) => (
                       <tr key={s?.id || i} className="hover:bg-slate-50">
                         <td className="py-3 px-4 text-center font-bold text-slate-500">{i+1}</td>
-                        <td className="py-3 px-4"><p className="font-black text-slate-800">{s?.name || 'Tanpa Nama'}</p></td>
+                        <td className="py-3 px-4"><p className="font-black text-slate-800">{s?.studentName || s?.student_name || 'Tanpa Nama'}</p></td>
                         <td className="py-3 px-4 text-center font-bold text-slate-600">{s?.class || '-'}-{s?.subKelas || ''}</td>
                         <td className="py-3 px-4"><p className="font-bold text-blue-600">{s?.mapel || '-'}</p><p className="text-[10px] text-slate-500">{s?.teacherEmail || '-'}</p></td>
                         <td className="py-3 px-4 text-center"><span className="text-base font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">{s?.score || 0}</span></td>
@@ -577,12 +734,19 @@ export default function SchoolAdminDashboard() {
       {showAddGuruModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-[120] print:hidden">
           <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-black mb-4 text-slate-800 flex items-center gap-2"><Plus className="text-blue-600"/> Daftarkan Guru Baru</h2>
+            <h2 className="text-xl font-black mb-4 text-slate-800 flex items-center gap-2"><Plus className="text-blue-600"/> Daftarkan Staf Baru</h2>
             <form onSubmit={handleAddGuru} className="space-y-4">
+               <div>
+                  <label className="text-xs font-bold text-slate-500 mb-1 block">Tugas / Hak Akses</label>
+                  <select required value={guruForm.role} onChange={e => setGuruForm({...guruForm, role: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500 bg-slate-50 cursor-pointer font-bold text-sm text-slate-700">
+                     <option value="teacher">Guru Bidang Studi (Pembuat Soal)</option>
+                     <option value="proctor">Pengawas Ruangan (Hanya Pantau)</option>
+                  </select>
+               </div>
                <div><label className="text-xs font-bold text-slate-500 mb-1 block">Nama Lengkap & Gelar</label><input required value={guruForm.name} onChange={e => setGuruForm({...guruForm, name: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500" placeholder="Bpk. Budi S.Pd" /></div>
                <div><label className="text-xs font-bold text-slate-500 mb-1 block">Email Akun (Login)</label><input type="email" required value={guruForm.email} onChange={e => setGuruForm({...guruForm, email: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500" placeholder="budi@guru.com" /></div>
                <div><label className="text-xs font-bold text-slate-500 mb-1 block">Password Sementara</label><input type="password" required value={guruForm.password} onChange={e => setGuruForm({...guruForm, password: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500" placeholder="Minimal 6 Karakter" /></div>
-               <div className="flex gap-2 pt-2"><button type="button" onClick={() => setShowAddGuruModal(false)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">Batal</button><button type="submit" className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black transition-colors">Buat Akun Guru</button></div>
+               <div className="flex gap-2 pt-2"><button type="button" onClick={() => setShowAddGuruModal(false)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">Batal</button><button type="submit" className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black transition-colors">Buat Akun Baru</button></div>
             </form>
           </div>
         </div>
@@ -590,10 +754,11 @@ export default function SchoolAdminDashboard() {
       {showEditGuruModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-[120] print:hidden">
           <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-black mb-4 text-slate-800 flex items-center gap-2"><UserCog className="text-blue-600"/> Edit Nama Guru</h2>
+            <h2 className="text-xl font-black mb-4 text-slate-800 flex items-center gap-2"><UserCog className="text-blue-600"/> Edit Profil Staf</h2>
             <form onSubmit={handleUpdateGuru} className="space-y-4">
                <div><label className="text-xs font-bold text-slate-500 mb-1 block">Nama Lengkap & Gelar</label><input required value={guruForm.name} onChange={e => setGuruForm({...guruForm, name: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl outline-none focus:border-blue-500" /></div>
                <div><label className="text-xs font-bold text-slate-500 mb-1 block">Email Akun (Info Saja)</label><input disabled value={guruForm.email} className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500" /></div>
+               <div><label className="text-xs font-bold text-slate-500 mb-1 block">Jabatan</label><input disabled value={guruForm.role === 'proctor' ? 'Pengawas Ruangan' : 'Guru Bidang Studi'} className="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-bold uppercase text-[10px]" /></div>
                <div className="flex gap-2 pt-2"><button type="button" onClick={() => setShowEditGuruModal(false)} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">Batal</button><button type="submit" className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black transition-colors">Simpan Revisi</button></div>
             </form>
           </div>

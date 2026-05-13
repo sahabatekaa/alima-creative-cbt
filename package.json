@@ -10,14 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
     "firebase": "^10.0.0",
+    "katex": "^0.16.9",
     "lucide-react": "latest",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "xlsx": "^0.18.5",
-    "katex": "^0.16.9",
     "react-latex-next": "^2.2.0",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

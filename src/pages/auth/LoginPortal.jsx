@@ -1,12 +1,10 @@
 // src/pages/auth/LoginPortal.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { db, auth } from '../../config/firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { ref, set, push, onValue, get, update } from 'firebase/database';
-import { GraduationCap, User, Lock, Key, LayoutGrid, Users, CheckCircle, RefreshCw, ShieldCheck, Loader2 } from 'lucide-react';
+import { supabase } from '../../config/supabase'; // 100% SUPABASE, NO FIREBASE!
+import { GraduationCap, User, Lock, Key, LayoutGrid, CheckCircle, ShieldCheck, Loader2 } from 'lucide-react';
 
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "3.0.0 PostgreSQL";
 
 export default function LoginPortal() {
   const navigate = useNavigate();
@@ -15,16 +13,15 @@ export default function LoginPortal() {
   const [currentView, setCurrentView] = useState('login'); 
   const [darkMode, setDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
   const [logoClicks, setLogoClicks] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false); 
   const [isStarting, setIsStarting] = useState(false);
   
-  // State Form Admin
+  // State Form Admin/Staf
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoadingAdmin, setIsLoadingAdmin] = useState(false);
 
-  // Data Ujian Siswa
+  // Data Ujian Siswa dari Supabase
   const [activeSessions, setActiveSessions] = useState([]);
   const [scannedToken, setScannedToken] = useState('');
 
@@ -38,34 +35,47 @@ export default function LoginPortal() {
     return () => window.removeEventListener('popstate', handleBackButton);
   }, [currentView]);
 
-  // Pantau Versi
-  useEffect(() => {
-    const versionRef = ref(db, 'settings/activeVersion');
-    const unsub = onValue(versionRef, (snapshot) => {
-      const serverVersion = snapshot.val();
-      if (serverVersion && serverVersion !== APP_VERSION) {
-        setIsSyncing(true); 
-      }
-    });
-    return () => unsub();
-  }, []);
-
   useEffect(() => {
     localStorage.setItem('darkMode', darkMode);
     if (darkMode) document.documentElement.classList.add('dark'); 
     else document.documentElement.classList.remove('dark');
   }, [darkMode]);
 
-  // Tarik Sesi Ujian Aktif
+  // ==========================================
+  // TARIK SESI UJIAN AKTIF (SUPABASE REALTIME)
+  // ==========================================
   useEffect(() => {
-    const unsub = onValue(ref(db, 'exam_sessions'), (snapshot) => {
-      if (snapshot.val()) {
-        setActiveSessions(Object.values(snapshot.val()).filter(s => s.status === 'open'));
-      } else {
-        setActiveSessions([]);
+    const fetchSessions = async () => {
+      const { data, error } = await supabase
+        .from('exam_sessions')
+        .select('*')
+        .eq('status', 'open');
+        
+      if (data && !error) {
+         // Transformasi snake_case (SQL) ke camelCase (React) agar UI tidak rusak
+         const mappedSessions = data.map(s => ({
+            ...s,
+            subKelas: s.sub_kelas,
+            jamMulai: s.jam_mulai,
+            jamSelesai: s.jam_selesai,
+            teacherEmail: s.teacher_email
+         }));
+         setActiveSessions(mappedSessions);
       }
-    });
-    return () => unsub();
+    };
+
+    fetchSessions(); // Panggilan pertama
+
+    // Pantau perubahan sesi jika guru buka/tutup sesi secara live
+    const channel = supabase.channel('public:exam_sessions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions' }, payload => {
+         fetchSessions();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Tangkap Token QR
@@ -80,7 +90,7 @@ export default function LoginPortal() {
   const availableClasses = [...new Set(activeSessions.map(s => s.kelas).filter(Boolean))];
 
   // ==========================================
-  // LOGIKA LOGIN SISWA
+  // LOGIKA LOGIN SISWA (SUPABASE 100%)
   // ==========================================
   const handleStudentStart = async (e) => {
     e.preventDefault();
@@ -91,6 +101,7 @@ export default function LoginPortal() {
     const sClass = e.target.studentClass.value;
     const tokenInput = e.target.token.value.toUpperCase();
     
+    // 1. Validasi Token & Kelas
     const validSession = activeSessions.find(s => s.token === tokenInput && s.kelas === sClass);
     if (!validSession) {
        setIsStarting(false);
@@ -101,6 +112,7 @@ export default function LoginPortal() {
     const now = new Date();
     const timeNow = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
+    // 2. Validasi Waktu
     if (validSession.jamMulai && timeNow < validSession.jamMulai) {
        setIsStarting(false);
        return alert(`🚫 BELUM MULAI!\nUjian baru akan dibuka pada jam ${validSession.jamMulai} WIB.`);
@@ -112,63 +124,89 @@ export default function LoginPortal() {
     }
 
     try {
+      // 3. ID Perangkat Anti-Joki
       let deviceId = localStorage.getItem('cbt_device_id');
       if (!deviceId) {
         deviceId = 'dev_' + Math.random().toString(36).substring(2, 15);
         localStorage.setItem('cbt_device_id', deviceId);
       }
 
-      const snapshot = await get(ref(db, 'live_students'));
-      let existingStudentId = null;
-      let existingData = null;
-
-      if (snapshot.exists()) {
-        const allStudents = snapshot.val();
-        for (const key in allStudents) {
-          const s = allStudents[key];
-          if (s.token === tokenInput && s.name.toLowerCase() === studentNameInput.toLowerCase()) {
-            if (s.status === 'Selesai') {
-               setIsStarting(false);
-               return alert("⚠️ Ujian untuk nama ini sudah diselesaikan dan dikumpulkan.");
-            }
-            if (s.deviceId && s.deviceId !== deviceId) {
-               setIsStarting(false);
-               return alert("🚨 ANTI-JOKI AKTIF!\nNama ini sedang mengerjakan ujian di perangkat/HP lain.");
-            }
-            existingStudentId = key;
-            existingData = s;
-            break;
-          }
-        }
-      }
+      // 4. Cek apakah siswa sudah terdaftar di sesi ini (Case Insensitive pencarian nama)
+      const { data: existingStudent, error: fetchErr } = await supabase
+        .from('live_students')
+        .select('*')
+        .ilike('name', studentNameInput)
+        .eq('token', tokenInput)
+        .maybeSingle();
 
       let finalData;
-      if (existingStudentId) {
-        const newRef = ref(db, `live_students/${existingStudentId}`);
-        finalData = { ...existingData, status: 'Online', deviceId };
-        await update(newRef, { status: 'Online', deviceId });
+
+      if (existingStudent) {
+          // Siswa Ditemukan
+          if (existingStudent.status === 'Selesai') {
+              setIsStarting(false);
+              return alert("⚠️ Ujian untuk nama ini sudah diselesaikan dan dikumpulkan.");
+          }
+          if (existingStudent.device_id && existingStudent.device_id !== deviceId) {
+              setIsStarting(false);
+              return alert("🚨 ANTI-JOKI AKTIF!\nNama ini sedang mengerjakan ujian di perangkat/HP lain.");
+          }
+          
+          // Update status kembali Online
+          const { data: updatedData, error: updateErr } = await supabase
+              .from('live_students')
+              .update({ status: 'Online', device_id: deviceId })
+              .eq('id', existingStudent.id)
+              .select()
+              .single();
+              
+          if (updateErr) throw updateErr;
+          finalData = updatedData;
+
       } else {
-        const newRef = push(ref(db, 'live_students'));
-        finalData = { 
-          id: newRef.key, 
-          name: studentNameInput, 
-          class: sClass, 
-          subKelas: autoSubKelas,
-          token: tokenInput, 
-          mapel: validSession.mapel, 
-          teacherEmail: validSession.teacherEmail, 
-          status: 'Online', 
-          progress: 0, 
-          warnings: 0, 
-          deviceId, 
-          timestamp: Date.now() 
-        };
-        await set(newRef, finalData);
+          // Siswa Baru (Pertama kali login ujian)
+          const { data: insertedData, error: insertErr } = await supabase
+              .from('live_students')
+              .insert([{
+                  name: studentNameInput,
+                  class: sClass,
+                  sub_kelas: autoSubKelas,
+                  token: tokenInput,
+                  mapel: validSession.mapel,
+                  teacher_email: validSession.teacherEmail, 
+                  status: 'Online',
+                  progress: 0,
+                  warnings: 0,
+                  device_id: deviceId
+              }])
+              .select()
+              .single();
+              
+          if (insertErr) throw insertErr;
+          finalData = insertedData;
       }
 
-      localStorage.setItem('studentData', JSON.stringify(finalData));
+      // Format data agar kompatibel dengan Layar Ujian (Halaman /exam)
+      const mappedStudentData = {
+         id: finalData.id,
+         name: finalData.name,
+         class: finalData.class,
+         subKelas: finalData.sub_kelas,
+         token: finalData.token,
+         mapel: finalData.mapel,
+         teacherEmail: finalData.teacher_email,
+         status: finalData.status,
+         progress: finalData.progress,
+         warnings: finalData.warnings,
+         deviceId: finalData.device_id,
+         broadcast: finalData.broadcast,
+         forceSubmit: finalData.force_submit
+      };
+
+      localStorage.setItem('studentData', JSON.stringify(mappedStudentData));
       setIsStarting(false);
       navigate('/exam');
+
     } catch (error) { 
       alert("Koneksi bermasalah: " + error.message); 
       setIsStarting(false);
@@ -176,7 +214,7 @@ export default function LoginPortal() {
   };
 
   // ==========================================
-  // LOGIKA LOGIN ADMIN / GURU
+  // LOGIKA LOGIN ADMIN / GURU / PENGAWAS
   // ==========================================
   const handleAdminLogin = async (e) => {
     e.preventDefault();
@@ -184,31 +222,47 @@ export default function LoginPortal() {
     setIsLoadingAdmin(true);
 
     try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      
-      if (userCred.user.email === 'admin@sekolah.com') {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (authError) throw authError;
+
+      const user = authData.user;
+
+      if (user.email === 'admin@sekolah.com') {
           navigate('/master');
-      } else {
-        const snap = await get(ref(db, `users/${userCred.user.uid}`));
-        if (snap.exists()) {
-           const userData = snap.val();
-           if (userData.status === 'pending') { 
-               await signOut(auth); 
-               alert("AKUN BELUM AKTIF!\nMenunggu persetujuan Admin Tata Usaha Sekolah."); 
-           } else if (userData.role === 'admin_sekolah') {
-               navigate('/school-admin');
-           } else if (userData.role === 'proctor') {
-               navigate('/proctor');
-           } else {
-               navigate('/teacher');
-           }
-        } else {
-           await signOut(auth);
-           setErrorMsg("Data user tidak ditemukan di sistem!");
-        }
+          return;
+      } 
+      
+      const { data: userData, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (dbError || !userData) {
+          await supabase.auth.signOut();
+          setErrorMsg("Data user tidak ditemukan di sistem SQL!");
+          setIsLoadingAdmin(false);
+          return;
       }
+
+      if (userData.status === 'pending') { 
+          await supabase.auth.signOut(); 
+          alert("AKUN BELUM AKTIF!\nMenunggu persetujuan Admin Tata Usaha Sekolah."); 
+      } else if (userData.role === 'admin_sekolah') {
+          navigate('/school-admin');
+      } else if (userData.role === 'proctor') {
+          navigate('/proctor');
+      } else {
+          navigate('/teacher');
+      }
+      
     } catch (err) { 
-      setErrorMsg("Login Gagal! Periksa email dan password."); 
+      setErrorMsg("Login Gagal! Periksa kembali email dan password Anda."); 
+      console.error("Supabase Login Error:", err.message);
     } finally {
       setIsLoadingAdmin(false);
     }
@@ -218,16 +272,6 @@ export default function LoginPortal() {
     <div className={darkMode ? 'dark' : ''}>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
         
-        {isSyncing && (
-          <div className="fixed inset-0 z-[999] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center text-white p-6 text-center">
-            <div className="bg-emerald-500 p-4 rounded-full animate-spin mb-6">
-              <RefreshCw size={48} />
-            </div>
-            <h2 className="text-2xl font-black mb-2 tracking-tight">SINKRONISASI SISTEM</h2>
-            <p className="text-slate-300 max-w-xs">Memperbarui ke versi {APP_VERSION}. Mohon tunggu...</p>
-          </div>
-        )}
-
         {/* ==========================================
             TAMPILAN PORTAL SISWA
         ========================================== */}
@@ -239,7 +283,7 @@ export default function LoginPortal() {
                 <div onClick={() => { setLogoClicks(c => c + 1); if (logoClicks + 1 >= 5) { setCurrentView('admin-login'); setLogoClicks(0); setEmail(''); setPassword(''); } }} className="bg-emerald-500 p-4 rounded-2xl text-white mb-4 cursor-pointer shadow-lg shadow-emerald-500/30 transition-transform active:scale-90">
                     <GraduationCap size={40} />
                 </div>
-                <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Darma Pertiwi CBT</h1>
+                <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Alima CBT</h1>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">V {APP_VERSION}</span>
                   <p className="text-slate-500 dark:text-slate-400 font-medium text-xs">Portal Resmi Siswa</p>
@@ -291,7 +335,7 @@ export default function LoginPortal() {
         )}
 
         {/* ==========================================
-            HALAMAN RAHASIA: LOGIN ADMIN & GURU
+            HALAMAN RAHASIA: LOGIN ADMIN & STAF
         ========================================== */}
         {currentView === 'admin-login' && (
           <div className="absolute inset-0 z-50 flex items-center justify-center min-h-screen p-4 md:p-6 bg-[#0f172a] animate-in fade-in duration-300">
@@ -331,11 +375,6 @@ export default function LoginPortal() {
                 </div>
 
                 <div className="pt-2 space-y-3 text-center">
-                  <button type="button" onClick={() => setCurrentView('proctor-login')} className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-3.5 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2">
-                    <ShieldCheck size={18} /> Masuk Sebagai Pengawas Ruang
-                  </button>
-                  
-                  {/* TOMBOL DAFTAR DIARAHKAN KE PAGE REGISTER */}
                   <button type="button" onClick={() => navigate('/register')} className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest transition-colors block w-full pt-2">
                     Belum punya akun? Daftar Guru Baru
                   </button>
@@ -346,30 +385,6 @@ export default function LoginPortal() {
                 </div>
               </form>
             </div>
-          </div>
-        )}
-
-        {/* ==========================================
-            HALAMAN AKSES PENGAWAS (PROCTOR LOGIN PIN)
-        ========================================== */}
-        {currentView === 'proctor-login' && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center min-h-screen p-4 bg-slate-950 animate-in zoom-in duration-300">
-             <div className="w-full max-w-sm bg-white p-8 rounded-3xl shadow-xl text-center border border-slate-200">
-                <ShieldCheck size={48} className="mx-auto text-blue-500 mb-4" />
-                <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest mb-6">Akses Pengawas</h2>
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    if(e.target.pin.value === "pengawas123") {
-                        navigate('/proctor');
-                    } else {
-                        alert("PIN Salah!");
-                    }
-                }}>
-                   <input name="pin" type="password" placeholder="Masukkan PIN..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-center font-black tracking-widest outline-none focus:border-blue-500 mb-4" required />
-                   <button type="submit" className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-lg shadow-blue-600/30 active:scale-95 transition-all">MASUK RUANGAN</button>
-                   <button type="button" onClick={() => setCurrentView('admin-login')} className="w-full mt-4 text-sm font-bold text-slate-400 hover:text-slate-500">Kembali ke Menu Utama</button>
-                </form>
-             </div>
           </div>
         )}
       </div>

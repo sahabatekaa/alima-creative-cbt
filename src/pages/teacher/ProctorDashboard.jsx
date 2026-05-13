@@ -1,46 +1,112 @@
 // src/pages/teacher/ProctorDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { db } from '../../config/firebase'; // Sesuaikan dengan path V3
-import { ref as dbRef, onValue, update } from 'firebase/database';
+import { supabase } from '../../config/supabase'; // 100% SUPABASE
 import { useNavigate } from 'react-router-dom';
-import { Monitor, ShieldAlert, MessageSquare, Send, LogOut, Unlock, Users, Filter, CheckCircle, Search, AlertTriangle, Radio, Activity, ChevronRight, Zap } from 'lucide-react';
+import { Monitor, ShieldAlert, MessageSquare, Send, LogOut, Unlock, Users, Filter, CheckCircle, Search, Activity, Zap, Loader2, Radio } from 'lucide-react';
 
 export default function ProctorDashboard({ onLogout }) {
   const navigate = useNavigate();
+  
+  // State Keamanan & Profil
+  const [proctorProfile, setProctorProfile] = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  // State Data
   const [activeMonitorToken, setActiveMonitorToken] = useState(localStorage.getItem('proctorToken') || '');
   const [sessions, setSessions] = useState([]);
   const [liveStudents, setLiveStudents] = useState([]);
   const [broadcastText, setBroadcastText] = useState('');
   
-  // FITUR BARU: Search & Filter
+  // State Filter
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all'); // all, online, selesai, curang
+  const [filterStatus, setFilterStatus] = useState('all');
 
-  // 1. Tarik Data Sesi Aktif & Siswa Live (Mode Hybrid Root V2)
+  // ==========================================
+  // 1. TARIK PROFIL PENGAWAS & KUNCI SEKOLAH
+  // ==========================================
   useEffect(() => {
-    const fetchSessions = onValue(dbRef(db, 'exam_sessions'), snap => {
-      if (snap.val()) {
-        const openSessions = Object.values(snap.val()).filter(s => s.status === 'open');
-        setSessions(openSessions);
-      } else {
-        setSessions([]);
+    const fetchProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile && !error) {
+           // Pastikan hanya role proctor atau superadmin/admin yang bisa masuk jika tersasar
+           setProctorProfile({ ...profile, schoolId: profile.school_id });
+        }
       }
-    });
-
-    const fetchLive = onValue(dbRef(db, 'live_students'), snap => {
-      if (snap.val()) {
-        const students = Object.keys(snap.val()).map(k => ({ id: k, ...snap.val()[k] }));
-        setLiveStudents(students);
-      } else {
-        setLiveStudents([]);
-      }
-    });
-
-    return () => {
-      fetchSessions();
-      fetchLive();
+      setIsLoadingProfile(false);
     };
+
+    fetchProfile();
   }, []);
+
+  const schoolId = proctorProfile?.schoolId || '';
+
+  // ==========================================
+  // 2. TARIK SESI UJIAN (HANYA MILIK SEKOLAHNYA)
+  // ==========================================
+  useEffect(() => {
+    if (!schoolId) return;
+
+    const fetchSessions = async () => {
+      const { data, error } = await supabase
+        .from('exam_sessions')
+        .select('*')
+        .eq('school_id', schoolId.toLowerCase()) // PENGUNCI KEAMANAN UTAMA
+        .eq('status', 'open');
+        
+      if (data && !error) {
+        setSessions(data.map(s => ({ ...s, subKelas: s.sub_kelas })));
+      }
+    };
+
+    fetchSessions();
+
+    // Pantau jika ada sesi baru yang dibuka oleh guru di sekolah ini
+    const sessionChannel = supabase.channel(`public:exam_sessions:school=${schoolId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions', filter: `school_id=eq.${schoolId.toLowerCase()}` }, payload => {
+         fetchSessions();
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(sessionChannel);
+  }, [schoolId]);
+
+  // ==========================================
+  // 3. TARIK RADAR SISWA (BERDASARKAN TOKEN)
+  // ==========================================
+  const fetchLive = async () => {
+    if (!activeMonitorToken) {
+      setLiveStudents([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('live_students')
+      .select('*')
+      .eq('token', activeMonitorToken);
+      
+    if (data && !error) {
+      setLiveStudents(data.map(s => ({ ...s, subKelas: s.sub_kelas, forceSubmit: s.force_submit })));
+    }
+  };
+
+  useEffect(() => {
+    fetchLive();
+
+    const liveChannel = supabase.channel(`public:live_students:token=${activeMonitorToken}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_students', filter: `token=eq.${activeMonitorToken}` }, payload => {
+         fetchLive();
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(liveChannel);
+  }, [activeMonitorToken]);
 
   const handleSetToken = (token) => {
     setActiveMonitorToken(token);
@@ -49,13 +115,17 @@ export default function ProctorDashboard({ onLogout }) {
     setFilterStatus('all');
   };
 
-  const handleExit = () => {
+  const handleExit = async () => {
+    try {
+      await supabase.auth.signOut();
+      localStorage.clear();
       if(onLogout) onLogout();
       else navigate('/login');
+    } catch (err) { alert("Gagal keluar: " + err.message); }
   };
 
   // Logika Filter & Search
-  const monitoredStudents = liveStudents.filter(s => s.token === activeMonitorToken);
+  const monitoredStudents = liveStudents;
   const filteredStudents = monitoredStudents.filter(s => {
       const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.class.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
@@ -66,34 +136,34 @@ export default function ProctorDashboard({ onLogout }) {
       return true; // 'all'
   });
 
-  // 2. Fungsi Eksekusi Pengawas
-  const sendBroadcast = () => {
+  // ==========================================
+  // FUNGSI EKSEKUSI PENGAWAS (SUPABASE)
+  // ==========================================
+  const sendBroadcast = async () => {
     if(!broadcastText) return;
     if(window.confirm(`Kirim pengumuman darurat ke semua layar siswa di Ruangan (Token: ${activeMonitorToken})?`)) {
-      monitoredStudents.forEach(s => update(dbRef(db, `live_students/${s.id}`), { broadcast: broadcastText }));
+      await supabase.from('live_students').update({ broadcast: broadcastText }).eq('token', activeMonitorToken);
       setBroadcastText('');
       alert("Pengumuman berhasil disiarkan ke seluruh perangkat siswa!");
     }
   };
 
-  const forceSubmitAll = () => {
+  const forceSubmitAll = async () => {
     if(window.confirm("🚨 PERINGATAN MASTER!\nAnda yakin ingin MENGAKHIRI UJIAN dan MENARIK PAKSA lembar jawaban semua siswa yang sedang ujian di ruangan ini?")) {
-      monitoredStudents.forEach(s => { 
-        if(s.status !== 'Selesai') update(dbRef(db, `live_students/${s.id}`), { forceSubmit: true }); 
-      });
-      alert("Sinyal tarik paksa berhasil dikirimkan!");
+      await supabase.from('live_students').update({ force_submit: true }).eq('token', activeMonitorToken).neq('status', 'Selesai');
+      alert("Sinyal tarik paksa massal berhasil dikirimkan!");
     }
   };
 
-  const unlockStudent = (studentId) => {
+  const unlockStudent = async (studentId) => {
     if(window.confirm("Buka layar siswa yang terkunci ini agar bisa melanjutkan ujian?")) {
-      update(dbRef(db, `live_students/${studentId}`), { warnings: 0, status: 'Online' });
+      await supabase.from('live_students').update({ warnings: 0, status: 'Online' }).eq('id', studentId);
     }
   };
 
-  const forceSubmitSingle = (studentId) => {
+  const forceSubmitSingle = async (studentId) => {
     if(window.confirm("Tarik paksa lembar jawaban siswa ini sekarang?")) {
-      update(dbRef(db, `live_students/${studentId}`), { forceSubmit: true });
+      await supabase.from('live_students').update({ force_submit: true }).eq('id', studentId);
     }
   };
 
@@ -104,6 +174,26 @@ export default function ProctorDashboard({ onLogout }) {
       curang: monitoredStudents.filter(s => (s.warnings || 0) >= 3).length,
       online: monitoredStudents.filter(s => s.status !== 'Selesai' && (s.warnings || 0) < 3).length
   };
+
+  if (isLoadingProfile) {
+     return (
+       <div className="h-screen flex flex-col items-center justify-center bg-slate-950 gap-4">
+          <Loader2 size={40} className="text-blue-500 animate-spin" />
+          <p className="text-sm font-bold text-slate-400 tracking-widest uppercase animate-pulse">Menyiapkan Ruang Pengawas...</p>
+       </div>
+     );
+  }
+
+  if (!proctorProfile) {
+     return (
+       <div className="h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center text-slate-300">
+          <ShieldAlert size={60} className="text-red-500 mb-4" />
+          <p className="text-xl font-black text-white mb-2">Akses Ditolak</p>
+          <p className="text-sm font-bold text-slate-500 mb-6">Sesi pengawas tidak valid atau Anda belum login.</p>
+          <button onClick={() => navigate('/login')} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm">Kembali ke Login</button>
+       </div>
+     );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col font-sans text-slate-200 selection:bg-blue-500/30">
@@ -120,7 +210,7 @@ export default function ProctorDashboard({ onLogout }) {
             <h1 className="font-black tracking-widest uppercase text-lg text-white flex items-center gap-2">
                 Proctoring Center <span className="bg-red-500/20 text-red-500 text-[9px] px-2 py-0.5 rounded border border-red-500/30 animate-pulse hidden sm:inline-block">LIVE</span>
             </h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Yaspendik PTPN IV - Darma Pertiwi</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Pengawas: {proctorProfile.name} | Inst: {schoolId.toUpperCase()}</p>
           </div>
         </div>
         <button onClick={handleExit} className="flex items-center gap-2 bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-500 px-4 py-2.5 rounded-xl text-xs font-black transition-all border border-slate-700 hover:border-red-900/50 active:scale-95 shadow-sm">
@@ -139,7 +229,7 @@ export default function ProctorDashboard({ onLogout }) {
                    <div className="bg-amber-500/10 p-2 rounded-lg text-amber-500"><Monitor size={20}/></div>
                    <div>
                        <h2 className="text-lg font-black text-white leading-tight">Akses Ruangan</h2>
-                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">Sinkronisasi Database Pusat</p>
+                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">Sesi Ujian di {schoolId.toUpperCase()}</p>
                    </div>
                 </div>
                 <select 
