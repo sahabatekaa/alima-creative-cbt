@@ -27,7 +27,7 @@ export default function SchoolAdminDashboard() {
   
   // Forms
   const [schoolForm, setSchoolForm] = useState({ alamat: '', kepalaSekolah: '', nipKepalaSekolah: '', telepon: '', logoUrl: '' });
-  const [guruForm, setGuruForm] = useState({ name: '', email: '', password: '', role: 'teacher' }); // Tambahkan state role default
+  const [guruForm, setGuruForm] = useState({ name: '', email: '', password: '', role: 'teacher' });
   const [studentForm, setStudentForm] = useState({ name: '', nisn: '', kelas: '', subKelas: '' });
   const [classForm, setClassForm] = useState('');
   const [subjectForm, setSubjectForm] = useState('');
@@ -148,6 +148,16 @@ export default function SchoolAdminDashboard() {
 
     fetchSchoolData();
     fetchAllData();
+
+    // RADAR REALTIME: Auto-update UI tanpa perlu Refresh F5 (Anti Bolak-Balik layarnya)
+    const adminChannel = supabase.channel('admin_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'master_classes' }, () => fetchAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'master_subjects' }, () => fetchAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => fetchAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchAllData())
+      .subscribe();
+
+    return () => supabase.removeChannel(adminChannel);
   }, [schoolId]);
 
   // --- FUNGSI LOGOUT ---
@@ -190,7 +200,6 @@ export default function SchoolAdminDashboard() {
   const safeClasses = Array.isArray(data.classes) ? data.classes : [];
   const safeSubjects = Array.isArray(data.subjects) ? data.subjects : [];
 
-  // Update: Ambil Guru ATAU Pengawas (keduanya akan di-manage di tab yang sama oleh TU)
   const schoolStaffs = safeUsers.filter(u => u.role === 'teacher' || u.role === 'proctor');
   const pendingTeachers = schoolStaffs.filter(u => u.status === 'pending');
   const activeTeachers = schoolStaffs.filter(u => u.status !== 'pending');
@@ -201,27 +210,27 @@ export default function SchoolAdminDashboard() {
   const schoolSessions = safeSessions;
   const schoolLeaderboard = safeLead; 
 
-  // --- MANAJEMEN MASTER DATA ---
+  // --- MANAJEMEN MASTER DATA (Tanpa Reload) ---
   const handleAddClass = async (e) => { 
     e.preventDefault(); 
     if(!classForm) return; 
     const { error } = await supabase.from('master_classes').insert([{ name: classForm, school_id: schoolId.toLowerCase() }]);
-    if (!error) { setClassForm(''); window.location.reload(); } else alert(error.message);
+    if (!error) { setClassForm(''); alert("Kelas berhasil ditambahkan!"); } else alert(error.message);
   };
   const handleDeleteClass = async (id) => { 
-    if(window.confirm("Hapus kelas ini?")) { await supabase.from('master_classes').delete().eq('id', id); window.location.reload(); }
+    if(window.confirm("Hapus kelas ini?")) { await supabase.from('master_classes').delete().eq('id', id); }
   };
   const handleAddSubject = async (e) => { 
     e.preventDefault(); 
     if(!subjectForm) return; 
     const { error } = await supabase.from('master_subjects').insert([{ name: subjectForm, school_id: schoolId.toLowerCase() }]);
-    if (!error) { setSubjectForm(''); window.location.reload(); } else alert(error.message);
+    if (!error) { setSubjectForm(''); alert("Mapel berhasil ditambahkan!"); } else alert(error.message);
   };
   const handleDeleteSubject = async (id) => { 
-    if(window.confirm("Hapus Mapel ini?")) { await supabase.from('master_subjects').delete().eq('id', id); window.location.reload(); } 
+    if(window.confirm("Hapus Mapel ini?")) { await supabase.from('master_subjects').delete().eq('id', id); } 
   };
 
-  // --- MANAJEMEN SISWA ---
+  // --- MANAJEMEN SISWA (Tanpa Reload) ---
   const handleAddStudent = async (e) => {
     e.preventDefault();
     try {
@@ -236,12 +245,11 @@ export default function SchoolAdminDashboard() {
       alert("Siswa ditambahkan!"); 
       setShowAddStudentModal(false); 
       setStudentForm({ name: '', nisn: '', kelas: '', subKelas: '' });
-      window.location.reload();
     } catch (err) { alert(err.message); }
   };
   
   const handleDeleteStudent = async (id) => { 
-    if(window.confirm("Hapus siswa ini?")) { await supabase.from('students').delete().eq('id', id); window.location.reload(); }
+    if(window.confirm("Hapus siswa ini?")) { await supabase.from('students').delete().eq('id', id); }
   };
 
   const handleImportStudents = (e) => {
@@ -269,7 +277,6 @@ export default function SchoolAdminDashboard() {
            if (error) throw error;
            alert(`${bulkData.length} Siswa berhasil di-import!`); 
            if(fileInputRef.current) fileInputRef.current.value = '';
-           window.location.reload();
         }
       } catch(err) { alert("Gagal Import: Format Excel salah atau bermasalah.\n" + err.message); }
     }; reader.readAsBinaryString(file);
@@ -280,7 +287,7 @@ export default function SchoolAdminDashboard() {
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Format_Siswa"); XLSX.writeFile(wb, "Template_Import_Siswa.xlsx");
   };
 
-  // --- MANAJEMEN GURU / PENGAWAS ---
+  // --- MANAJEMEN GURU / PENGAWAS (Tanpa Reload) ---
   const handleAddGuru = async (e) => {
     e.preventDefault(); if (schoolId === 'UNREGISTERED') return alert("Akses dibatasi.");
     try { 
@@ -291,34 +298,33 @@ export default function SchoolAdminDashboard() {
          id: authData.user.id,
          name: guruForm.name,
          email: guruForm.email,
-         role: guruForm.role, // TANGKAP ROLE YANG DIPILIH
+         role: guruForm.role,
          school_id: schoolId.toLowerCase(),
          status: 'active'
       }]);
       if (dbErr) throw dbErr;
 
-      alert("Akun berhasil dibuat! (Silakan relogin jika sesi tertimpa)."); 
+      alert("Akun berhasil dibuat!"); 
       setShowAddGuruModal(false); 
       setGuruForm({ name: '', email: '', password: '', role: 'teacher' }); 
-      window.location.reload();
     } catch (err) { alert("Gagal: " + err.message); }
   };
 
   const handleUpdateGuru = async (e) => { 
     e.preventDefault(); 
     const { error } = await supabase.from('users').update({ name: guruForm.name }).eq('id', editGuruId);
-    if (!error) { alert("Diperbarui!"); setShowEditGuruModal(false); window.location.reload(); } else alert(error.message);
+    if (!error) { alert("Diperbarui!"); setShowEditGuruModal(false); } else alert(error.message);
   };
   
   // FUNGSI APPROVE & REJECT PENDING
   const approveTeacher = async (id) => {
-     await supabase.from('users').update({ status: 'active' }).eq('id', id); window.location.reload();
+     await supabase.from('users').update({ status: 'active' }).eq('id', id);
   };
   const rejectTeacher = async (id) => { 
-     if(window.confirm("Tolak dan hapus data akun ini?")) { await supabase.from('users').delete().eq('id', id); window.location.reload(); }
+     if(window.confirm("Tolak dan hapus data akun ini?")) { await supabase.from('users').delete().eq('id', id); }
   };
   const deleteTeacher = async (id) => { 
-     if(window.confirm("Hapus akun ini dari instansi Anda?")) { await supabase.from('users').delete().eq('id', id); window.location.reload(); }
+     if(window.confirm("Hapus akun ini dari instansi Anda?")) { await supabase.from('users').delete().eq('id', id); }
   };
   const handleResetPassword = async (email) => { 
      if (window.confirm(`Kirim instruksi reset ke ${email}?`)) {
@@ -658,10 +664,10 @@ export default function SchoolAdminDashboard() {
                       <select value={recapKelas} onChange={e => setRecapKelas(e.target.value)} className="w-full sm:w-40 p-2.5 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700"><option value="">Semua Kelas</option>{availableKelasRekap.map(k => <option key={k} value={k}>{k}</option>)}</select>
                    </div>
                    
-                   <div className="flex gap-2 w-full xl:w-auto">
-                      <button onClick={() => { setPrintMode('rekap'); setTimeout(() => window.print(), 300); }} disabled={schoolId === 'UNREGISTERED'} className="flex-1 xl:flex-none bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"><BarChart size={14}/> Cetak Nilai</button>
-                      <button onClick={() => { setPrintMode('berita_acara'); setTimeout(() => window.print(), 300); }} disabled={schoolId === 'UNREGISTERED'} className="flex-1 xl:flex-none bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"><FileText size={14}/> Berita Acara</button>
-                      <button onClick={() => { setPrintMode('daftar_hadir'); setTimeout(() => window.print(), 300); }} disabled={schoolId === 'UNREGISTERED'} className="flex-1 xl:flex-none bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"><Users size={14}/> Daftar Hadir</button>
+                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full xl:w-auto mt-4 xl:mt-0">
+                      <button onClick={() => { setPrintMode('rekap'); setTimeout(() => window.print(), 300); }} disabled={schoolId === 'UNREGISTERED'} className="w-full bg-slate-800 hover:bg-slate-700 text-white px-4 py-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"><BarChart size={16}/> Cetak Nilai</button>
+                      <button onClick={() => { setPrintMode('berita_acara'); setTimeout(() => window.print(), 300); }} disabled={schoolId === 'UNREGISTERED'} className="w-full bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"><FileText size={16}/> Berita Acara</button>
+                      <button onClick={() => { setPrintMode('daftar_hadir'); setTimeout(() => window.print(), 300); }} disabled={schoolId === 'UNREGISTERED'} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"><Users size={16}/> Daftar Hadir</button>
                    </div>
                 </div>
               </div>

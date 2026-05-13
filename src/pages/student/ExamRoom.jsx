@@ -280,16 +280,21 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   }, [timeLeft, isLocked, questions, isFullscreen, forceAllowFullscreen, shouldForceSubmit, storageKey]);
 
   // ==========================================
-  // JAWAB & SUBMIT UJIAN
+  // JAWAB & SUBMIT UJIAN (REVISI PROGRESS)
   // ==========================================
   const updateAnswer = async (qId, value) => {
     const newAns = { ...answers, [qId]: value }; 
     setAnswers(newAns); 
     localStorage.setItem(`${storageKey}_ans`, JSON.stringify(newAns));
     
-    if (isOnline) {
-      const prog = Math.round((Object.keys(newAns).length / questions.length) * 100);
-      supabase.from('live_students').update({ progress: prog }).eq('id', sid).catch(()=>{});
+    // PERBAIKAN: Sinkronisasi progress secara ASYNC
+    if (isOnline && sid && sid !== 'guest') {
+      try {
+        const prog = Math.round((Object.keys(newAns).length / questions.length) * 100);
+        await supabase.from('live_students').update({ progress: prog }).eq('id', sid);
+      } catch (err) {
+        console.error("Gagal sinkronisasi progress:", err);
+      }
     }
   };
 
