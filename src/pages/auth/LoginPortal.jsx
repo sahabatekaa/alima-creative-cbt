@@ -231,7 +231,7 @@ export default function LoginPortal() {
 
       const user = authData.user;
 
-      if (user.email === 'admin@sekolah.com') {
+      if (user.email === 'admin@alima.com') {
           navigate('/master');
           return;
       } 
