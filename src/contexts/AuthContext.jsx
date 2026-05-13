@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../config/supabase'; // 100% SUPABASE
+import { supabase } from '../config/supabase'; 
 import { RefreshCw } from 'lucide-react';
 
 const AuthContext = createContext();
@@ -8,11 +8,10 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [tenantData, setTenantData] = useState(null); // Menyimpan profil spesifik sekolah klien
+  const [tenantData, setTenantData] = useState(null); 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fungsi untuk mengambil detail profil user dan institusi dari PostgreSQL
     const fetchUserProfile = async (user) => {
       if (!user) {
         setCurrentUser(null);
@@ -25,7 +24,20 @@ export function AuthProvider({ children }) {
       try {
         setCurrentUser(user);
 
-        // 1. Tarik data profil dari tabel 'users'
+        // 🌟 JALUR VIP FOUNDER: Mencegah terlempar ke login! 🌟
+        if (user.email === 'admin@alima.com') {
+            setUserData({
+                id: user.id,
+                email: user.email,
+                name: 'Founder Alima CBT',
+                role: 'superadmin',
+                status: 'active'
+            });
+            setLoading(false);
+            return; // Langsung berikan akses, hentikan pencarian ke tabel
+        }
+
+        // 1. Tarik data profil untuk user selain admin
         const { data: profileData, error: profileErr } = await supabase
           .from('users')
           .select('*')
@@ -33,19 +45,19 @@ export function AuthProvider({ children }) {
           .single();
 
         if (profileErr || !profileData) {
+          console.warn("Profil tidak ditemukan atau terblokir RLS");
           setUserData(null);
           setLoading(false);
           return;
         }
 
-        // Normalisasi snake_case (SQL) ke camelCase (React) agar komponen UI tidak rusak
         const normalizedUser = {
           ...profileData,
           schoolId: profileData.school_id 
         };
         setUserData(normalizedUser);
 
-        // 2. Tarik data institusi/yayasan jika user terkait sekolah
+        // 2. Tarik data institusi
         if (normalizedUser.schoolId && normalizedUser.role !== 'superadmin') {
           const { data: schoolData, error: schoolErr } = await supabase
             .from('schools')
@@ -58,38 +70,29 @@ export function AuthProvider({ children }) {
           }
         }
       } catch (error) {
-        console.error("🚨 FATAL: Gagal menarik data otentikasi SaaS dari Supabase:", error);
+        console.error("🚨 FATAL: Gagal menarik data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    // Cek sesi aktif saat aplikasi pertama kali dimuat
+    // Cek sesi aktif
     supabase.auth.getSession().then(({ data: { session } }) => {
       fetchUserProfile(session?.user ?? null);
     });
 
-    // Pantau perubahan status login (Login, Logout, Token Refresh)
+    // Pantau perubahan
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      // Hanya set loading true jika benar-benar ganti user/login (mencegah kedip saat refresh token di background)
       if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT') {
         setLoading(true);
         fetchUserProfile(session?.user ?? null);
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Paket data yang akan disebar ke seluruh komponen aplikasi
-  const value = {
-    currentUser,
-    userData,
-    tenantData,
-    loading
-  };
+  const value = { currentUser, userData, tenantData, loading };
 
   return (
     <AuthContext.Provider value={value}>
@@ -106,7 +109,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// Custom Hook untuk memudahkan pemanggilan di komponen lain
 export function useAuth() {
   return useContext(AuthContext);
 }
