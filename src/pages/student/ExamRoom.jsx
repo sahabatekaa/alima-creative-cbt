@@ -36,6 +36,7 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   
   const answersRef = useRef(answers);
   const isLockedRef = useRef(isLocked);
+  const isSubmitting = useRef(false); // GEMBOK ANTI-SPAM (DOUBLE SUBMIT)
 
   useEffect(() => { answersRef.current = answers; }, [answers]);
   useEffect(() => { isLockedRef.current = isLocked; }, [isLocked]);
@@ -280,7 +281,7 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   }, [timeLeft, isLocked, questions, isFullscreen, forceAllowFullscreen, shouldForceSubmit, storageKey]);
 
   // ==========================================
-  // JAWAB & SUBMIT UJIAN (REVISI PROGRESS)
+  // JAWAB & SUBMIT UJIAN (REVISI PROGRESS & GEMBOK)
   // ==========================================
   const updateAnswer = async (qId, value) => {
     const newAns = { ...answers, [qId]: value }; 
@@ -317,13 +318,18 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
   };
 
   const submitExam = async () => {
+    if (isSubmitting.current) return; // GEMBOK: Mencegah eksekusi ganda jika diklik berulang kali
+    isSubmitting.current = true;
+
     if (!isOnline) {
       alert("🚨 KONEKSI TERPUTUS!\nSistem tidak dapat mengumpulkan jawaban karena Anda sedang offline. Mohon periksa kembali koneksi internet/WiFi Anda.\n\nSemua jawaban Anda aman tersimpan di perangkat.");
+      isSubmitting.current = false; // Buka gembok kembali
       return;
     }
 
     if (!schoolIdRef.current) {
       alert("⚠️ Gagal menyimpan data sesi! Mohon refresh halaman dan coba kumpulkan lagi.");
+      isSubmitting.current = false; // Buka gembok kembali
       return;
     }
 
@@ -389,6 +395,7 @@ export default function ExamRoom({ studentData: propStudentData, onFinish }) {
       if(onFinish) onFinish(finalScore);
     } catch (error) {
       alert("Gagal mengumpulkan ujian. Pastikan koneksi stabil dan coba lagi.");
+      isSubmitting.current = false; // Buka gembok kembali jika gagal agar siswa bisa mencoba lagi
     }
   };
 
