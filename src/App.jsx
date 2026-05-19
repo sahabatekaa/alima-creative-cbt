@@ -6,8 +6,9 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 // ==========================================
 // IMPORT HALAMAN ASLI (V3 SAAS)
 // ==========================================
+import LandingPage from './pages/LandingPage'; // <-- IMPORT LANDING PAGE
 import LoginPortal from './pages/auth/LoginPortal';
-import RegisterPortal from './pages/auth/RegisterPortal'; // IMPORT PAGE BARU
+import RegisterPortal from './pages/auth/RegisterPortal'; 
 import MasterDashboard from './pages/superadmin/MasterDashboard';
 import SchoolAdminDashboard from './pages/teacher/SchoolAdminDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
@@ -53,9 +54,16 @@ export default function App() {
       <Router>
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300 text-slate-800 dark:text-slate-100">
           <Routes>
-            {/* PUBLIC ROUTE */}
+            {/* ========================================== */}
+            {/* PUBLIC ROUTE (Halaman Bebas Akses) */}
+            {/* ========================================== */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPortal />} />
-            <Route path="/register" element={<RegisterPortal />} /> {/* RUTE REGISTER BARU */}
+            <Route path="/registrasi" element={<RegisterPortal />} />
+            
+            {/* ========================================== */}
+            {/* PROTECTED ROUTE (Harus Punya Hak Akses) */}
+            {/* ========================================== */}
             
             {/* SUPER ADMIN ROUTE (Master SaaS) */}
             <Route path="/master/*" element={
@@ -86,20 +94,20 @@ export default function App() {
             } />
 
             {/* STUDENT ROUTE (Peserta Ujian) */}
+            <Route path="/exam" element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <ExamRoom onFinish={() => window.location.href = '/student/result'} />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/student/result" element={
               <ProtectedRoute allowedRoles={['student']}>
                 <ResultPage />
               </ProtectedRoute>
             } />
 
-            <Route path="/exam" element={
-              <ProtectedRoute allowedRoles={['student']}>
-                <ExamRoom onFinish={() => window.location.href = '/student/result'} />
-              </ProtectedRoute>
-            } />
-
-            {/* DEFAULT REDIRECT */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            {/* DEFAULT REDIRECT (Jika ada yang mengetik URL ngawur) */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </Router>
