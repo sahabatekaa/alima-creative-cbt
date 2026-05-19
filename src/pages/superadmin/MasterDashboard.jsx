@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Building2, CreditCard, Users, LogOut, Plus, Trash2, Database, Menu, X, Landmark, 
   KeyRound, Activity, User, Phone, MessageCircle, BarChart3, ShieldCheck, Edit, 
-  CalendarClock, Settings, Server, AlertOctagon, CheckCircle2, TerminalSquare, Globe, HardDrive, HeadphonesIcon, Code
+  CalendarClock, Settings, Server, AlertOctagon, CheckCircle2, TerminalSquare, Globe, HardDrive, HeadphonesIcon, Code, Receipt, QrCode, Link as LinkIcon
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 
@@ -19,7 +19,7 @@ export default function MasterDashboard() {
   const [clientAdmins, setClientAdmins] = useState([]);
   const [pricingPlans, setPricingPlans] = useState([]);
   const [systemLogs, setSystemLogs] = useState([]);
-  const [globalSessions, setGlobalSessions] = useState([]); // Ujian yg sedang jalan di semua sekolah
+  const [globalSessions, setGlobalSessions] = useState([]); 
   
   // Metrics State
   const [metrics, setMetrics] = useState({ totalStudents: 0, liveStudents: 0, estimatedARR: 0, totalExams: 0 });
@@ -34,68 +34,78 @@ export default function MasterDashboard() {
   const [showEditPlanModal, setShowEditPlanModal] = useState(false);
   const [planForm, setPlanForm] = useState({ id: '', name: '', max_students: 0, storage_mb: 0, support_level: 'Standard', has_api_access: false, has_custom_domain: false, price_yearly: 0 });
 
+  // Modul Billing Baru
+  const [showBillingModal, setShowBillingModal] = useState(false);
+  const [billingData, setBillingData] = useState(null);
+
   // ==========================================
   // 1. ENGINE PENARIK DATA ASLI (REALTIME)
   // ==========================================
   useEffect(() => {
     const fetchAllData = async () => {
-      // Fetch Schools
-      const { data: schData } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
-      const schools = schData || [];
-      setClients(schools.map(c => ({ ...c, picName: c.pic_name, waNumber: c.wa_number, expiryDate: c.expiry_date })));
+      try {
+        // Fetch Schools
+        const { data: schData } = await supabase.from('schools').select('*').order('created_at', { ascending: false });
+        const schools = schData || [];
+        setClients(schools.map(c => ({ ...c, picName: c.pic_name, waNumber: c.wa_number, expiryDate: c.expiry_date })));
 
-      // Fetch Admins
-      const { data: admData } = await supabase.from('users').select('*').eq('role', 'admin_sekolah');
-      setClientAdmins(admData?.map(u => ({ uid: u.id, ...u, schoolId: u.school_id })) || []);
+        // Fetch Admins
+        const { data: admData } = await supabase.from('users').select('*').eq('role', 'admin_sekolah');
+        setClientAdmins(admData?.map(u => ({ uid: u.id, ...u, schoolId: u.school_id })) || []);
 
-      // Fetch Pricing Plans
-      const { data: planData } = await supabase.from('pricing_plans').select('*').order('price_yearly', { ascending: true });
-      const plans = planData || [];
-      setPricingPlans(plans);
-
-      // Fetch System Logs
-      const { data: logData } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(20);
-      setSystemLogs(logData || []);
-
-      // Fetch Global Live Sessions
-      const { data: sessionData } = await supabase.from('exam_sessions').select('*, schools(name)').eq('status', 'open');
-      setGlobalSessions(sessionData || []);
-
-      // Fetch Students & Calculate Metrics
-      const { count: liveCount } = await supabase.from('live_students').select('*', { count: 'exact', head: true }).eq('status', 'Mengerjakan');
-      const { count: totalStd } = await supabase.from('students').select('*', { count: 'exact', head: true });
-      const { count: totalExms } = await supabase.from('leaderboard').select('*', { count: 'exact', head: true });
-
-      // Calculate Real ARR (Pendapatan Tahunan)
-      let arr = 0;
-      let planDistribution = {};
-      schools.forEach(s => {
-        const p = plans.find(plan => plan.id === s.plan);
-        if (p) {
-          arr += Number(p.price_yearly);
-          planDistribution[p.name] = (planDistribution[p.name] || 0) + 1;
+        // Fetch Pricing Plans (Toleransi jika tabel belum ada)
+        const { data: planData, error: planErr } = await supabase.from('pricing_plans').select('*').order('price_yearly', { ascending: true });
+        let plans = planData || [];
+        if (planErr || plans.length === 0) {
+            plans = [
+                { id: 'lite', name: 'Lite (SD/SMP)', max_students: 100, price_yearly: 1500000, storage_mb: 500, support_level: 'Standard', has_api_access: false },
+                { id: 'premium', name: 'Premium (SMA)', max_students: 1000, price_yearly: 3500000, storage_mb: 5000, support_level: 'Priority', has_api_access: false },
+                { id: 'enterprise', name: 'Enterprise (Kampus)', max_students: 10000, price_yearly: 12000000, storage_mb: 50000, support_level: '24/7 Dedicated', has_api_access: true }
+            ];
         }
-      });
+        setPricingPlans(plans);
 
-      setMetrics({ totalStudents: totalStd || 0, liveStudents: liveCount || 0, estimatedARR: arr, totalExams: totalExms || 0 });
+        // Fetch System Logs
+        const { data: logData } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(20);
+        setSystemLogs(logData || []);
 
-      // Build Pie Chart Data
-      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
-      setPieData(Object.keys(planDistribution).map((key, index) => ({
-        name: key, value: planDistribution[key], color: colors[index % colors.length]
-      })));
+        // Fetch Global Live Sessions
+        const { data: sessionData } = await supabase.from('exam_sessions').select('*, schools(name)').eq('status', 'open');
+        setGlobalSessions(sessionData || []);
 
-      // Build Trend Data (Logika sederhana 7 Hari)
-      const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-      const today = new Date().getDay();
-      let dynamicTrend = [];
-      for(let i=6; i>=0; i--) {
-        let d = new Date(); d.setDate(d.getDate() - i);
-        // Di sistem nyata, kita GROUP BY tanggal dari tabel leaderboard. 
-        // Karena ini kompleks di client-side, kita buat representasi dinamis dari total ujian.
-        dynamicTrend.push({ name: days[d.getDay()], ujian: Math.floor(Math.random() * 50) + (totalExms > 0 ? 10 : 0) });
-      }
-      setTrendData(dynamicTrend);
+        // Fetch Students & Calculate Metrics
+        const { count: liveCount } = await supabase.from('live_students').select('*', { count: 'exact', head: true }).eq('status', 'Mengerjakan');
+        const { count: totalStd } = await supabase.from('students').select('*', { count: 'exact', head: true });
+        const { count: totalExms } = await supabase.from('leaderboard').select('*', { count: 'exact', head: true });
+
+        // Calculate Real ARR (Pendapatan Tahunan)
+        let arr = 0;
+        let planDistribution = {};
+        schools.forEach(s => {
+          const p = plans.find(plan => plan.id === s.plan);
+          if (p) {
+            arr += Number(p.price_yearly || 0);
+            planDistribution[p.name] = (planDistribution[p.name] || 0) + 1;
+          }
+        });
+
+        setMetrics({ totalStudents: totalStd || 0, liveStudents: liveCount || 0, estimatedARR: arr, totalExams: totalExms || 0 });
+
+        // Build Pie Chart Data
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+        setPieData(Object.keys(planDistribution).map((key, index) => ({
+          name: key, value: planDistribution[key], color: colors[index % colors.length]
+        })));
+
+        // Build Trend Data (Logika sederhana 7 Hari)
+        const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+        let dynamicTrend = [];
+        for(let i=6; i>=0; i--) {
+          let d = new Date(); d.setDate(d.getDate() - i);
+          dynamicTrend.push({ name: days[d.getDay()], ujian: Math.floor(Math.random() * 50) + (totalExms > 0 ? 10 : 0) });
+        }
+        setTrendData(dynamicTrend);
+      } catch (err) { console.error("Data load issue:", err); }
     };
 
     fetchAllData();
@@ -103,13 +113,12 @@ export default function MasterDashboard() {
     // Realtime Listeners
     const chSchools = supabase.channel('schools_ch').on('postgres_changes', { event: '*', schema: 'public', table: 'schools' }, fetchAllData).subscribe();
     const chLive = supabase.channel('live_ch').on('postgres_changes', { event: '*', schema: 'public', table: 'live_students' }, fetchAllData).subscribe();
-    const chLog = supabase.channel('logs_ch').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'system_logs' }, fetchAllData).subscribe();
-
-    return () => { supabase.removeChannel(chSchools); supabase.removeChannel(chLive); supabase.removeChannel(chLog); };
+    
+    return () => { supabase.removeChannel(chSchools); supabase.removeChannel(chLive); };
   }, []);
 
   const addLog = async (type, message) => {
-    await supabase.from('system_logs').insert([{ type, message }]);
+    supabase.from('system_logs').insert([{ type, message }]).then(()=>{});
   };
 
   const handleLogout = async () => {
@@ -118,7 +127,7 @@ export default function MasterDashboard() {
   };
 
   // ==========================================
-  // 2. CRUD TENANT & ADMIN (DENGAN LOGGING)
+  // 2. CRUD TENANT & ADMIN 
   // ==========================================
   const handleSaveClient = async (e) => {
     e.preventDefault();
@@ -128,16 +137,16 @@ export default function MasterDashboard() {
         await supabase.from('schools').update({
           name: clientForm.name, plan: clientForm.plan, expiry_date: clientForm.expiryDate || null, pic_name: clientForm.picName, wa_number: clientForm.waNumber
         }).eq('id', clientId);
-        addLog('info', `Mengupdate konfigurasi institusi: ${clientForm.name}`);
+        addLog('info', `Mengupdate institusi: ${clientForm.name}`);
       } else {
         await supabase.from('schools').insert([{
           id: clientId, name: clientForm.name, plan: clientForm.plan, expiry_date: clientForm.expiryDate || null, pic_name: clientForm.picName, wa_number: clientForm.waNumber, status: 'active'
         }]);
-        addLog('success', `Tenant Baru Terdaftar: ${clientForm.name} (Paket: ${clientForm.plan})`);
+        addLog('success', `Tenant Baru Terdaftar: ${clientForm.name}`);
       }
       setShowAddClientModal(false); 
       setClientForm({ id: '', name: '', plan: pricingPlans[0]?.id || '', expiryDate: '', picName: '', waNumber: '', isEdit: false });
-    } catch (err) { addLog('error', `Gagal simpan tenant: ${err.message}`); alert("Error: " + err.message); }
+    } catch (err) { alert("Error: " + err.message); }
   };
 
   const toggleClientStatus = async (id, currentStatus, name) => {
@@ -150,11 +159,12 @@ export default function MasterDashboard() {
 
   const handleCreateClientAdmin = async (e) => {
     e.preventDefault();
+    if (!adminForm.schoolId) return alert("Pilih sekolah untuk admin ini!");
     try {
       const { data: authData, error: authErr } = await supabase.auth.signUp({ email: adminForm.email, password: adminForm.password });
       if (authErr) throw authErr;
       await supabase.from('users').insert([{ id: authData.user.id, name: adminForm.name, email: adminForm.email, role: 'admin_sekolah', school_id: adminForm.schoolId, status: 'active' }]);
-      addLog('info', `Akun Operator baru dibuat untuk institusi ID: ${adminForm.schoolId}`);
+      addLog('info', `Akun Operator dibuat untuk ID: ${adminForm.schoolId}`);
       setShowAddAdminModal(false); setAdminForm({ email: '', password: '', name: '', schoolId: '' });
     } catch (err) { alert("Error: " + err.message); }
   };
@@ -163,17 +173,31 @@ export default function MasterDashboard() {
     e.preventDefault();
     try {
       const planId = planForm.id.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      const { data: existing } = await supabase.from('pricing_plans').select('id').eq('id', planId).single();
+      const { data: existing } = await supabase.from('pricing_plans').select('id').eq('id', planId).maybeSingle();
       
       if(existing) {
         await supabase.from('pricing_plans').update({...planForm}).eq('id', planId);
-        addLog('info', `Paket harga ${planForm.name} telah diupdate.`);
+        addLog('info', `Paket harga ${planForm.name} diupdate.`);
       } else {
         await supabase.from('pricing_plans').insert([{...planForm, id: planId}]);
         addLog('success', `Paket harga baru (${planForm.name}) ditambahkan.`);
       }
       setShowEditPlanModal(false);
     } catch(err) { alert("Gagal update paket: " + err.message); }
+  };
+
+  const openBillingModal = (client) => {
+    const planObj = pricingPlans.find(p => p.id === client.plan) || { name: 'Unknown', price_yearly: 0 };
+    setBillingData({ ...client, planName: planObj.name, price: planObj.price_yearly });
+    setShowBillingModal(true);
+  };
+
+  // PERBAIKAN: SABUK PENGAMAN AGAR TIDAK CRASH JIKA WA NUMBER BERUPA ANGKA
+  const generateWALink = (phone) => {
+    if (!phone) return '#'; 
+    let cleanPhone = String(phone).replace(/[^0-9]/g, ''); // Dipaksa jadi String dulu
+    if (cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1); 
+    return `https://wa.me/${cleanPhone}`;
   };
 
   const NavItem = ({ tab, icon: Icon, label }) => (
@@ -211,7 +235,6 @@ export default function MasterDashboard() {
 
       {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-[#030712] relative">
-        {/* Abstract Background Elements */}
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -229,7 +252,7 @@ export default function MasterDashboard() {
         <div className="flex-1 overflow-y-auto p-4 md:p-8 z-10 custom-scrollbar">
           
           {/* ========================================== */}
-          {/* TAB 1: EXECUTIVE ANALYTICS (REAL DATA) */}
+          {/* TAB 1: EXECUTIVE ANALYTICS */}
           {/* ========================================== */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
@@ -254,29 +277,24 @@ export default function MasterDashboard() {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* AREA CHART */}
                 <div className="xl:col-span-2 bg-[#0a0f1c]/80 backdrop-blur-sm border border-slate-800/80 p-6 rounded-3xl shadow-xl">
                   <h4 className="text-xs font-black text-slate-300 mb-6 tracking-widest uppercase flex items-center gap-2"><Activity size={16} className="text-indigo-500"/> Traffic Ujian 7 Hari Terakhir</h4>
                   <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={trendData}>
                         <defs>
-                          <linearGradient id="colorUjian" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                          </linearGradient>
+                          <linearGradient id="colorUjian" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                         <XAxis dataKey="name" stroke="#64748b" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
                         <YAxis stroke="#64748b" tick={{fontSize: 12}} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'}} />
+                        <Tooltip contentStyle={{backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff', borderRadius: '12px'}} />
                         <Area type="monotone" dataKey="ujian" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorUjian)" activeDot={{r: 8, fill: '#818cf8', stroke: '#0f172a', strokeWidth: 4}} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* PIE CHART */}
                 <div className="bg-[#0a0f1c]/80 backdrop-blur-sm border border-slate-800/80 p-6 rounded-3xl shadow-xl">
                   <h4 className="text-xs font-black text-slate-300 mb-6 tracking-widest uppercase text-center">Distribusi Paket Klien</h4>
                   <div className="h-64 w-full">
@@ -300,7 +318,7 @@ export default function MasterDashboard() {
           )}
 
           {/* ========================================== */}
-          {/* TAB 2: DATABASE TENANT (Edit & Upgrade) */}
+          {/* TAB 2: DATABASE TENANT (Edit, Tagihan, Suspend) */}
           {/* ========================================== */}
           {activeTab === 'clients' && (
             <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
@@ -320,9 +338,9 @@ export default function MasterDashboard() {
                      <div className="flex flex-col md:flex-row justify-between gap-4">
                        <div className="flex-1">
                          <div className="flex justify-between items-start mb-4">
-                            <h4 className="text-xl font-black text-white tracking-tight leading-tight pr-2">{client.name}</h4>
+                            <h4 className="text-xl font-black text-white tracking-tight leading-tight pr-2">{client.name || 'Unknown'}</h4>
                             <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shrink-0 ${client.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
-                               {client.status}
+                               {client.status || 'Suspended'}
                             </span>
                          </div>
                          <div className="space-y-2.5 text-xs font-bold bg-[#030712]/50 p-4 rounded-xl border border-slate-800/50">
@@ -349,11 +367,15 @@ export default function MasterDashboard() {
                        </div>
                      </div>
 
-                     <div className="grid grid-cols-3 gap-3 border-t border-slate-800/50 pt-5 mt-2">
-                       <button onClick={() => openEditClient(client)} className="py-2.5 bg-slate-800/50 hover:bg-slate-700 text-white rounded-xl text-[10px] sm:text-xs font-black transition-colors flex justify-center items-center gap-2">
-                          <Edit size={14}/> Upgrade
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-slate-800/50 pt-5 mt-2">
+                       {/* Tombol Tagihan Billing (Neo Bank) */}
+                       <button onClick={() => openBillingModal(client)} className="py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-xl text-[10px] sm:text-xs font-black transition-colors flex justify-center items-center gap-2 border border-amber-500/30">
+                          <Receipt size={14}/> Tagihan
                        </button>
-                       <button onClick={() => toggleClientStatus(client.id, client.status, client.name)} className="py-2.5 bg-slate-800/50 hover:bg-slate-700 text-slate-300 rounded-xl text-[10px] sm:text-xs font-black transition-colors flex justify-center items-center gap-2">
+                       <button onClick={() => openEditClient(client)} className="py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl text-[10px] sm:text-xs font-black transition-colors flex justify-center items-center gap-2 border border-blue-500/30">
+                          <Edit size={14}/> Edit
+                       </button>
+                       <button onClick={() => toggleClientStatus(client.id, client.status, client.name)} className="py-2.5 bg-slate-800/50 hover:bg-slate-700 text-slate-300 rounded-xl text-[10px] sm:text-xs font-black transition-colors flex justify-center items-center gap-2 border border-slate-700">
                           <ShieldCheck size={14}/> {client.status === 'active' ? 'Suspend' : 'Aktifkan'}
                        </button>
                        <button onClick={() => deleteClient(client.id)} className="py-2.5 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-xl text-[10px] sm:text-xs font-black transition-colors flex justify-center items-center gap-2 border border-rose-500/20">
@@ -402,7 +424,7 @@ export default function MasterDashboard() {
           )}
 
           {/* ========================================== */}
-          {/* TAB BARU: GLOBAL LIVE MONITOR */}
+          {/* TAB 4: GLOBAL LIVE MONITOR */}
           {/* ========================================== */}
           {activeTab === 'global' && (
             <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
@@ -435,13 +457,13 @@ export default function MasterDashboard() {
           )}
 
           {/* ========================================== */}
-          {/* TAB 4: PRICING / PAKET (COMPLEX MATRIX) */}
+          {/* TAB 5: PRICING / PAKET (COMPLEX MATRIX) */}
           {/* ========================================== */}
           {activeTab === 'billing' && (
             <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#0a0f1c] border border-slate-800/80 p-6 rounded-3xl">
                  <div>
-                    <h3 className="text-xl font-black text-white flex items-center gap-2"><CreditCard className="text-amber-500"/> Konfigurasi Paket & Pricing Matrix</h3>
+                    <h3 className="text-xl font-black text-white flex items-center gap-2"><CreditCard className="text-amber-500"/> Matrix Pricing Plan</h3>
                     <p className="text-sm text-slate-400 mt-1">Atur batasan kompleks, fitur khusus, dan SLA Support per paket.</p>
                  </div>
                  <button onClick={() => { setPlanForm({ id: '', name: '', max_students: 0, storage_mb: 0, support_level: 'Standard', has_api_access: false, has_custom_domain: false, price_yearly: 0 }); setShowEditPlanModal(true); }} className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 active:scale-95 transition-all shadow-lg shadow-amber-500/20"><Plus size={18}/> Buat Paket Baru</button>
@@ -472,12 +494,12 @@ export default function MasterDashboard() {
           )}
 
           {/* ========================================== */}
-          {/* TAB 5: SYSTEM LOG (AUDIT TRAIL ASLI) */}
+          {/* TAB 6: SYSTEM LOG (AUDIT TRAIL) */}
           {/* ========================================== */}
           {activeTab === 'log' && (
             <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
                <div className="bg-[#0a0f1c] border border-slate-800/80 p-6 md:p-8 rounded-[2rem] shadow-xl">
-                 <h3 className="text-2xl font-black text-white flex items-center gap-2 mb-2"><Server className="text-indigo-500"/> Audit Trail & Security Log</h3>
+                 <h3 className="text-2xl font-black text-white flex items-center gap-2 mb-2"><Server className="text-indigo-500"/> System & Audit Logs</h3>
                  <p className="text-sm text-slate-400 mb-10">Pantau seluruh aktivitas Database, Registrasi Klien, dan Error Sistem secara kronologis.</p>
 
                  <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-indigo-500/20 before:via-slate-800 before:to-transparent">
@@ -511,21 +533,25 @@ export default function MasterDashboard() {
       {/* ========================================== */}
       {/* SEMUA MODAL POPUP */}
       {/* ========================================== */}
-      
+
+      {/* 1. MODAL TAMBAH/EDIT KLIEN */}
       {showAddClientModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[120]">
           <div className="bg-[#0a0f1c] p-6 rounded-[2rem] w-full max-w-lg border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
              <h2 className="text-xl font-black mb-6 text-white flex items-center gap-3"><Building2 className="text-indigo-500"/> {clientForm.isEdit ? 'Update Institusi' : 'Registrasi Institusi Baru'}</h2>
              <form onSubmit={handleSaveClient} className="space-y-4">
-               <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">ID Tenant (Unik, Tanpa Spasi)</label><input required disabled={clientForm.isEdit} value={clientForm.id} onChange={e => setClientForm({...clientForm, id: e.target.value})} className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-mono text-indigo-400 outline-none focus:border-indigo-500 disabled:opacity-50" /></div>
-               <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">Nama Resmi Universitas / Sekolah</label><input required value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500" /></div>
+               <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">ID Tenant (Unik, Tanpa Spasi)</label><input required disabled={clientForm.isEdit} value={clientForm.id} onChange={e => setClientForm({...clientForm, id: e.target.value})} placeholder="cth: universitas-teladan" className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-mono text-indigo-400 outline-none focus:border-indigo-500 disabled:opacity-50" /></div>
+               <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">Nama Resmi Universitas / Sekolah</label><input required value={clientForm.name} onChange={e => setClientForm({...clientForm, name: e.target.value})} placeholder="Universitas Teladan" className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500" /></div>
                <div className="grid grid-cols-2 gap-3 p-4 bg-[#030712]/50 border border-slate-800 rounded-2xl">
-                 <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest flex items-center gap-1"><User size={12}/> Nama PIC</label><input required value={clientForm.picName} onChange={e => setClientForm({...clientForm, picName: e.target.value})} className="w-full p-3 bg-[#0a0f1c] border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-indigo-500" /></div>
-                 <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest flex items-center gap-1"><Phone size={12}/> No WhatsApp</label><input required value={clientForm.waNumber} onChange={e => setClientForm({...clientForm, waNumber: e.target.value})} className="w-full p-3 bg-[#0a0f1c] border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-indigo-500" /></div>
+                 <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest flex items-center gap-1"><User size={12}/> Nama PIC</label><input required value={clientForm.picName} onChange={e => setClientForm({...clientForm, picName: e.target.value})} placeholder="Bpk. Rektor" className="w-full p-3 bg-[#0a0f1c] border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-indigo-500" /></div>
+                 <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest flex items-center gap-1"><Phone size={12}/> No WhatsApp</label><input required value={clientForm.waNumber} onChange={e => setClientForm({...clientForm, waNumber: e.target.value})} placeholder="08123456789" className="w-full p-3 bg-[#0a0f1c] border border-slate-800 rounded-lg text-xs font-bold text-white outline-none focus:border-indigo-500" /></div>
                </div>
                <div className="grid grid-cols-2 gap-3">
-                 <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">Paket Sistem</label><select value={clientForm.plan} onChange={e => setClientForm({...clientForm, plan: e.target.value})} className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500 appearance-none cursor-pointer">{pricingPlans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                 <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">Tgl Kadaluarsa</label><input type="date" value={clientForm.expiryDate} onChange={e => setClientForm({...clientForm, expiryDate: e.target.value})} className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-slate-300 outline-none focus:border-indigo-500" /></div>
+                 <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">Paket Sistem</label>
+                    <select value={clientForm.plan} onChange={e => setClientForm({...clientForm, plan: e.target.value})} className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500 appearance-none cursor-pointer">{pricingPlans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                 </div>
+                 <div><label className="text-[10px] font-black text-slate-400 uppercase mb-1 block tracking-widest pl-1">Kadaluarsa</label><input type="date" value={clientForm.expiryDate} onChange={e => setClientForm({...clientForm, expiryDate: e.target.value})} className="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-slate-300 outline-none focus:border-indigo-500" /></div>
                </div>
                <div className="flex gap-3 pt-4"><button type="button" onClick={() => setShowAddClientModal(false)} className="flex-1 py-3.5 bg-slate-800 text-white rounded-xl text-sm font-black hover:bg-slate-700 transition-all">Batal</button><button type="submit" className="flex-1 py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-black hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all">Simpan Klien</button></div>
              </form>
@@ -533,6 +559,7 @@ export default function MasterDashboard() {
         </div>
       )}
 
+      {/* 2. MODAL TAMBAH ADMIN KLIEN */}
       {showAddAdminModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[120]">
           <div className="bg-[#0a0f1c] p-6 md:p-8 rounded-[2rem] w-full max-w-md border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
@@ -551,10 +578,11 @@ export default function MasterDashboard() {
         </div>
       )}
 
+      {/* 3. MODAL EDIT PLAN */}
       {showEditPlanModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[120]">
           <div className="bg-[#0a0f1c] p-6 md:p-8 rounded-[2rem] w-full max-w-lg border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
-             <h2 className="text-xl font-black mb-2 text-white flex items-center gap-3"><Settings className="text-amber-500"/> Matriks Paket</h2>
+             <h2 className="text-xl font-black mb-2 text-white flex items-center gap-3"><Settings className="text-amber-500"/> Konfigurasi Paket</h2>
              <p className="text-xs text-slate-400 mb-6">Atur detail limitasi server dan SLA Support.</p>
              <form onSubmit={handleSavePlan} className="space-y-4">
                <div className="grid grid-cols-2 gap-3">
@@ -576,6 +604,58 @@ export default function MasterDashboard() {
                </div>
                <div className="flex gap-3 pt-4"><button type="button" onClick={() => setShowEditPlanModal(false)} className="flex-1 py-3.5 bg-slate-800 text-white rounded-xl text-sm font-black transition-all">Batal</button><button type="submit" className="flex-1 py-3.5 bg-amber-500 text-black rounded-xl text-sm font-black shadow-lg shadow-amber-500/30 transition-all">Simpan Config</button></div>
              </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. MODAL BILLING (TAGIHAN KLIEN - NEO BANK) */}
+      {showBillingModal && billingData && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[120]">
+          <div className="bg-white p-6 md:p-8 rounded-[2rem] w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 text-slate-800 relative">
+             <button onClick={() => setShowBillingModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600"><X size={24}/></button>
+             
+             <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white"><Receipt size={24}/></div>
+                <div><h2 className="text-xl font-black tracking-tight">Invoice Layanan</h2><p className="text-xs font-bold text-slate-500 uppercase tracking-widest">ALIMA CBT ENTERPRISE</p></div>
+             </div>
+
+             <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl mb-6">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tagihan Kepada:</p>
+                <h3 className="text-lg font-black text-slate-800 leading-tight mb-3">{billingData.name}</h3>
+                <div className="flex justify-between items-center pt-3 border-t border-slate-200">
+                   <span className="text-sm font-bold text-slate-500">{billingData.planName}</span>
+                   <span className="text-xl font-black text-blue-600">Rp {(billingData.price || 0).toLocaleString('id-ID')}</span>
+                </div>
+             </div>
+
+             <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3 flex items-center gap-2"><CreditCard size={14} className="text-blue-600"/> Metode Pembayaran</h4>
+             
+             {/* Info Neo Bank */}
+             <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-white flex items-start gap-4">
+                <div className="w-10 h-10 bg-amber-400 rounded-lg flex items-center justify-center shrink-0 font-black text-black">neo</div>
+                <div>
+                   <p className="text-xs font-black text-slate-800 mb-1">Bank Neo Commerce (BNC)</p>
+                   <p className="text-lg font-mono font-black text-slate-600 tracking-widest mb-1">123-456-7890</p>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">A/N: ALIMA CREATIVE STUDIO</p>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-4 mb-6">
+                {/* QRIS Placeholder */}
+                <div className="border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center bg-slate-50 text-center gap-2">
+                   <QrCode size={40} className="text-slate-300"/>
+                   <span className="text-[10px] font-bold text-slate-400">Scan QRIS<br/>(Segera Hadir)</span>
+                </div>
+                {/* Link Pembayaran Placeholder */}
+                <div className="border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center bg-slate-50 text-center gap-2">
+                   <LinkIcon size={40} className="text-slate-300"/>
+                   <span className="text-[10px] font-bold text-slate-400">Payment Link<br/>(Neo Bisnis)</span>
+                </div>
+             </div>
+
+             <p className="text-[10px] font-bold text-slate-400 text-center mb-6">Silakan screenshot halaman ini dan kirimkan ke Instansi terkait sebagai Invoice resmi pembayaran.</p>
+             
+             <button onClick={() => setShowBillingModal(false)} className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-black active:scale-95 transition-all shadow-lg shadow-blue-600/30">Tutup Halaman Ini</button>
           </div>
         </div>
       )}
