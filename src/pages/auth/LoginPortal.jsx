@@ -140,6 +140,17 @@ export default function LoginPortal() {
                 {loading ? <Loader2 size={18} className="animate-spin" /> : 'MASUK SISTEM'}
               </button>
             </div>
+            
+            {/* TAUTAN REGISTRASI */}
+            <div className="text-center pt-2 border-t border-slate-100">
+              <p className="text-[11px] font-bold text-slate-500">
+                Belum mendaftarkan instansi Anda?{' '}
+                <button type="button" onClick={() => navigate('/registrasi')} className="text-blue-600 hover:text-blue-700 font-black uppercase tracking-widest transition-colors">
+                  Daftar Sekarang
+                </button>
+              </p>
+            </div>
+
           </form>
 
         </div>
