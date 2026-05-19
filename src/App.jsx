@@ -15,6 +15,8 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import ExamRoom from './pages/student/ExamRoom';
 import ResultPage from './pages/student/ResultPage';
 import ProctorDashboard from './pages/teacher/ProctorDashboard';
+import StudentPortal from './pages/student/StudentPortal';
+
 
 // ==========================================
 // SATPAM DIGITAL (ROLE-BASED PROTECTED ROUTE)
@@ -60,6 +62,8 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPortal />} />
             <Route path="/registrasi" element={<RegisterPortal />} />
+<Route path="/portal-siswa" element={<StudentPortal />} />
+
             
             {/* ========================================== */}
             {/* PROTECTED ROUTE (Harus Punya Hak Akses) */}
