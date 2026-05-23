@@ -33,20 +33,25 @@ export default function RegisterPortal() {
     }
 
     try {
-      const cleanSchoolCode = schoolCode.trim().toLowerCase();
+      // 1. SMART ID FORMATTING: Ubah "Darma Pertiwi" -> "darma-pertiwi"
+      const cleanSchoolCode = schoolCode.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
-      // 1. Validasi Kode Sekolah di Supabase (PostgreSQL)
+      // 2. Validasi Kode Sekolah di Supabase (PostgreSQL)
       const { data: schoolData, error: schoolErr } = await supabase
         .from('schools')
         .select('id')
         .eq('id', cleanSchoolCode)
-        .single();
+        .maybeSingle();
 
-      if (schoolErr || !schoolData) {
-        throw new Error(`Kode Sekolah "${schoolCode}" tidak terdaftar. Hubungi Admin TU Anda.`);
+      if (schoolErr) {
+        throw new Error("Gagal terhubung ke database untuk validasi institusi.");
       }
 
-      // 2. Buat Akun Supabase Auth
+      if (!schoolData) {
+        throw new Error(`Kode Sekolah "${cleanSchoolCode}" tidak ditemukan. Pastikan Anda mengetik ID yang benar dari Admin.`);
+      }
+
+      // 3. Buat Akun Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email,
         password: password,
@@ -57,7 +62,7 @@ export default function RegisterPortal() {
       const user = authData.user;
       if (!user) throw new Error("Gagal membuat akun autentikasi.");
 
-      // 3. Simpan Profil dengan status PENDING ke tabel 'users'
+      // 4. Simpan Profil dengan status PENDING ke tabel 'users'
       const { error: dbError } = await supabase
         .from('users')
         .insert([
@@ -71,7 +76,11 @@ export default function RegisterPortal() {
           }
         ]);
         
-      if (dbError) throw dbError;
+      if (dbError) {
+        // FAIL-SAFE: Hapus akun auth jika insert profil gagal agar email tidak nyangkut
+        await supabase.auth.admin.deleteUser(user.id);
+        throw new Error("Gagal menyimpan profil: " + dbError.message);
+      }
       
       // Auto-logout supaya guru dipaksa masuk ke layar login
       await supabase.auth.signOut(); 
@@ -122,9 +131,10 @@ export default function RegisterPortal() {
             <div>
               <input 
                 type="text" required value={schoolCode} onChange={(e) => setSchoolCode(e.target.value)}
-                placeholder="Kode Instansi (Cth: SEKOLAH-01)" 
+                placeholder="Kode Instansi (Cth: DARMA-PERTIWI)" 
                 className="w-full px-4 py-3.5 border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-bold text-slate-800 placeholder-slate-400 transition-all bg-emerald-50/30 uppercase"
               />
+              <p className="text-[9px] font-bold text-slate-400 mt-1 pl-1">Spasi dan huruf besar akan diformat otomatis.</p>
             </div>
             <div>
               <input 
