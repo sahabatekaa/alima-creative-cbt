@@ -84,11 +84,22 @@ export default function TeacherDashboard() {
   const [editSoalId, setEditSoalId] = useState(null);
   const [previewMode, setPreviewMode] = useState(false);
 
-  // ==========================================
-  // TARIK DATA PROFIL AUTH (SUPABASE)
+    // ==========================================
+  // TARIK DATA PROFIL AUTH (SMART CACHE SYSTEM)
   // ==========================================
   useEffect(() => {
+    let isMounted = true;
+
     const fetchSessionAndProfile = async () => {
+      // 1. CEK CACHE LOKAL (Jurus Anti-Loading Lama)
+      // Jika data sudah ada di HP, langsung tampilkan tanpa loading!
+      const cachedProfile = localStorage.getItem('cbt_teacher_profile');
+      if (cachedProfile) {
+         setTeacherProfile(JSON.parse(cachedProfile));
+         setIsLoadingProfile(false); 
+      }
+
+      // 2. CEK SUPABASE DI LATAR BELAKANG (Silent Check)
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
@@ -98,27 +109,40 @@ export default function TeacherDashboard() {
           .eq('id', session.user.id)
           .single();
           
-        if (profile && !error) {
-           setTeacherProfile({ ...profile, schoolId: profile.school_id });
+        if (profile && !error && isMounted) {
+           const fullProfile = { ...profile, schoolId: profile.school_id };
+           setTeacherProfile(fullProfile);
            setTempProfileName(profile.name || '');
-        } else {
-           setTeacherProfile(null);
+           
+           // Perbarui cache dengan data paling baru
+           localStorage.setItem('cbt_teacher_profile', JSON.stringify(fullProfile));
+        } else if (!cachedProfile && isMounted) {
+           setTeacherProfile(null); // Hanya logout jika benar-benar tidak ada cache
         }
-      } else {
+      } else if (!cachedProfile && isMounted) {
         setTeacherProfile(null);
-        setIsLoadingSchool(false); // Lepas barikade
+        setIsLoadingSchool(false);
       }
-      setIsLoadingProfile(false);
+      
+      if (isMounted) setIsLoadingProfile(false);
     };
 
     fetchSessionAndProfile();
 
+    // 3. JAGA-JAGA JIKA USER BENAR-BENAR KLIK LOGOUT
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (_event === 'SIGNED_OUT') setTeacherProfile(null);
+      if (_event === 'SIGNED_OUT') {
+         localStorage.removeItem('cbt_teacher_profile');
+         if (isMounted) setTeacherProfile(null);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
+
 
   const currentUserEmail = teacherProfile?.email || '';
   const schoolId = teacherProfile?.schoolId || '';
