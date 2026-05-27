@@ -104,13 +104,17 @@
             try {
                 const tokenInput = document.getElementById('in-token').value.trim().toUpperCase();
                 
-                // JALAN PINTAS FIX BUG KELAS: Tarik data murni menggunakan Token saja dulu!
-                const { data: session, error: errSession } = await supabase.from('exam_sessions')
-                    .select('*').eq('token', tokenInput).eq('status', 'open').single();
+                // MENGGUNAKAN .limit(1) UNTUK MENCEGAH CRASH JIKA ADA TOKEN GANDA
+                const { data: sessions, error: errSession } = await supabase.from('exam_sessions')
+                    .select('*').eq('token', tokenInput).eq('status', 'open').limit(1);
 
-                if(errSession || !session) throw new Error("Token Ujian tidak aktif atau salah!");
+                // MEMUNCULKAN PESAN ERROR ASLI DARI DATABASE JIKA DIBLOKIR
+                if(errSession) throw new Error("Akses Database Ditolak: " + errSession.message);
+                
+                if(!sessions || sessions.length === 0) throw new Error("Token Ujian tidak aktif atau tidak ditemukan!");
 
-                // NORMALISASI STRING KELAS: Hilangkan seluruh spasi sebelum dibandingkan!
+                const session = sessions[0];
+
                 const cleanStudentClass = activeStudent.kelas.replace(/\s+/g, '').toUpperCase();
                 const cleanSessionClass = session.kelas.replace(/\s+/g, '').toUpperCase();
 
@@ -118,7 +122,6 @@
                     throw new Error(`Kelas Anda (${activeStudent.kelas}) tidak terdaftar untuk Token sesi ini (${session.kelas})!`);
                 }
 
-                // Buat ID Unik browser & ID Unik data radar
                 const stableStudentId = 'std_' + activeStudent.nomor_ujian;
                 const newBrowserSessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
 
@@ -137,13 +140,11 @@
                 const storageKey = `cbt_exam_${stableStudentId}`;
                 localStorage.setItem('studentData', JSON.stringify(sessionData));
 
-                // CEK DATA LAMA & PULIHKAN PROGRESS JAWABAN JIKA PINDAH DEVICE
-                const { data: oldLive } = await supabase.from('live_students').select('answers').eq('id', stableStudentId).single();
+                const { data: oldLive } = await supabase.from('live_students').select('answers').eq('id', stableStudentId).maybeSingle();
                 if (oldLive && oldLive.answers && Object.keys(oldLive.answers).length > 0) {
                     localStorage.setItem(`${storageKey}_ans`, JSON.stringify(oldLive.answers));
                 }
 
-                // UPSERT DATA RADAR + INJEKSI SESSION ID BARU UNTUK KICK LOGIN GANDA
                 const { error: errInsert } = await supabase.from('live_students').upsert([{
                     id: stableStudentId, school_id: session.school_id, name: sessionData.name,
                     token: session.token, mapel: session.mapel, kelas: session.class, sub_kelas: sessionData.subKelas,
