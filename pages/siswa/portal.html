@@ -21,7 +21,7 @@
         </div>
 
         <div id="error-msg" class="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-xs font-bold hidden items-start gap-3 shadow-inner">
-            <span></span>
+            <span id="error-text"></span>
         </div>
 
         <form id="form-login" class="space-y-5">
@@ -60,6 +60,7 @@
 
         let activeStudent = null;
 
+        // Auto-fill Token dari URL Parameter (Fitur Scan QR)
         const urlParams = new URLSearchParams(window.location.search);
         const urlToken = urlParams.get('token');
         if(urlToken) {
@@ -70,11 +71,12 @@
         const previewBox = document.getElementById('student-preview');
         const btnSubmit = document.getElementById('btn-submit');
         const errorMsg = document.getElementById('error-msg');
+        const errorText = document.getElementById('error-text');
 
         function showError(msg) {
             errorMsg.classList.remove('hidden');
             errorMsg.classList.add('flex');
-            errorMsg.querySelector('span').innerText = msg;
+            errorText.innerText = msg;
         }
 
         let timeout = null;
@@ -120,11 +122,13 @@
             try {
                 const tokenInput = document.getElementById('in-token').value.trim().toUpperCase();
                 
-                const { data: session, error } = await supabase.from('exam_sessions')
+                // Cari sesi Ujian berdasarkan Token & Kelas
+                const { data: session, error: errSession } = await supabase.from('exam_sessions')
                     .select('*').eq('token', tokenInput).eq('kelas', activeStudent.kelas).eq('status', 'open').single();
 
-                if(error || !session) throw new Error("Token Ujian tidak valid, sesi ditutup, atau kelas Anda tidak cocok dengan token ini!");
+                if(errSession || !session) throw new Error("Token Ujian tidak valid, sesi ditutup, atau kelas Anda tidak cocok dengan token ini!");
 
+                // Susun Data Sesi untuk Exam Room
                 const sessionData = {
                     id: 'std_' + Math.random().toString(36).substr(2, 9),
                     name: activeStudent.name,
@@ -138,12 +142,21 @@
 
                 localStorage.setItem('studentData', JSON.stringify(sessionData));
 
-                // FIXED: 'name' alih-alih 'student_name' untuk live_students
-                await supabase.from('live_students').insert([{
-                    id: sessionData.id, school_id: session.school_id, name: sessionData.name,
-                    token: session.token, mapel: session.mapel, kelas: session.kelas, sub_kelas: sessionData.subKelas,
-                    status: 'Mengerjakan', progress: 0, warnings: 0
+                // Lapor ke Live Proctoring Supabase & TANGKAP ERROR JIKA GAGAL
+                const { error: errInsert } = await supabase.from('live_students').insert([{
+                    id: sessionData.id, 
+                    school_id: session.school_id, 
+                    name: sessionData.name,
+                    token: session.token, 
+                    mapel: session.mapel, 
+                    kelas: session.kelas, 
+                    sub_kelas: sessionData.subKelas,
+                    status: 'Mengerjakan', 
+                    progress: 0, 
+                    warnings: 0
                 }]);
+
+                if(errInsert) throw new Error("Database menolak radar pengawas: " + errInsert.message);
 
                 window.location.href = 'exam.html';
             } catch (err) {
