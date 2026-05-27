@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ruang Ujian | Alima CBT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -27,7 +27,7 @@
     <div id="layer-fullscreen" class="fixed inset-0 bg-slate-900 z-[150] flex-col items-center justify-center p-6 text-center flex">
         <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-6 text-emerald-400 animate-pulse"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         <h1 class="text-2xl md:text-3xl font-black mb-4 tracking-wider text-white">Sistem Keamanan Aktif</h1>
-        <p class="text-slate-400 mb-10 max-w-md text-base md:text-lg">Gunakan layar penuh untuk memulai. Jika menggunakan aplikasi Exambro, tekan masuk.</p>
+        <p class="text-slate-400 mb-10 max-w-md text-base md:text-lg">Gunakan layar penuh untuk memulai ujian. Jika menggunakan aplikasi Exambro, tekan masuk.</p>
         <button onclick="enterFS()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl active:scale-95 transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)] tracking-widest">MASUK UJIAN</button>
     </div>
 
@@ -67,7 +67,7 @@
         </header>
 
         <div id="offline-alert" class="bg-red-50 border-b border-red-200 p-1.5 text-center text-red-600 text-[11px] font-bold shadow-inner z-30 relative hidden">
-            ⚠️ KONEKSI TERPUTUS! Jawaban otomatis tersimpan di perangkat.
+            ⚠️ KONEKSI TERPUTUS! Jawaban otomatis aman tersimpan di perangkat.
         </div>
 
         <main class="flex-1 max-w-7xl mx-auto w-full p-3 sm:p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 mt-1 items-start">
@@ -96,7 +96,6 @@
               <h3 class="font-black text-sm text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-100 pb-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Navigasi</h3>
               <div id="nav-grid" class="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-[250px] lg:max-h-[40vh] overflow-y-auto pr-1 pb-1 custom-scrollbar"></div>
             </div>
-            
             <div class="bg-white p-4 sm:p-5 rounded-[1.5rem] shadow-sm border border-slate-200" id="submit-box"></div>
           </div>
         </main>
@@ -121,15 +120,14 @@
         const storageKey = `cbt_exam_${studentData.id}`;
         let questions = [];
         let currentIndex = 0;
-        let answers = JSON.parse(localStorage.getItem(`${storageKey}_ans`)) || {};
-        let ragu = JSON.parse(localStorage.getItem(`${storageKey}_ragu`)) || {};
+        let answers = JSON.parse(localStorage.getItem(`${storageKey}_ans`) || '{}');
+        let ragu = JSON.parse(localStorage.getItem(`${storageKey}_ragu`) || '{}');
         let timeLeft = parseInt(localStorage.getItem(`${storageKey}_time`)) || 5400;
         let warnings = parseInt(localStorage.getItem(`${storageKey}_warn`)) || 0;
         let isLocked = localStorage.getItem(`${storageKey}_lock`) === 'true';
         let schoolId = null;
         let isSubmitting = false;
         
-        // STATUS BROWSER (Untuk Bypass Exambro)
         let isExambroMode = false;
 
         document.getElementById('head-nama').innerText = studentData.name;
@@ -137,6 +135,9 @@
         document.getElementById('mob-nama').innerText = studentData.name;
         document.getElementById('mob-mapel').innerText = studentData.mapel;
         document.getElementById('mob-kelas').innerText = `Kls ${studentData.class}-${studentData.subKelas}`;
+
+        const wmContainer = document.getElementById('watermark-container');
+        for(let i=0; i<15; i++) { wmContainer.innerHTML += `<div class="mb-8">${(studentData.name + " - " + studentData.class + " ").repeat(8)}</div>`; }
 
         window.addEventListener('online', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE'; document.getElementById('offline-alert').classList.add('hidden'); });
         window.addEventListener('offline', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE'; document.getElementById('offline-alert').classList.remove('hidden'); });
@@ -169,12 +170,7 @@
                     localStorage.setItem(`${storageKey}_order`, JSON.stringify(questions.map(q=>q.id)));
                 }
             }
-            updateSubmitUI();
-            renderUI(); 
-            startTimer(); 
-            subscribeRealtime();
-            
-            // Re-sync progress
+            updateSubmitUI(); renderUI(); startTimer(); subscribeRealtime();
             syncAns();
         }
 
@@ -189,41 +185,41 @@
                  <span class="text-[11px] font-black bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border tracking-wider">NO. ${currentIndex+1} / ${questions.length}</span>
               </div>
             `;
-            if(q.teks_wacana) html += `<div class="mb-5 p-4 sm:p-5 bg-slate-50 border-l-[3px] border-slate-400 rounded-r-xl text-sm sm:text-base font-medium text-slate-700 whitespace-pre-wrap katex-render">${q.teks_wacana}</div>`;
-            if(q.gambar) html += `<div class="mb-5 flex justify-center bg-slate-50 p-2 rounded-xl border border-slate-100"><img src="${q.gambar}" class="max-h-72 object-contain rounded-lg"/></div>`;
-            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 leading-relaxed katex-render pl-3">${q.pertanyaan || ''}</div>`;
+            if(q.teks_wacana) html += `<div class="mb-5 p-4 bg-slate-50 border-l-[3px] border-slate-400 text-sm katex-render">${q.teks_wacana}</div>`;
+            if(q.gambar) html += `<div class="mb-5 flex justify-center"><img src="${q.gambar}" class="max-h-72 object-contain rounded-lg"/></div>`;
+            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3">${q.pertanyaan || ''}</div>`;
 
             if(type === 'PG') {
                 html += `<div class="space-y-2.5 pl-3">`;
                 ['A','B','C','D'].forEach(opt => {
                     const isSel = answers[q.id] === opt;
-                    html += `<button onclick="jawabPG('${q.id}','${opt}')" class="w-full text-left p-3 sm:p-4 rounded-xl border-[1.5px] transition-all flex items-start gap-3 break-words ${isSel?'bg-blue-50 border-blue-500 shadow-sm text-blue-900 font-bold':'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm shrink-0 transition-colors ${isSel?'bg-blue-500 text-white':'bg-slate-100 text-slate-500 border border-slate-200'}">${opt}</span><div class="flex-1 text-sm sm:text-base pt-1 katex-render">${q[`opsi_${opt.toLowerCase()}`] || ''}</div></button>`;
+                    html += `<button onclick="jawabPG('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-[1.5px] flex items-start gap-3 ${isSel?'bg-blue-50 border-blue-500 font-bold':'bg-white border-slate-200 hover:border-blue-300'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm ${isSel?'bg-blue-500 text-white':'bg-slate-100'}">${opt}</span><div class="flex-1 pt-1 katex-render">${q[`opsi_${opt.toLowerCase()}`] || ''}</div></button>`;
                 });
                 html += `</div>`;
             } else if(type === 'PGK') {
                 html += `<div class="space-y-2.5 pl-3">`;
                 ['A','B','C','D'].forEach(opt => {
                     const isSel = answers[q.id] && answers[q.id].split(',').includes(opt);
-                    html += `<button onclick="jawabPGK('${q.id}','${opt}')" class="w-full text-left p-3 sm:p-4 rounded-xl border-[1.5px] transition-all flex items-start gap-3 break-words ${isSel?'bg-orange-50 border-orange-500 shadow-sm text-orange-900 font-bold':'bg-white border-slate-200 hover:border-orange-300 hover:bg-slate-50'}"><div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg border-[1.5px] mt-0.5 transition-colors ${isSel?'bg-orange-500 border-orange-500 text-white':'bg-slate-100 border-slate-300'}">${isSel?'✓':''}</div><div class="flex-1 text-sm sm:text-base pt-0.5 katex-render"><span class="font-black mr-2 opacity-50">${opt}.</span>${q[`opsi_${opt.toLowerCase()}`] || ''}</div></button>`;
+                    html += `<button onclick="jawabPGK('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-[1.5px] flex items-start gap-3 ${isSel?'bg-orange-50 border-orange-500 font-bold':'bg-white border-slate-200 hover:border-orange-300'}"><div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg border-[1.5px] mt-0.5 ${isSel?'bg-orange-500 text-white':'bg-slate-100'}">${isSel?'✓':''}</div><div class="flex-1 text-sm pt-0.5 katex-render"><span class="font-black mr-2 opacity-50">${opt}.</span>${q[`opsi_${opt.toLowerCase()}`] || ''}</div></button>`;
                 });
                 html += `</div>`;
             } else if(type === 'ESAI') {
-                html += `<div class="pl-3"><textarea onchange="jawabEsai('${q.id}', this.value)" placeholder="Ketik uraian jawaban Anda di sini..." class="w-full min-h-[160px] p-4 rounded-xl border-2 border-slate-200 focus:border-purple-500 outline-none text-sm sm:text-base bg-slate-50 focus:bg-white">${answers[q.id]||''}</textarea></div>`;
+                html += `<div class="pl-3"><textarea onchange="jawabEsai('${q.id}', this.value)" placeholder="Ketik jawaban..." class="w-full min-h-[120px] p-3 border rounded-xl bg-slate-50 focus:bg-white">${answers[q.id]||''}</textarea></div>`;
             }
 
             document.getElementById('soal-box').innerHTML = html;
             if(window.renderMathInElement) renderMathInElement(document.getElementById('soal-box'), { delimiters: [{left:"$",right:"$",display:false}, {left:"$$",right:"$$",display:true}] });
             
             document.getElementById('nav-grid').innerHTML = questions.map((x, i) => {
-                let cls = 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100';
+                let cls = 'bg-slate-50 text-slate-500 border-slate-200';
                 if(ragu[x.id]) cls = 'bg-amber-400 text-white border-amber-500'; else if(answers[x.id]) cls = 'bg-slate-800 text-white border-slate-900';
-                if(currentIndex === i) cls += ' ring-[3px] ring-emerald-400/50 scale-105 z-10';
-                return `<button onclick="goTo(${i})" class="h-10 w-full rounded-lg text-sm font-black border transition-all ${cls}">${i+1}</button>`;
+                if(currentIndex === i) cls += ' ring-[3px] ring-emerald-400/50 scale-105';
+                return `<button onclick="goTo(${i})" class="h-10 w-full rounded-lg text-sm font-black border">${i+1}</button>`;
             }).join('');
 
             document.getElementById('btn-prev').disabled = currentIndex === 0;
             document.getElementById('btn-next').disabled = currentIndex === questions.length - 1;
-            document.getElementById('btn-ragu').className = ragu[q.id] ? "flex-1 py-3.5 px-4 bg-amber-400 text-white border border-amber-500 rounded-xl font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all text-xs sm:text-sm" : "flex-1 py-3.5 px-4 bg-white border border-slate-200 text-amber-500 hover:bg-amber-50 rounded-xl font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all text-xs sm:text-sm";
+            document.getElementById('btn-ragu').className = ragu[q.id] ? "flex-1 py-3.5 bg-amber-400 text-white border-amber-500 rounded-xl font-black flex items-center justify-center" : "flex-1 py-3.5 bg-white border border-slate-200 text-amber-500 rounded-xl font-black flex items-center justify-center";
         }
 
         window.goTo = (idx) => { currentIndex = idx; renderUI(); };
@@ -239,26 +235,17 @@
             localStorage.setItem(`${storageKey}_ans`, JSON.stringify(answers)); renderUI();
             if(navigator.onLine && questions.length > 0) {
                 const prog = Math.round((Object.keys(answers).length/questions.length)*100);
-                await supabase.from('live_students').update({progress: prog}).eq('id', studentData.id);
+                // INTEGRASI LINTAS PERANGKAT: Setor jawaban real-time ke kolom khusus di server Supabase
+                await supabase.from('live_students').update({ progress: prog, answers: answers }).eq('id', studentData.id);
             }
         }
 
         function updateSubmitUI() {
             const box = document.getElementById('submit-box');
             if (timeLeft <= 600) {
-                box.innerHTML = `
-                   <p class="text-[10px] font-bold text-red-500 mb-2 text-center uppercase animate-pulse">Waktu &lt; 10 Menit!</p>
-                   <button onclick="window.submitExamCheck()" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-95 transition-all tracking-wider text-xs sm:text-sm animate-in zoom-in duration-300">
-                     KUMPULKAN
-                   </button>
-                `;
+                box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-black">KUMPULKAN</button>`;
             } else {
-                box.innerHTML = `
-                 <div class="w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl flex flex-col items-center justify-center gap-1.5 text-center select-none">
-                    <span class="text-[10px] font-black tracking-widest uppercase text-slate-500">Tombol Kumpul Dikunci</span>
-                    <span class="text-[9px] font-bold text-slate-400">Terbuka di 10 Menit Terakhir</span>
-                 </div>
-                `;
+                box.innerHTML = `<div class="w-full p-4 bg-slate-50 border-2 border-dashed text-slate-400 rounded-xl text-center"><span class="text-[10px] font-black tracking-widest uppercase block text-slate-500">Tombol Kumpul Dikunci</span><span class="text-[9px] font-bold text-slate-400">Terbuka di 10 Menit Terakhir</span></div>`;
             }
         }
 
@@ -268,9 +255,7 @@
                 timeLeft--; localStorage.setItem(`${storageKey}_time`, timeLeft);
                 const min = Math.floor(timeLeft/60); const sec = timeLeft%60;
                 document.getElementById('timer-display').innerText = `${min}:${String(sec).padStart(2,'0')}`;
-                
-                updateSubmitUI(); 
-                if(timeLeft <= 0) { clearInterval(t); submitExam(); }
+                updateSubmitUI(); if(timeLeft <= 0) { clearInterval(t); submitExam(); }
             }, 1000);
         }
 
@@ -278,7 +263,7 @@
 
         async function submitExam() {
             if(isSubmitting) return; isSubmitting=true;
-            if(!navigator.onLine) { alert("OFFLINE! Sistem gagal mengirim."); isSubmitting=false; return; }
+            if(!navigator.onLine) { alert("OFFLINE! Gagal mengirim."); isSubmitting=false; return; }
             
             let pts = 0; let tot = 0;
             questions.forEach(q => {
@@ -311,30 +296,18 @@
             } catch(e) { alert("Gagal kumpul!"); isSubmitting=false; }
         }
 
-        // --- SOLUSI EXAMBRO BYPASS ---
         window.enterFS = () => { 
             const layer = document.getElementById('layer-fullscreen');
             if(document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().then(()=>{ 
-                    layer.classList.replace('flex','hidden'); 
-                }).catch(err => {
-                    // Bypass untuk Exambro yang menolak request API ini
-                    console.log("Exambro Mode Active");
-                    isExambroMode = true;
-                    layer.classList.replace('flex','hidden');
+                document.documentElement.requestFullscreen().then(()=>{ layer.classList.replace('flex','hidden'); }).catch(() => {
+                    isExambroMode = true; layer.classList.replace('flex','hidden');
                 });
-            } else {
-                isExambroMode = true;
-                layer.classList.replace('flex','hidden');
-            }
+            } else { isExambroMode = true; layer.classList.replace('flex','hidden'); }
         };
 
-        // --- SISTEM KEAMANAN ---
-        let isProcessingCheat = false;
         async function handleCheat(reason) {
             if(isLocked || isProcessingCheat) return;
-            isProcessingCheat = true;
-            warnings++; localStorage.setItem(`${storageKey}_warn`, warnings);
+            isProcessingCheat = true; warnings++; localStorage.setItem(`${storageKey}_warn`, warnings);
             
             const blurLayer = document.getElementById('blur-warning');
             blurLayer.classList.remove('hidden'); blurLayer.classList.add('flex');
@@ -342,7 +315,6 @@
 
             try { await supabase.from('live_students').update({warnings: warnings, status: reason}).eq('id', studentData.id); } catch(e) {}
             if(warnings >= 3) { isLocked = true; localStorage.setItem(`${storageKey}_lock`, 'true'); cekCheat(); }
-            
             setTimeout(() => { isProcessingCheat = false; }, 2000); 
         }
 
@@ -351,22 +323,17 @@
             else document.getElementById('layer-block').classList.replace('flex','hidden'); 
         }
         
-        document.addEventListener('fullscreenchange', () => { 
-            if(!document.fullscreenElement && !isExambroMode) document.getElementById('layer-fullscreen').classList.replace('hidden','flex'); 
-        });
-
-        document.addEventListener('visibilitychange', () => {
-            const isFS = isExambroMode ? true : document.fullscreenElement;
-            if(document.hidden && isFS && !isLocked) { handleCheat('Pindah Tab / Tutup Layar'); }
-        });
-
-        window.addEventListener('blur', () => {
-            const isFS = isExambroMode ? true : document.fullscreenElement;
-            if(!isLocked && !document.hidden && isFS) { handleCheat('Pindah Aplikasi / Split Screen'); }
-        });
+        document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !isExambroMode) document.getElementById('layer-fullscreen').classList.replace('hidden','flex'); });
+        document.addEventListener('visibilitychange', () => { if(document.hidden && !isLocked) { handleCheat('Pindah Tab / Tutup Layar'); } });
+        window.addEventListener('blur', () => { if(!isLocked && !document.hidden) { handleCheat('Split Screen / Notifikasi'); } });
 
         function subscribeRealtime() {
             supabase.channel('siswa').on('postgres_changes', { event:'UPDATE', schema:'public', table:'live_students', filter:`id=eq.${studentData.id}` }, p => {
+                // SENSOR KICK DETEKSI LOGIN GANDA: Tendang keluar jika token sesi browser tidak cocok dengan server!
+                if(p.new.session_id && p.new.session_id !== studentData.sessionId) {
+                    alert("🚨 DETEKSI LOGIN GANDA!\nAkun Anda telah login di perangkat/device lain. Sesi di layar ini ditutup otomatis.");
+                    localStorage.clear(); window.location.href = 'portal.html'; return;
+                }
                 if(p.new.warnings===0 && isLocked) { isLocked=false; warnings=0; localStorage.setItem(`${storageKey}_lock`,'false'); cekCheat(); alert("Kunci dibuka pengawas."); }
                 if(p.new.force_submit) submitExam();
                 if(p.new.broadcast && p.new.broadcast !== localStorage.getItem('last_bc')) {

@@ -59,34 +59,25 @@
         import { supabase } from '../../js/config/supabase.js';
 
         let activeStudent = null;
-
-        // Auto-fill Token dari URL Parameter (Fitur Scan QR)
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlToken = urlParams.get('token');
-        if(urlToken) {
-            document.getElementById('in-token').value = urlToken.toUpperCase();
-        }
+        const urlToken = new URLSearchParams(window.location.search).get('token');
+        if(urlToken) document.getElementById('in-token').value = urlToken.toUpperCase();
 
         const inputNoUjian = document.getElementById('in-noujian');
         const previewBox = document.getElementById('student-preview');
         const btnSubmit = document.getElementById('btn-submit');
         const errorMsg = document.getElementById('error-msg');
-        const errorText = document.getElementById('error-text');
 
         function showError(msg) {
-            errorMsg.classList.remove('hidden');
-            errorMsg.classList.add('flex');
-            errorText.innerText = msg;
+            errorMsg.classList.remove('hidden'); errorMsg.classList.add('flex');
+            document.getElementById('error-text').innerText = msg;
         }
 
         let timeout = null;
         inputNoUjian.addEventListener('input', (e) => {
             clearTimeout(timeout);
             const val = e.target.value.trim().toUpperCase();
-            activeStudent = null;
-            previewBox.classList.add('hidden');
-            btnSubmit.disabled = true;
-            btnSubmit.className = "w-full bg-slate-200 text-slate-400 py-4 rounded-xl font-black text-sm tracking-widest transition-all flex items-center justify-center gap-2";
+            activeStudent = null; previewBox.classList.add('hidden'); btnSubmit.disabled = true;
+            btnSubmit.className = "w-full bg-slate-200 text-slate-400 py-4 rounded-xl font-black text-sm tracking-widest flex items-center justify-center gap-2";
             btnSubmit.innerText = "MENCARI...";
 
             if(val.length > 2) {
@@ -96,72 +87,73 @@
                         activeStudent = data;
                         document.getElementById('prev-name').innerText = data.name;
                         document.getElementById('prev-kelas').innerText = `Kelas ${data.kelas} - ${data.sub_kelas || '-'}`;
-                        previewBox.classList.remove('hidden');
-                        errorMsg.classList.add('hidden');
-                        
+                        previewBox.classList.remove('hidden'); errorMsg.classList.add('hidden');
                         btnSubmit.disabled = false;
-                        btnSubmit.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black text-sm tracking-widest transition-all shadow-lg shadow-emerald-600/30 active:scale-95 flex items-center justify-center gap-2";
+                        btnSubmit.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black text-sm tracking-widest shadow-lg shadow-emerald-600/30 active:scale-95 flex items-center justify-center gap-2";
                         btnSubmit.innerHTML = `MASUK RUANG UJIAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
-                    } else {
-                        btnSubmit.innerText = "DATA TIDAK DITEMUKAN";
-                    }
-                }, 800);
-            } else {
-                btnSubmit.innerText = "CARI IDENTITAS DULU";
-            }
+                    } else { btnSubmit.innerText = "DATA TIDAK DITEMUKAN"; }
+                }, 600);
+            } else { btnSubmit.innerText = "CARI IDENTITAS DULU"; }
         });
 
         document.getElementById('form-login').onsubmit = async (e) => {
             e.preventDefault();
             if(!activeStudent) return;
-            
-            errorMsg.classList.add('hidden');
-            btnSubmit.innerHTML = "MEMVERIFIKASI...";
-            btnSubmit.disabled = true;
+            errorMsg.classList.add('hidden'); btnSubmit.innerHTML = "MEMVERIFIKASI..."; btnSubmit.disabled = true;
 
             try {
                 const tokenInput = document.getElementById('in-token').value.trim().toUpperCase();
                 
-                // Cari sesi Ujian berdasarkan Token & Kelas
+                // JALAN PINTAS FIX BUG KELAS: Tarik data murni menggunakan Token saja dulu!
                 const { data: session, error: errSession } = await supabase.from('exam_sessions')
-                    .select('*').eq('token', tokenInput).eq('kelas', activeStudent.kelas).eq('status', 'open').single();
+                    .select('*').eq('token', tokenInput).eq('status', 'open').single();
 
-                if(errSession || !session) throw new Error("Token Ujian tidak valid, sesi ditutup, atau kelas Anda tidak cocok dengan token ini!");
+                if(errSession || !session) throw new Error("Token Ujian tidak aktif atau salah!");
 
-                // Susun Data Sesi untuk Exam Room
+                // NORMALISASI STRING KELAS: Hilangkan seluruh spasi sebelum dibandingkan!
+                const cleanStudentClass = activeStudent.kelas.replace(/\s+/g, '').toUpperCase();
+                const cleanSessionClass = session.kelas.replace(/\s+/g, '').toUpperCase();
+
+                if(cleanStudentClass !== cleanSessionClass) {
+                    throw new Error(`Kelas Anda (${activeStudent.kelas}) tidak terdaftar untuk Token sesi ini (${session.kelas})!`);
+                }
+
+                // Buat ID Unik browser & ID Unik data radar
+                const stableStudentId = 'std_' + activeStudent.nomor_ujian;
+                const newBrowserSessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+
                 const sessionData = {
-                    id: 'std_' + Math.random().toString(36).substr(2, 9),
+                    id: stableStudentId,
                     name: activeStudent.name,
                     noujian: activeStudent.nomor_ujian,
                     token: session.token,
                     mapel: session.mapel,
                     class: session.kelas,
                     subKelas: activeStudent.sub_kelas || '-',
-                    teacherEmail: session.teacher_email
+                    teacherEmail: session.teacher_email,
+                    sessionId: newBrowserSessionId
                 };
 
+                const storageKey = `cbt_exam_${stableStudentId}`;
                 localStorage.setItem('studentData', JSON.stringify(sessionData));
 
-                // Lapor ke Live Proctoring Supabase & TANGKAP ERROR JIKA GAGAL
-                const { error: errInsert } = await supabase.from('live_students').insert([{
-                    id: sessionData.id, 
-                    school_id: session.school_id, 
-                    name: sessionData.name,
-                    token: session.token, 
-                    mapel: session.mapel, 
-                    kelas: session.kelas, 
-                    sub_kelas: sessionData.subKelas,
-                    status: 'Mengerjakan', 
-                    progress: 0, 
-                    warnings: 0
+                // CEK DATA LAMA & PULIHKAN PROGRESS JAWABAN JIKA PINDAH DEVICE
+                const { data: oldLive } = await supabase.from('live_students').select('answers').eq('id', stableStudentId).single();
+                if (oldLive && oldLive.answers && Object.keys(oldLive.answers).length > 0) {
+                    localStorage.setItem(`${storageKey}_ans`, JSON.stringify(oldLive.answers));
+                }
+
+                // UPSERT DATA RADAR + INJEKSI SESSION ID BARU UNTUK KICK LOGIN GANDA
+                const { error: errInsert } = await supabase.from('live_students').upsert([{
+                    id: stableStudentId, school_id: session.school_id, name: sessionData.name,
+                    token: session.token, mapel: session.mapel, kelas: session.class, sub_kelas: sessionData.subKelas,
+                    status: 'Mengerjakan', session_id: newBrowserSessionId
                 }]);
 
-                if(errInsert) throw new Error("Database menolak radar pengawas: " + errInsert.message);
-
+                if(errInsert) throw new Error("Gagal mendaftarkan radar ujian: " + errInsert.message);
                 window.location.href = 'exam.html';
             } catch (err) {
-                showError(err.message);
-                btnSubmit.disabled = false;
+                showError(err.message); btnSubmit.disabled = false;
                 btnSubmit.innerHTML = `MASUK RUANG UJIAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
             }
         };
