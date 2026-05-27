@@ -104,22 +104,30 @@
             try {
                 const tokenInput = document.getElementById('in-token').value.trim().toUpperCase();
                 
-                // MENGGUNAKAN .limit(1) UNTUK MENCEGAH CRASH JIKA ADA TOKEN GANDA
+                // DETEKTIF 1: Cari Token di database dengan ILIKE (Abaikan huruf besar/kecil/spasi tak kasat mata)
                 const { data: sessions, error: errSession } = await supabase.from('exam_sessions')
-                    .select('*').eq('token', tokenInput).eq('status', 'open').limit(1);
+                    .select('*').ilike('token', tokenInput).limit(1);
 
-                // MEMUNCULKAN PESAN ERROR ASLI DARI DATABASE JIKA DIBLOKIR
-                if(errSession) throw new Error("Akses Database Ditolak: " + errSession.message);
+                if(errSession) throw new Error("Akses Database Ditolak (Cek RLS): " + errSession.message);
                 
-                if(!sessions || sessions.length === 0) throw new Error("Token Ujian tidak aktif atau tidak ditemukan!");
+                // Jika array kosong, berarti benar-benar tidak ada di DB
+                if(!sessions || sessions.length === 0) {
+                    throw new Error(`Token '${tokenInput}' tidak ditemukan di sistem! Pastikan RLS sudah mati dan token benar.`);
+                }
 
                 const session = sessions[0];
 
+                // DETEKTIF 2: Cek Status Sesi
+                if(session.status !== 'open') {
+                    throw new Error(`Token ditemukan, tapi status ujian saat ini ditutup ('${session.status}')! Minta Admin untuk membuka sesi.`);
+                }
+
+                // DETEKTIF 3: Cek Kelas (Pembersih Spasi Murni)
                 const cleanStudentClass = activeStudent.kelas.replace(/\s+/g, '').toUpperCase();
                 const cleanSessionClass = session.kelas.replace(/\s+/g, '').toUpperCase();
 
                 if(cleanStudentClass !== cleanSessionClass) {
-                    throw new Error(`Kelas Anda (${activeStudent.kelas}) tidak terdaftar untuk Token sesi ini (${session.kelas})!`);
+                    throw new Error(`Kelas tidak cocok! Kelas Anda (${activeStudent.kelas}) berbeda dengan target Token (${session.kelas}).`);
                 }
 
                 const stableStudentId = 'std_' + activeStudent.nomor_ujian;
@@ -147,11 +155,11 @@
 
                 const { error: errInsert } = await supabase.from('live_students').upsert([{
                     id: stableStudentId, school_id: session.school_id, name: sessionData.name,
-                    token: session.token, mapel: session.mapel, kelas: session.class, sub_kelas: sessionData.subKelas,
+                    token: session.token, mapel: session.mapel, kelas: session.kelas, sub_kelas: sessionData.subKelas,
                     status: 'Mengerjakan', session_id: newBrowserSessionId
                 }]);
 
-                if(errInsert) throw new Error("Gagal mendaftarkan radar ujian: " + errInsert.message);
+                if(errInsert) throw new Error("Gagal mendaftarkan radar ujian (Cek RLS live_students): " + errInsert.message);
                 window.location.href = 'exam.html';
             } catch (err) {
                 showError(err.message); btnSubmit.disabled = false;
