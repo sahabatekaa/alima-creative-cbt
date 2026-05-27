@@ -8,190 +8,297 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="../../css/global.css">
-    <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); 
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @media print { 
+          @page { margin: 1.5cm; size: portrait; } 
+          html, body { height: auto !important; overflow: visible !important; background: white !important; color: black !important; }
+          #sidebar-container, header, .print-hidden { display: none !important; }
+          .print-block { display: block !important; }
+          table { width: 100% !important; border-collapse: collapse; margin-top: 15px; border: 2px solid black !important; } 
+          th, td { border: 1px solid black !important; padding: 8px !important; font-size: 12px !important; color: black !important; } 
+          th { background-color: #F1F5F9 !important; font-weight: bold; text-transform: uppercase; } 
+        }
+    </style>
 </head>
-<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800">
-    <div id="sidebar-container"></div>
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
-        <header class="bg-white border-b border-slate-200 p-4 md:px-6 flex justify-between items-center z-10 sticky top-0 shadow-sm">
-           <div class="flex items-center gap-3">
-             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-emerald-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-             <h2 class="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest">Teacher Center V3</h2>
+<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
+    <div id="sidebar-container" class="print-hidden"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
+        
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4 print-hidden">
+           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
+             <button id="open-sidebar" onclick="document.getElementById('pengawas-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay')?.classList.toggle('hidden');" class="md:hidden p-2 bg-slate-100 rounded-lg text-emerald-600 hover:bg-slate-200 transition-colors shrink-0">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Teacher Center V3</h2>
+           </div>
+           <div class="flex items-center gap-3 shrink-0">
+               <div class="text-right hidden md:block ml-2">
+                   <p class="text-xs font-bold text-slate-800 truncate max-w-[120px]" id="user-name">Memuat...</p>
+                   <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Guru Mapel</p>
+               </div>
+               <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black shrink-0" id="user-initial">G</div>
            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
-            <div class="max-w-6xl mx-auto space-y-6 pb-10">
-                <div class="bg-white p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 space-y-4">
-                    <div class="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-slate-100 pb-4">
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full relative">
+            <div class="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
+                
+                <div class="bg-white p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 print-hidden space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 pb-4">
                         <div>
-                            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Rekapitulasi & Cetak Nilai</h3>
-                            <p class="text-xs font-bold text-slate-400 mt-1">Saring sesi ujian sebelum mencetak dokumen atau koreksi esai.</p>
+                            <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Rekapitulasi & Cetak Nilai</h3>
+                            <p class="text-xs font-bold text-slate-400 mt-1">Saring berdasarkan sesi sebelum mencetak dokumen atau koreksi esai.</p>
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <button id="btn-export-excel" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Excel</button>
+                            <button id="btn-bersihkan" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Reset Nilai Saya</button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <select id="filter-mapel" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500"><option value="">-- Pilih Mapel --</option></select>
-                        <select id="filter-kelas" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500"><option value="">-- Pilih Kelas --</option></select>
-                        <select id="filter-token" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-500"><option value="">-- Pilih Token Sesi --</option></select>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                        <select id="f-mapel" class="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700 cursor-pointer focus:border-emerald-500"><option value="">-- Semua Mapel --</option></select>
+                        <select id="f-kelas" class="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700 cursor-pointer focus:border-emerald-500"><option value="">-- Semua Kelas --</option></select>
+                        <select id="f-token" class="w-full p-3 border border-emerald-300 rounded-xl bg-emerald-50 outline-none text-xs font-black text-emerald-800 cursor-pointer focus:border-emerald-500"><option value="">-- Pilih Token Wajib (Koreksi) --</option></select>
                     </div>
-                    <div class="flex flex-wrap gap-2 pt-2">
-                        <button id="btn-export-excel" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Cetak Daftar Nilai (Excel)</button>
-                        <button id="btn-koreksi-esai" class="bg-amber-400 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> Koreksi Esai Manual</button>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2">
+                        <button onclick="cetakPDF('rekap')" class="w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl text-xs font-black shadow-sm transition-all flex justify-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Cetak Daftar Nilai</button>
+                        <button onclick="cetakPDF('berita')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-xs font-black shadow-sm transition-all">Berita Acara Ujian</button>
+                        <button onclick="cetakPDF('hadir')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-xs font-black shadow-sm transition-all">Daftar Hadir Siswa</button>
+                        <button id="btn-koreksi-esai" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 py-3 rounded-xl text-xs font-black shadow-sm transition-all flex items-center justify-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> Koreksi Esai Manual</button>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="overflow-x-auto custom-scrollbar">
+                <div class="bg-white rounded-[24px] border border-slate-200 p-4 md:p-8 shadow-sm w-full relative">
+                    
+                    <div id="official-kop-header" class="hidden print:flex flex-col items-center justify-center mb-6 border-b-4 border-double border-black pb-4 text-center w-full">
+                        <h1 class="text-xl font-black uppercase tracking-widest text-black" id="kop-school-name">NAMA SEKOLAH</h1>
+                        <h2 class="text-xs font-bold text-gray-700 mt-1" id="kop-school-address">Alamat Instansi</h2>
+                        <p class="mt-0.5 text-[10px] font-bold text-gray-500" id="kop-school-phone">Telepon: -</p>
+                    </div>
+
+                    <h3 class="text-center font-black text-black text-lg underline tracking-wide uppercase mb-6 hidden print:block" id="print-title">DAFTAR NILAI UJIAN</h3>
+                    <p class="text-xs font-bold text-black mb-4 hidden print:block" id="print-meta"></p>
+
+                    <div class="overflow-x-auto w-full custom-scrollbar">
                         <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 text-[10px] uppercase font-black tracking-wider">
+                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
                                 <tr>
-                                    <th class="p-4">Identitas Siswa</th>
-                                    <th class="p-4 text-center">Kelas/Token</th>
-                                    <th class="p-4 text-center">Mapel</th>
-                                    <th class="p-4 text-center">PG / Esai</th>
-                                    <th class="p-4 text-center">Skor Akhir</th>
+                                    <th class="py-3 px-4 text-center w-12 font-black uppercase text-[10px] tracking-wider">No</th>
+                                    <th class="py-3 px-4 font-black uppercase text-[10px] tracking-wider">Identitas Siswa</th>
+                                    <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider">Kelas / Token</th>
+                                    <th class="py-3 px-4 font-black uppercase text-[10px] tracking-wider">Mapel</th>
+                                    <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider">Nilai (PG | Esai)</th>
+                                    <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider">Skor Akhir</th>
+                                    <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider w-16 print:hidden">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="nilai-body" class="divide-y divide-slate-100">
-                                <tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold">Pilih Mapel, Kelas, dan Token untuk melihat nilai.</td></tr>
+                            <tbody id="rekap-table-body" class="divide-y divide-slate-100">
+                                <tr><td colspan="7" class="p-10 text-center text-slate-400 font-bold">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="hidden print:flex justify-end mt-12 text-center text-xs w-full" id="print-ttd-1">
+                        <div class="w-64">
+                            <p id="print-date-label">Medan, ...</p>
+                            <p class="mt-1">Guru Mata Pelajaran,</p>
+                            <br/><br/><br/>
+                            <p class="font-black uppercase border-b border-black pb-0.5" id="print-guru-name">_________________________</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="modal-esai" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] hidden items-center justify-center p-4 print-hidden transition-all duration-300">
+            <div class="bg-white rounded-[2rem] w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-slate-700">
+                <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-amber-50">
+                    <div>
+                        <h2 class="text-lg font-black text-amber-900 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> Koreksi Esai Cepat</h2>
+                        <p id="esai-progress" class="text-xs font-bold text-amber-700 mt-1">Memuat data...</p>
+                    </div>
+                    <button id="btn-close-esai" class="p-2.5 bg-white rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+                
+                <div id="esai-content" class="p-6 md:p-8 overflow-y-auto flex-1 space-y-6 bg-slate-50 custom-scrollbar">
+                    </div>
+
+                <div class="p-5 border-t border-slate-200 bg-white flex flex-col sm:flex-row gap-4 items-center">
+                    <div class="flex-1 w-full relative">
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Berikan Skor Nilai Esai (Otomatis ditotal)</label>
+                        <input type="number" id="input-skor-esai" class="w-full p-4 bg-amber-50 border-2 border-amber-200 rounded-xl text-2xl font-black text-amber-900 outline-none focus:border-amber-500 transition-colors" placeholder="Ketik nilai...">
+                    </div>
+                    <button id="btn-simpan-esai" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-8 py-5 rounded-xl font-black text-sm tracking-widest active:scale-95 transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2">SIMPAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
                 </div>
             </div>
         </div>
+
     </main>
-
-    <div id="modal-esai" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-amber-50">
-                <div>
-                    <h2 class="text-lg font-black text-amber-900 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> Koreksi Esai Cepat</h2>
-                    <p id="esai-progress" class="text-xs font-bold text-amber-700 mt-1">Memuat data...</p>
-                </div>
-                <button id="btn-close-esai" class="p-2 bg-white rounded-full text-slate-400 hover:text-red-500 shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            </div>
-            
-            <div id="esai-content" class="p-6 overflow-y-auto flex-1 space-y-5 bg-slate-50">
-                </div>
-
-            <div class="p-5 border-t border-slate-200 bg-white flex gap-3 items-center">
-                <div class="flex-1">
-                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Beri Nilai (0 - 100)</label>
-                    <input type="number" id="input-skor-esai" min="0" max="100" class="w-full p-3 bg-amber-50 border border-amber-200 rounded-xl text-lg font-black text-amber-900 text-center outline-none focus:border-amber-500" placeholder="0">
-                </div>
-                <button id="btn-simpan-esai" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-4 rounded-xl font-black text-sm tracking-widest active:scale-95 transition-all shadow-lg shadow-amber-500/30">SIMPAN & LANJUT</button>
-            </div>
-        </div>
-    </div>
 
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
         import { renderGuruSidebar } from '../../js/components/sidebar-guru.js';
-        renderGuruSidebar();
+        
+        // Panggil Sidebar dengan penundaan agar DOM termuat
+        setTimeout(() => renderGuruSidebar(), 100);
 
-        let schoolId = null;
-        let teacherEmail = null;
-        let leaderboardData = [];
-        let esaiTasks = [];
-        let currentTaskIdx = 0;
+        let schoolId = null; let teacherEmail = null; let teacherName = '';
+        let rawData = []; let filteredData = []; 
+        let esaiTasks = []; let currentTaskIdx = 0;
 
         async function initPage() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return window.location.href = '../auth/login.html';
             const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-            schoolId = profile.school_id; teacherEmail = profile.email;
+            schoolId = profile.school_id; teacherEmail = profile.email; teacherName = profile.name;
             
-            // Muat Filter Mapel & Kelas
-            const [{data: mapels}, {data: kelas}, {data: sesi}] = await Promise.all([
-                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
-                supabase.from('master_classes').select('name').eq('school_id', schoolId),
-                supabase.from('exam_sessions').select('token').eq('teacher_email', teacherEmail)
-            ]);
+            document.getElementById('user-name').innerText = teacherName;
+            document.getElementById('user-initial').innerText = teacherName.charAt(0).toUpperCase();
+            
+            const { data: school } = await supabase.from('schools').select('*').eq('id', schoolId).single();
+            if(school) {
+                document.getElementById('topbar-school-name').innerText = school.name;
+                document.getElementById('kop-school-name').innerText = school.name.toUpperCase();
+                document.getElementById('kop-school-address').innerText = school.alamat || '';
+            }
 
-            if(mapels) document.getElementById('filter-mapel').innerHTML += mapels.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-            if(kelas) document.getElementById('filter-kelas').innerHTML += kelas.map(k => `<option value="${k.name}">${k.name}</option>`).join('');
-            if(sesi) document.getElementById('filter-token').innerHTML += sesi.map(s => `<option value="${s.token}">${s.token}</option>`).join('');
+            loadLeaderboard();
         }
 
-        async function loadData() {
-            const m = document.getElementById('filter-mapel').value;
-            const k = document.getElementById('filter-kelas').value;
-            const t = document.getElementById('filter-token').value;
-            
-            if(!m || !k || !t) return;
-            document.getElementById('nilai-body').innerHTML = '<tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold">Mencari data...</td></tr>';
+        async function loadLeaderboard() {
+            const { data: lead, error } = await supabase.from('leaderboard').select('*').eq('teacher_email', teacherEmail);
 
-            const { data } = await supabase.from('leaderboard').select('*').eq('teacher_email', teacherEmail).eq('mapel', m).eq('kelas', k).eq('token', t);
-            leaderboardData = data || [];
-            
-            if(leaderboardData.length === 0) {
-                document.getElementById('nilai-body').innerHTML = '<tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold">Belum ada siswa yang mengumpulkan nilai di sesi ini.</td></tr>';
+            if (error || !lead || lead.length === 0) {
+                document.getElementById('rekap-table-body').innerHTML = `<tr><td colspan="7" class="p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 rounded-xl">Belum ada nilai ujian.</td></tr>`;
                 return;
             }
 
-            document.getElementById('nilai-body').innerHTML = leaderboardData.map(row => {
-                const pg = row.objective_score || 0;
-                const es = row.essay_score || 0;
-                const total = row.score || 0;
-                return `
-                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50">
-                    <td class="p-4"><p class="font-black text-slate-800 text-sm uppercase">${row.student_name}</p></td>
-                    <td class="p-4 text-center"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-bold border">${row.kelas}-${row.sub_kelas} / ${row.token}</span></td>
-                    <td class="p-4 text-center font-bold text-slate-600 text-xs">${row.mapel}</td>
-                    <td class="p-4 text-center font-bold text-slate-500 text-xs">PG: ${pg} | E: ${es}</td>
-                    <td class="p-4 text-center"><span class="text-base font-black ${total < 70 ? 'text-red-500' : 'text-emerald-600'}">${total}</span></td>
+            rawData = lead;
+            
+            const mSet = [...new Set(rawData.map(l => l.mapel).filter(Boolean))];
+            const kSet = [...new Set(rawData.map(l => l.kelas).filter(Boolean))];
+            const tSet = [...new Set(rawData.map(l => l.token).filter(Boolean))];
+
+            document.getElementById('f-mapel').innerHTML += mSet.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('f-kelas').innerHTML += kSet.map(k => `<option value="${k}">${k}</option>`).join('');
+            document.getElementById('f-token').innerHTML += tSet.map(t => `<option value="${t}">${t}</option>`).join('');
+
+            document.getElementById('f-mapel').onchange = filterData;
+            document.getElementById('f-kelas').onchange = filterData;
+            document.getElementById('f-token').onchange = filterData;
+
+            filterData();
+        }
+
+        function filterData() {
+            const m = document.getElementById('f-mapel').value;
+            const k = document.getElementById('f-kelas').value;
+            const t = document.getElementById('f-token').value;
+
+            filteredData = rawData.filter(l => (m === '' || l.mapel === m) && (k === '' || l.kelas === k) && (t === '' || l.token === t));
+            
+            const dateStr = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('print-meta').innerHTML = `Mata Pelajaran: ${m||'Semua'} <br/> Kelas: ${k||'Semua'} | Token: ${t||'Semua'} <br/> Guru: ${teacherName}`;
+            document.getElementById('print-date-label').innerText = `Dicetak pada: ${dateStr}`;
+            document.getElementById('print-guru-name').innerText = teacherName;
+
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('rekap-table-body');
+            if(filteredData.length === 0) return tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 font-bold">Data kosong.</td></tr>`;
+
+            tbody.innerHTML = filteredData.map((l, i) => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-2.5 px-4 text-center font-bold text-slate-400 text-xs">${i + 1}</td>
+                    <td class="py-2.5 px-4">
+                        <p class="font-black text-slate-800 text-sm uppercase">${l.student_name || 'Anonim'}</p>
+                        ${l.is_essay_graded ? '<span class="text-[8px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border mt-0.5 inline-block">ESAI SELESAI</span>' : '<span class="text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border mt-0.5 inline-block">PERLU KOREKSI</span>'}
+                    </td>
+                    <td class="py-2.5 px-4 text-center font-bold text-slate-600 text-xs">${l.kelas}-${l.sub_kelas}<br/><span class="text-[9px] text-emerald-600 font-mono">${l.token}</span></td>
+                    <td class="py-2.5 px-4 font-bold text-slate-700 text-xs uppercase">${l.mapel}</td>
+                    <td class="py-2.5 px-4 text-center font-bold text-slate-500 text-xs uppercase bg-slate-50 border-x border-slate-100">
+                        PG: ${l.objective_score||0} <span class="mx-1 text-slate-300">|</span> Esai: <span class="${l.essay_score > 0 ? 'text-amber-600' : 'text-slate-400'}">${l.essay_score||0}</span>
+                    </td>
+                    <td class="py-2.5 px-4 text-center">
+                        <span class="text-base font-black ${l.score < 70 ? 'text-rose-600' : 'text-emerald-600'}">${l.score || 0}</span>
+                    </td>
+                    <td class="py-2.5 px-4 text-center print:hidden">
+                        <button onclick="delRekap('${l.id}')" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    </td>
                 </tr>
-            `}).join('');
+            `).join('');
         }
 
-        ['filter-mapel', 'filter-kelas', 'filter-token'].forEach(id => {
-            document.getElementById(id).addEventListener('change', loadData);
-        });
+        window.delRekap = async (id) => { if(confirm("Hapus data nilai siswa ini?")) { await supabase.from('leaderboard').delete().eq('id', id); loadLeaderboard(); } };
+        document.getElementById('btn-bersihkan').onclick = async () => { const c = prompt("Ketik HAPUS untuk membersihkan semua nilai Anda:"); if(c === "HAPUS") { await supabase.from('leaderboard').delete().eq('teacher_email', teacherEmail); loadLeaderboard(); } };
 
-        // --- LOGIKA KOREKSI ESAI ---
+        document.getElementById('btn-export-excel').onclick = () => {
+            if(filteredData.length===0) return alert("Data Kosong!");
+            const rows = filteredData.map((l, i) => ({ "No": i+1, "Nama Siswa": l.student_name, "Kelas": l.kelas, "Mapel": l.mapel, "Nilai PG": l.objective_score, "Nilai Esai": l.essay_score, "Skor Akhir": l.score }));
+            const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Rekap CBT"); XLSX.writeFile(wb, `Rekap_Nilai_${new Date().toISOString().slice(0,10)}.xlsx`);
+        };
+
+        window.cetakPDF = (mode) => {
+            if(filteredData.length===0) return alert("Data kosong!");
+            let title = "DAFTAR NILAI UJIAN";
+            if(mode === 'berita') title = "BERITA ACARA PELAKSANAAN UJIAN";
+            if(mode === 'hadir') title = "DAFTAR HADIR PESERTA UJIAN";
+            document.getElementById('print-title').innerText = title;
+            setTimeout(() => window.print(), 300);
+        };
+
+        // --- SISTEM KOREKSI ESAI TINDER-STYLE (FIXED) ---
         document.getElementById('btn-koreksi-esai').onclick = async () => {
-            const m = document.getElementById('filter-mapel').value;
-            const k = document.getElementById('filter-kelas').value;
-            const t = document.getElementById('filter-token').value;
+            const token = document.getElementById('f-token').value;
+            if(!token) return alert("Anda WAJIB memilih 1 Token Sesi di Filter Atas untuk mengkoreksi Esai pada kelas tersebut!");
             
-            if(!m || !k || !t) return alert("Pilih Mapel, Kelas, dan Token terlebih dahulu!");
-            if(leaderboardData.length === 0) return alert("Tidak ada data siswa untuk dikoreksi.");
+            const siswaEsai = filteredData.filter(s => s.answers && Object.keys(s.answers).some(k => typeof s.answers[k] === 'string' && s.answers[k].trim() !== '' && !k.endsWith('_score')));
+            if(siswaEsai.length === 0) return alert("Tidak ada jawaban esai yang ditemukan dari siswa pada sesi ini.");
 
-            document.getElementById('esai-progress').innerText = "Menyiapkan lembar jawaban...";
             document.getElementById('modal-esai').classList.remove('hidden'); document.getElementById('modal-esai').classList.add('flex');
-            document.getElementById('esai-content').innerHTML = '<div class="text-center text-slate-400 p-10 font-bold">Membuka lembar jawaban...</div>';
+            document.getElementById('esai-content').innerHTML = '<div class="text-center text-slate-400 p-10 font-bold animate-pulse">Menarik Naskah Esai...</div>';
 
-            // Ambil semua soal esai untuk mapel ini
-            const { data: soalEsai } = await supabase.from('bank_soal').select('id, pertanyaan, opsi_a').eq('mapel', m).eq('kelas', k).eq('jenis_soal', 'ESAI').eq('teacher_email', teacherEmail);
-            
-            if(!soalEsai || soalEsai.length === 0) {
-                document.getElementById('esai-content').innerHTML = '<div class="text-center text-red-400 p-10 font-bold">Tidak ada tipe soal ESAI di bank soal ini.</div>';
-                return;
+            const { data: soalList } = await supabase.from('bank_soal').select('*').eq('jenis_soal', 'ESAI').eq('token', token);
+            // Fallback jika tidak ada soal spesifik token, cari by Mapel & Kelas
+            let esaiSoal = soalList;
+            if(!esaiSoal || esaiSoal.length === 0) {
+                const mapel = document.getElementById('f-mapel').value;
+                const { data: soalFallback } = await supabase.from('bank_soal').select('*').eq('jenis_soal', 'ESAI').eq('mapel', mapel);
+                esaiSoal = soalFallback || [];
             }
 
-            // Susun antrean tugas koreksi
             esaiTasks = [];
-            leaderboardData.forEach(student => {
-                const ansObj = student.answers || {};
-                soalEsai.forEach(soal => {
-                    const studentAnswer = ansObj[soal.id] || '';
-                    if(studentAnswer.trim() !== '') {
+            siswaEsai.forEach(siswa => {
+                const ans = siswa.answers || {};
+                Object.keys(ans).forEach(soalId => {
+                    // Abaikan key _score
+                    if(soalId.endsWith('_score')) return;
+                    
+                    const jawabanSiswa = ans[soalId];
+                    if(jawabanSiswa && jawabanSiswa.trim() !== '') {
+                        const soalRef = esaiSoal.find(s => s.id === soalId);
                         esaiTasks.push({
-                            leaderboard_id: student.id,
-                            student_name: student.student_name,
-                            question_id: soal.id,
-                            pertanyaan: soal.pertanyaan,
-                            kunci: soal.opsi_a, // Kolom opsi_a bisa dipakai guru untuk simpan acuan jawaban
-                            jawaban_siswa: studentAnswer,
-                            current_score: ansObj[`${soal.id}_score`] || 0
+                            leaderboard_id: siswa.id,
+                            student_name: siswa.student_name,
+                            question_id: soalId,
+                            pertanyaan: soalRef ? soalRef.pertanyaan : "Soal ID: " + soalId + " (Teks tidak ditemukan di Bank Soal)",
+                            jawaban_siswa: jawabanSiswa,
+                            current_score: ans[`${soalId}_score`] || 0,
+                            objective_score: siswa.objective_score || 0
                         });
                     }
                 });
             });
 
             if(esaiTasks.length === 0) {
-                document.getElementById('esai-content').innerHTML = '<div class="text-center text-slate-400 p-10 font-bold">Semua siswa mengosongkan jawaban esainya.</div>';
+                document.getElementById('esai-content').innerHTML = '<div class="text-center text-slate-400 p-10 font-bold">Semua jawaban Esai kosong.</div>';
                 return;
             }
 
@@ -201,34 +308,41 @@
 
         function renderEsaiTask() {
             if(currentTaskIdx >= esaiTasks.length) {
-                document.getElementById('esai-content').innerHTML = '<div class="text-center text-emerald-500 p-10"><svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto mb-4"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg><h2 class="text-2xl font-black">Selesai!</h2><p class="font-bold text-slate-500 mt-2">Semua esai telah dikoreksi.</p></div>';
+                document.getElementById('esai-content').innerHTML = `
+                    <div class="text-center text-emerald-500 py-16 flex flex-col items-center justify-center animate-in zoom-in duration-300">
+                        <div class="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 border-4 border-emerald-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h2 class="text-3xl font-black text-slate-800 mb-2">Pekerjaan Selesai!</h2>
+                        <p class="font-bold text-slate-500 text-lg">Semua lembar esai telah dikoreksi dan dikalkulasi.</p>
+                    </div>`;
                 document.getElementById('btn-simpan-esai').classList.add('hidden');
                 document.getElementById('input-skor-esai').parentElement.classList.add('hidden');
                 document.getElementById('esai-progress').innerText = "Tuntas 100%";
-                loadData(); // Refresh tabel belakang
+                loadLeaderboard(); // Refresh data utama
                 return;
             }
 
             const task = esaiTasks[currentTaskIdx];
-            document.getElementById('esai-progress').innerText = `Koreksi ke-${currentTaskIdx + 1} dari ${esaiTasks.length}`;
+            document.getElementById('esai-progress').innerText = `Siswa ke-${currentTaskIdx + 1} dari ${esaiTasks.length}`;
             
             document.getElementById('esai-content').innerHTML = `
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nama Siswa</p>
-                    <p class="text-lg font-black text-blue-600">${task.student_name}</p>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-right-10 duration-300">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Identitas Peserta</p>
+                    <p class="text-xl font-black text-blue-600 uppercase">${task.student_name}</p>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pertanyaan Esai</p>
-                    <p class="font-semibold text-slate-800 text-sm whitespace-pre-wrap">${task.pertanyaan}</p>
-                    ${task.kunci ? `<div class="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-xs font-medium text-emerald-800"><span class="font-bold">Acuan Jawaban Guru:</span><br>${task.kunci}</div>` : ''}
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-right-10 duration-300 delay-75">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Butir Pertanyaan Esai</p>
+                    <p class="font-semibold text-slate-800 text-base md:text-lg leading-relaxed whitespace-pre-wrap">${task.pertanyaan}</p>
                 </div>
-                <div class="bg-amber-100/50 p-5 rounded-2xl border-2 border-amber-200 shadow-inner">
-                    <p class="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">Jawaban Siswa</p>
-                    <p class="font-medium text-slate-800 text-base whitespace-pre-wrap leading-relaxed">${task.jawaban_siswa}</p>
+                <div class="bg-amber-50 p-6 md:p-8 rounded-2xl border-2 border-amber-200 shadow-inner animate-in slide-in-from-right-10 duration-300 delay-150">
+                    <p class="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Jawaban Siswa:</p>
+                    <p class="font-medium text-slate-900 text-lg whitespace-pre-wrap leading-relaxed">${task.jawaban_siswa}</p>
                 </div>
             `;
             
-            document.getElementById('input-skor-esai').value = task.current_score;
+            document.getElementById('input-skor-esai').value = task.current_score || '';
+            document.getElementById('input-skor-esai').focus();
             document.getElementById('input-skor-esai').parentElement.classList.remove('hidden');
             document.getElementById('btn-simpan-esai').classList.remove('hidden');
         }
@@ -238,21 +352,19 @@
             const newScore = parseInt(document.getElementById('input-skor-esai').value) || 0;
             const btn = document.getElementById('btn-simpan-esai');
             
-            btn.innerText = "MENYIMPAN..."; btn.disabled = true;
+            btn.innerHTML = `MENYIMPAN...`; btn.disabled = true;
 
-            // 1. Ambil data siswa dari DB untuk diupdate
+            // 1. Ambil data asli siswa langsung dari database agar aman
             const { data: student } = await supabase.from('leaderboard').select('answers, objective_score').eq('id', task.leaderboard_id).single();
             
             if(student) {
                 let ans = student.answers || {};
-                ans[`${task.question_id}_score`] = newScore; // Simpan nilai per butir soal
+                ans[`${task.question_id}_score`] = newScore;
                 
-                // Hitung ulang total nilai Esai
                 let totalEsai = 0;
                 Object.keys(ans).forEach(key => { if(key.endsWith('_score')) totalEsai += parseInt(ans[key]); });
                 
-                // Asumsi pembobotan: PG murni dari objective_score. Total = PG + Esai. 
-                // (Guru bisa sesuaikan rumus ini nanti, misal PG 70% Esai 30%)
+                // KALKULASI SKOR AKHIR = PG + ESAI
                 const finalScore = (student.objective_score || 0) + totalEsai;
 
                 await supabase.from('leaderboard').update({
@@ -265,26 +377,13 @@
 
             currentTaskIdx++;
             renderEsaiTask();
-            btn.innerText = "SIMPAN & LANJUT"; btn.disabled = false;
+            btn.innerHTML = `SIMPAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`; 
+            btn.disabled = false;
         };
 
         document.getElementById('btn-close-esai').onclick = () => {
             document.getElementById('modal-esai').classList.remove('flex'); document.getElementById('modal-esai').classList.add('hidden');
-            loadData(); // Refresh tabel nilai saat ditutup
-        };
-        
-        // --- EXPORT EXCEL ---
-        document.getElementById('btn-export-excel').onclick = () => {
-            if(leaderboardData.length === 0) return alert("Tidak ada data untuk diekspor.");
-            const exportData = leaderboardData.map((r, i) => ({
-                'No': i+1, 'Nama Siswa': r.student_name, 'Kelas': r.kelas+'-'+r.sub_kelas, 
-                'Mapel': r.mapel, 'Token': r.token, 'Nilai PG': r.objective_score||0, 
-                'Nilai Esai': r.essay_score||0, 'SKOR AKHIR': r.score||0
-            }));
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Rekap Nilai");
-            XLSX.writeFile(wb, `Rekap_Nilai_${document.getElementById('filter-mapel').value}_${document.getElementById('filter-kelas').value}.xlsx`);
+            loadLeaderboard(); // Segarkan tabel di belakang layar
         };
 
         document.addEventListener('DOMContentLoaded', initPage);
