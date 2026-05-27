@@ -1,7 +1,7 @@
 {
-  "buildCommand": null,
+  "framework": null,
+  "buildCommand": "exit 0",
   "outputDirectory": ".",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/$1" }
-  ]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
