@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Siswa | Alima CBT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+    <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+</head>
+<body class="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-4 selection:bg-emerald-500 selection:text-white">
+
+    <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-xl border border-slate-200 w-full max-w-md animate-in zoom-in-95 duration-300">
+        <div class="flex flex-col items-center mb-6 text-center">
+            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Portal Ujian Siswa</h1>
+            <p class="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">Verifikasi Identitas Anda</p>
+        </div>
+
+        <div id="error-msg" class="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-xs font-bold hidden items-start gap-3 shadow-inner">
+            <span></span>
+        </div>
+
+        <form id="form-login" class="space-y-5">
+            <div>
+                <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 pl-1">Nomor Ujian Peserta</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+                    <input type="text" id="in-noujian" required class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder-slate-400" placeholder="Ketik Nomor Ujian..." />
+                </div>
+            </div>
+
+            <div id="student-preview" class="hidden p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Identitas Ditemukan:</p>
+                <p id="prev-name" class="font-black text-slate-800 text-sm uppercase">NAMA SISWA</p>
+                <p id="prev-kelas" class="font-bold text-slate-500 text-xs mt-0.5">Kelas: -</p>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 pl-1">Token Sesi Ujian</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+                    <input type="text" id="in-token" required class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-slate-800 uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder-slate-400" placeholder="XXXXXX" />
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" id="btn-submit" disabled class="w-full bg-slate-200 text-slate-400 py-4 rounded-xl font-black text-sm tracking-widest transition-all flex items-center justify-center gap-2">
+                    CARI IDENTITAS DULU
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+
+        let activeStudent = null;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if(urlToken) {
+            document.getElementById('in-token').value = urlToken.toUpperCase();
+        }
+
+        const inputNoUjian = document.getElementById('in-noujian');
+        const previewBox = document.getElementById('student-preview');
+        const btnSubmit = document.getElementById('btn-submit');
+        const errorMsg = document.getElementById('error-msg');
+
+        function showError(msg) {
+            errorMsg.classList.remove('hidden');
+            errorMsg.classList.add('flex');
+            errorMsg.querySelector('span').innerText = msg;
+        }
+
+        let timeout = null;
+        inputNoUjian.addEventListener('input', (e) => {
+            clearTimeout(timeout);
+            const val = e.target.value.trim().toUpperCase();
+            activeStudent = null;
+            previewBox.classList.add('hidden');
+            btnSubmit.disabled = true;
+            btnSubmit.className = "w-full bg-slate-200 text-slate-400 py-4 rounded-xl font-black text-sm tracking-widest transition-all flex items-center justify-center gap-2";
+            btnSubmit.innerText = "MENCARI...";
+
+            if(val.length > 2) {
+                timeout = setTimeout(async () => {
+                    const { data, error } = await supabase.from('students').select('*').eq('nomor_ujian', val).single();
+                    if(data && !error) {
+                        activeStudent = data;
+                        document.getElementById('prev-name').innerText = data.name;
+                        document.getElementById('prev-kelas').innerText = `Kelas ${data.kelas} - ${data.sub_kelas || '-'}`;
+                        previewBox.classList.remove('hidden');
+                        errorMsg.classList.add('hidden');
+                        
+                        btnSubmit.disabled = false;
+                        btnSubmit.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black text-sm tracking-widest transition-all shadow-lg shadow-emerald-600/30 active:scale-95 flex items-center justify-center gap-2";
+                        btnSubmit.innerHTML = `MASUK RUANG UJIAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+                    } else {
+                        btnSubmit.innerText = "DATA TIDAK DITEMUKAN";
+                    }
+                }, 800);
+            } else {
+                btnSubmit.innerText = "CARI IDENTITAS DULU";
+            }
+        });
+
+        document.getElementById('form-login').onsubmit = async (e) => {
+            e.preventDefault();
+            if(!activeStudent) return;
+            
+            errorMsg.classList.add('hidden');
+            btnSubmit.innerHTML = "MEMVERIFIKASI...";
+            btnSubmit.disabled = true;
+
+            try {
+                const tokenInput = document.getElementById('in-token').value.trim().toUpperCase();
+                
+                const { data: session, error } = await supabase.from('exam_sessions')
+                    .select('*').eq('token', tokenInput).eq('kelas', activeStudent.kelas).eq('status', 'open').single();
+
+                if(error || !session) throw new Error("Token Ujian tidak valid, sesi ditutup, atau kelas Anda tidak cocok dengan token ini!");
+
+                const sessionData = {
+                    id: 'std_' + Math.random().toString(36).substr(2, 9),
+                    name: activeStudent.name,
+                    noujian: activeStudent.nomor_ujian,
+                    token: session.token,
+                    mapel: session.mapel,
+                    class: session.kelas,
+                    subKelas: activeStudent.sub_kelas || '-',
+                    teacherEmail: session.teacher_email
+                };
+
+                localStorage.setItem('studentData', JSON.stringify(sessionData));
+
+                // FIXED: 'name' alih-alih 'student_name' untuk live_students
+                await supabase.from('live_students').insert([{
+                    id: sessionData.id, school_id: session.school_id, name: sessionData.name,
+                    token: session.token, mapel: session.mapel, kelas: session.kelas, sub_kelas: sessionData.subKelas,
+                    status: 'Mengerjakan', progress: 0, warnings: 0
+                }]);
+
+                window.location.href = 'exam.html';
+            } catch (err) {
+                showError(err.message);
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = `MASUK RUANG UJIAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+            }
+        };
+    </script>
+</body>
+</html>

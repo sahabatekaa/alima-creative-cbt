@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Matrix | Alima CBT Enterprise</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+</head>
+<body class="flex h-screen bg-[#030712] overflow-hidden font-sans text-slate-200 selection:bg-amber-500/30">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0">
+        <div class="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <header class="bg-[#0a0f1c]/70 backdrop-blur-xl border-b border-slate-800/50 p-4 md:p-5 flex justify-between items-center z-10 sticky top-0">
+           <div class="flex items-center gap-4">
+             <button id="open-sidebar" class="lg:hidden text-indigo-500 hover:text-white transition-colors">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-sm md:text-base font-black text-white tracking-widest uppercase">Pricing Matrix</h2>
+           </div>
+           <button id="btn-add-plan" class="bg-amber-500 hover:bg-amber-400 text-black px-4 md:px-5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-95">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+               <span class="hidden md:inline">Buat Paket Baru</span>
+               <span class="md:hidden">Tambah</span>
+           </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 z-10 custom-scrollbar">
+            <div class="max-w-7xl mx-auto animate-in fade-in duration-500">
+                
+                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0a0f1c] border border-slate-800/80 p-6 rounded-3xl shadow-lg">
+                    <div>
+                        <h3 class="text-xl font-black text-white flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                            Konfigurasi Paket Layanan
+                        </h3>
+                        <p class="text-sm text-slate-400 mt-1">Atur parameter pembatasan sistem, kapasitas server, dan harga jual B2B per tahun.</p>
+                    </div>
+                </div>
+
+                <div id="pricing-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="col-span-full p-16 text-center text-slate-500 font-bold">Memuat konfigurasi pricing matrix...</div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-plan" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-[#0a0f1c] p-6 md:p-8 rounded-[2rem] w-full max-w-lg border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+             <h2 class="text-xl font-black mb-6 text-white flex items-center gap-3">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                 Parameter Setup Paket
+             </h2>
+             
+             <form id="form-plan" class="space-y-4">
+                 <input type="hidden" id="form-mode" value="add">
+                 <input type="hidden" id="original-id" value="">
+
+                 <div class="grid grid-cols-2 gap-3">
+                     <div>
+                         <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">ID (Huruf kecil, No spasi)</label>
+                         <input type="text" id="plan-id" required placeholder="lite" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-mono text-amber-500 outline-none focus:border-amber-500 disabled:opacity-50 disabled:bg-slate-900">
+                     </div>
+                     <div>
+                         <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">Nama Tampilan</label>
+                         <input type="text" id="plan-name" required placeholder="Lite (PAUD/TK)" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-amber-500">
+                     </div>
+                 </div>
+
+                 <div class="grid grid-cols-3 gap-3">
+                     <div>
+                         <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1" title="Maksimal Siswa Terdaftar">Maks Siswa</label>
+                         <input type="number" id="plan-max-students" required min="1" placeholder="100" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-amber-500 text-center">
+                     </div>
+                     <div>
+                         <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1" title="Kapasitas Cloud">Storage (MB)</label>
+                         <input type="number" id="plan-storage" required min="1" placeholder="500" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-amber-500 text-center">
+                     </div>
+                     <div>
+                         <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">Harga (Rp/Thn)</label>
+                         <input type="number" id="plan-price" required min="0" placeholder="1500000" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-emerald-400 outline-none focus:border-amber-500">
+                     </div>
+                 </div>
+
+                 <div class="grid grid-cols-2 gap-3 p-4 bg-[#030712]/50 border border-slate-800 rounded-2xl">
+                     <label class="flex items-center gap-3 cursor-pointer">
+                         <input type="checkbox" id="plan-api" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-amber-500">
+                         <span class="text-xs font-bold text-slate-300">Akses REST API</span>
+                     </label>
+                     <label class="flex items-center gap-3 cursor-pointer">
+                         <input type="checkbox" id="plan-domain" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-amber-500">
+                         <span class="text-xs font-bold text-slate-300">Custom Domain</span>
+                     </label>
+                 </div>
+
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">Service Level Agreement (SLA)</label>
+                     <select id="plan-support" required class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-emerald-400 outline-none focus:border-amber-500 appearance-none cursor-pointer">
+                         <option value="Standard Bantuan">Standard Bantuan H+1</option>
+                         <option value="Priority Live Chat">Priority Live Chat</option>
+                         <option value="24/7 Dedicated Teknisi">24/7 Dedicated Teknisi</option>
+                     </select>
+                 </div>
+
+                 <div class="flex gap-3 pt-6 border-t border-slate-800/50 mt-4">
+                     <button type="button" id="btn-close-plan" class="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-black transition-all">Batal</button>
+                     <button type="submit" id="btn-save-plan" class="flex-1 py-3.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-sm font-black shadow-lg shadow-amber-500/30 transition-all">Simpan Config</button>
+                 </div>
+             </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderSidebar } from '../../js/components/sidebar.js';
+
+        renderSidebar();
+
+        let currentPlans = [];
+
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) window.location.href = '../auth/login.html';
+            else document.getElementById('sidebar-user-email').innerText = session.user.email;
+        }
+        checkAuth();
+
+        // ==========================================
+        // 1. TARIK DATA PAKET
+        // ==========================================
+        async function loadPricingPlans() {
+            const grid = document.getElementById('pricing-grid');
+            
+            try {
+                const { data: plans, error } = await supabase.from('pricing_plans').select('*').order('price_yearly', { ascending: true });
+                
+                if (error) throw error;
+
+                // Jika tabel masih kosong, berikan default (Diset untuk PAUD/TK & SDIT)
+                if (!plans || plans.length === 0) {
+                    currentPlans = [
+                        { id: 'lite', name: 'Lite (PAUD/TK)', max_students: 150, storage_mb: 1000, support_level: 'Standard Bantuan', has_api_access: false, has_custom_domain: false, price_yearly: 1500000 },
+                        { id: 'premium', name: 'Premium (SDIT)', max_students: 500, storage_mb: 5000, support_level: 'Priority Live Chat', has_api_access: false, has_custom_domain: false, price_yearly: 3500000 },
+                        { id: 'enterprise', name: 'Enterprise (Yayasan Terpadu)', max_students: 5000, storage_mb: 50000, support_level: '24/7 Dedicated Teknisi', has_api_access: true, has_custom_domain: true, price_yearly: 12000000 }
+                    ];
+                } else {
+                    currentPlans = plans;
+                }
+
+                renderPricingCards();
+
+            } catch (err) {
+                grid.innerHTML = `<div class="col-span-full p-10 text-center text-rose-500 font-bold">Gagal memuat pricing: ${err.message}</div>`;
+            }
+        }
+
+        // ==========================================
+        // 2. CETAK KARTU (UI)
+        // ==========================================
+        function renderPricingCards() {
+            const grid = document.getElementById('pricing-grid');
+            let htmlCards = '';
+
+            currentPlans.forEach(plan => {
+                // Formatting harga dan storage
+                const priceFormatted = (plan.price_yearly / 1000000).toFixed(1);
+                const storageFormatted = plan.storage_mb >= 1000 ? (plan.storage_mb / 1000).toFixed(1) + ' GB' : plan.storage_mb + ' MB';
+
+                htmlCards += `
+                <div class="bg-[#0a0f1c] border border-slate-800/80 rounded-[2rem] p-6 shadow-xl relative overflow-hidden group hover:border-amber-500/50 transition-colors flex flex-col justify-between">
+                    <div class="absolute top-[-5%] right-[-5%] p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-amber-500 transform rotate-12"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </div>
+                    
+                    <div class="relative z-10 flex-1">
+                        <span class="bg-slate-900 text-amber-500 border border-slate-800 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest inline-block mb-4 shadow-sm">${plan.id}</span>
+                        <h4 class="text-2xl font-black text-white mb-2 tracking-tight">${plan.name}</h4>
+                        <p class="text-3xl font-black text-white mb-6">Rp ${priceFormatted}<span class="text-sm text-slate-500 font-bold ml-1">Jt/Thn</span></p>
+                        
+                        <div class="space-y-3 mb-8 bg-[#030712]/70 p-4 rounded-2xl border border-slate-800/50 backdrop-blur-sm">
+                            <div class="flex justify-between border-b border-slate-800/50 pb-2">
+                                <span class="text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Batas Siswa
+                                </span>
+                                <span class="text-white font-black text-sm">${plan.max_students}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800/50 pb-2">
+                                <span class="text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg> Storage Bank Soal
+                                </span>
+                                <span class="text-white font-black text-sm">${storageFormatted}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-800/50 pb-2">
+                                <span class="text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg> Layanan Support
+                                </span>
+                                <span class="text-emerald-400 font-black text-xs md:text-sm text-right leading-tight max-w-[120px]">${plan.support_level}</span>
+                            </div>
+                            <div class="flex justify-between pb-1">
+                                <span class="text-slate-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> API & Domain
+                                </span>
+                                <span class="text-white font-black text-sm">${plan.has_api_access || plan.has_custom_domain ? '✅ Terbuka' : '🔒 Terkunci'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button data-id="${plan.id}" class="btn-edit-plan w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-colors border border-slate-700 relative z-10 active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg> Edit Parameter
+                    </button>
+                </div>
+                `;
+            });
+
+            grid.innerHTML = htmlCards;
+        }
+
+        setTimeout(loadPricingPlans, 200);
+
+        // ==========================================
+        // 3. LOGIKA INTERAKSI MODAL & SUBMIT DATA
+        // ==========================================
+        document.body.addEventListener('click', (e) => {
+            // Buka Modal Edit
+            const editBtn = e.target.closest('.btn-edit-plan');
+            if (editBtn) {
+                const id = editBtn.getAttribute('data-id');
+                const plan = currentPlans.find(p => p.id === id);
+                if (plan) {
+                    document.getElementById('form-mode').value = 'edit';
+                    document.getElementById('original-id').value = plan.id;
+                    document.getElementById('plan-id').value = plan.id;
+                    document.getElementById('plan-id').disabled = true; // Jangan boleh ganti ID kalau edit
+                    
+                    document.getElementById('plan-name').value = plan.name;
+                    document.getElementById('plan-max-students').value = plan.max_students;
+                    document.getElementById('plan-storage').value = plan.storage_mb;
+                    document.getElementById('plan-price').value = plan.price_yearly;
+                    document.getElementById('plan-api').checked = plan.has_api_access;
+                    document.getElementById('plan-domain').checked = plan.has_custom_domain;
+                    document.getElementById('plan-support').value = plan.support_level;
+
+                    document.getElementById('modal-plan').classList.replace('hidden', 'flex');
+                }
+            }
+
+            // Buka Modal Tambah Baru
+            if (e.target.closest('#btn-add-plan')) {
+                document.getElementById('form-plan').reset();
+                document.getElementById('form-mode').value = 'add';
+                document.getElementById('plan-id').disabled = false;
+                document.getElementById('modal-plan').classList.replace('hidden', 'flex');
+            }
+
+            // Tutup Modal
+            if (e.target.closest('#btn-close-plan') || e.target.id === 'modal-plan') {
+                document.getElementById('modal-plan').classList.replace('flex', 'hidden');
+            }
+        });
+
+        // SIMPAN KE DATABASE
+        document.getElementById('form-plan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const mode = document.getElementById('form-mode').value;
+            const btn = document.getElementById('btn-save-plan');
+            btn.innerHTML = 'Menyimpan...'; btn.disabled = true;
+
+            const idRaw = document.getElementById('plan-id').value;
+            const cleanId = idRaw.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+            
+            const dataToSave = {
+                id: mode === 'add' ? cleanId : document.getElementById('original-id').value,
+                name: document.getElementById('plan-name').value,
+                max_students: parseInt(document.getElementById('plan-max-students').value),
+                storage_mb: parseInt(document.getElementById('plan-storage').value),
+                price_yearly: parseInt(document.getElementById('plan-price').value),
+                has_api_access: document.getElementById('plan-api').checked,
+                has_custom_domain: document.getElementById('plan-domain').checked,
+                support_level: document.getElementById('plan-support').value
+            };
+
+            try {
+                // Upsert = Jika ID belum ada maka Insert, jika ID sudah ada maka Update
+                const { error } = await supabase.from('pricing_plans').upsert([dataToSave]);
+                
+                if (error) throw error;
+
+                document.getElementById('modal-plan').classList.replace('flex', 'hidden');
+                loadPricingPlans(); // Refresh tampilan
+
+            } catch (err) {
+                alert("Gagal merubah konfigurasi. Pastikan tabel 'pricing_plans' ada di Supabase. Error: " + err.message);
+            } finally {
+                btn.innerHTML = 'Simpan Config'; btn.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+</html>

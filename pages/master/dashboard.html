@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Dashboard | Alima CBT Enterprise</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="stylesheet" href="../../css/global.css">
+</head>
+<body class="flex h-screen bg-[#030712] overflow-hidden font-sans text-slate-200 selection:bg-indigo-500/30">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0">
+        <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <header class="bg-[#0a0f1c]/70 backdrop-blur-xl border-b border-slate-800/50 p-4 md:p-5 flex justify-between items-center z-10 sticky top-0">
+           <div class="flex items-center gap-4">
+             <button id="open-sidebar" class="lg:hidden text-indigo-500 hover:text-white transition-colors">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-sm md:text-base font-black text-white tracking-widest uppercase">Central Command</h2>
+           </div>
+           <div class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg text-emerald-400 text-[10px] font-black uppercase tracking-widest shadow-sm">
+             <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+             Systems Online
+           </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 z-10 custom-scrollbar">
+            <div class="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
+              
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-[#0a0f1c]/80 border border-slate-800/80 p-5 rounded-3xl shadow-xl flex flex-col justify-between">
+                   <div class="flex justify-between items-start mb-2"><p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Active Tenants</p>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                   </div>
+                   <h3 class="text-3xl font-black text-white" id="stat-tenants">0</h3>
+                </div>
+                <div class="bg-[#0a0f1c]/80 border border-slate-800/80 p-5 rounded-3xl shadow-xl flex flex-col justify-between">
+                   <div class="flex justify-between items-start mb-2"><p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Siswa Terdaftar</p>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                   </div>
+                   <h3 class="text-3xl font-black text-white" id="stat-students">0</h3>
+                </div>
+                <div class="bg-[#0a0f1c]/80 border border-slate-800/80 p-5 rounded-3xl shadow-xl flex flex-col justify-between relative overflow-hidden">
+                   <div class="absolute inset-0 bg-emerald-500/5 animate-pulse"></div>
+                   <div class="flex justify-between items-start mb-2 relative z-10"><p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Live Connections</p>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                   </div>
+                   <h3 class="text-3xl font-black text-emerald-400 relative z-10" id="stat-live">0</h3>
+                </div>
+                <div class="bg-[#0a0f1c]/80 border border-slate-800/80 p-5 rounded-3xl shadow-xl flex flex-col justify-between">
+                   <div class="flex justify-between items-start mb-2"><p class="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Estimated ARR</p>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                   </div>
+                   <h3 class="text-2xl font-black text-amber-400">Rp <span id="stat-arr">0</span> <span class="text-sm text-slate-500">Jt</span></h3>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div class="xl:col-span-2 bg-[#0a0f1c]/80 border border-slate-800/80 p-6 rounded-3xl shadow-xl">
+                  <h4 class="text-xs font-black text-slate-300 mb-6 tracking-widest uppercase flex items-center gap-2">Traffic Ujian 7 Hari Terakhir</h4>
+                  <div class="h-64 md:h-72 w-full relative">
+                      <canvas id="trendChart"></canvas>
+                  </div>
+                </div>
+
+                <div class="bg-[#0a0f1c]/80 border border-slate-800/80 p-6 rounded-3xl shadow-xl flex flex-col items-center justify-center">
+                  <h4 class="text-xs font-black text-slate-300 mb-4 tracking-widest uppercase text-center w-full">Distribusi Paket Klien</h4>
+                  <div class="h-48 w-full max-w-[200px] relative mb-4">
+                      <canvas id="pieChart"></canvas>
+                  </div>
+                  <div id="pie-legend" class="flex justify-center flex-wrap gap-x-4 gap-y-2 mt-2 w-full">
+                      </div>
+                </div>
+              </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderSidebar } from '../../js/components/sidebar.js';
+
+        // 1. Suntik Sidebar
+        renderSidebar();
+
+        // Variabel Global untuk Grafik agar bisa di-update
+        let trendChartInstance = null;
+        let pieChartInstance = null;
+
+        // 2. Proteksi Halaman & Data Diri
+        async function checkAuth() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = '../auth/login.html';
+                return;
+            }
+            document.getElementById('sidebar-user-email').innerText = session.user.email;
+        }
+        checkAuth();
+
+        // 3. FUNGSI PENARIK DATA ASLI DARI SUPABASE (Sesuai React Bos)
+        async function fetchDashboardData() {
+            try {
+                // A. Ambil Data Harga Paket (Pricing Plans)
+                const { data: plans } = await supabase.from('pricing_plans').select('*');
+                const defaultPlans = plans || [
+                    { id: 'lite', name: 'Lite', price_yearly: 1500000 },
+                    { id: 'premium', name: 'Premium', price_yearly: 3500000 },
+                    { id: 'enterprise', name: 'Enterprise', price_yearly: 12000000 }
+                ];
+
+                // B. Ambil Data Institusi (Schools)
+                const { data: schools } = await supabase.from('schools').select('*');
+                const tenants = schools || [];
+
+                // C. Hitung ARR (Pendapatan Tahunan) & Distribusi Paket
+                let totalARR = 0;
+                let planDistribution = {};
+                
+                tenants.forEach(school => {
+                    const p = defaultPlans.find(plan => plan.id === school.plan);
+                    if (p) {
+                        totalARR += Number(p.price_yearly || 0);
+                        planDistribution[p.name] = (planDistribution[p.name] || 0) + 1;
+                    } else {
+                        // Jika plan tidak dikenali, masukkan ke kategori 'Lainnya'
+                        planDistribution['Lainnya'] = (planDistribution['Lainnya'] || 0) + 1;
+                    }
+                });
+
+                // D. Ambil Total Siswa (Hitung jumlah baris)
+                // Note: Gunakan { count: 'exact', head: true } agar ringan di database
+                const { count: totalStudents } = await supabase
+                    .from('students')
+                    .select('*', { count: 'exact', head: true });
+
+                // E. Ambil Total Siswa Sedang Live (Mengerjakan Ujian)
+                const { count: liveStudents } = await supabase
+                    .from('live_students')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'Mengerjakan');
+
+                // F. UPDATE ANGKA DI KOTAK ATAS (DOM)
+                document.getElementById('stat-tenants').innerText = tenants.length;
+                document.getElementById('stat-students').innerText = totalStudents || 0;
+                document.getElementById('stat-live').innerText = liveStudents || 0;
+                document.getElementById('stat-arr').innerText = (totalARR / 1000000).toFixed(1);
+
+                // G. UPDATE GRAFIK
+                updateCharts(planDistribution);
+
+            } catch (error) {
+                console.error("Gagal menarik data Supabase:", error.message);
+            }
+        }
+
+        // 4. Inisialisasi & Update Grafik Chart.js
+        function updateCharts(planDistribution) {
+            // --- PIE CHART (Distribusi Paket Asli) ---
+            const pieLabels = Object.keys(planDistribution);
+            const pieValues = Object.values(planDistribution);
+            const pieColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444']; // Biru, Hijau, Kuning, Ungu, Merah
+
+            // Buat HTML Legend secara dinamis
+            const legendContainer = document.getElementById('pie-legend');
+            let legendHTML = '';
+            pieLabels.forEach((label, i) => {
+                legendHTML += `<div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full" style="background-color: ${pieColors[i % pieColors.length]}"></div><span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">${label} <span class="text-white">(${pieValues[i]})</span></span></div>`;
+            });
+            legendContainer.innerHTML = legendHTML || '<span class="text-[10px] text-slate-500">Belum ada klien</span>';
+
+            // Render Pie Chart
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy(); // Hapus yang lama kalau ada
+            pieChartInstance = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieValues.length > 0 ? pieValues : [1], // Jika kosong, tampilkan 1 cincin abu
+                        backgroundColor: pieValues.length > 0 ? pieColors : ['#1e293b'],
+                        borderWidth: 0, hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
+            });
+
+            // --- TREND CHART (Grafik Ujian 7 Hari) ---
+            // Di kode React Bos, ini menggunakan data Random (Math.random), kita buat senada
+            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            let dynamicTrend = [];
+            let currentDayLabels = [];
+            
+            for(let i=6; i>=0; i--) {
+                let d = new Date(); d.setDate(d.getDate() - i);
+                currentDayLabels.push(days[d.getDay()]);
+                dynamicTrend.push(Math.floor(Math.random() * 50) + 10); 
+            }
+
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            const gradient = ctxTrend.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+            if (trendChartInstance) trendChartInstance.destroy();
+            trendChartInstance = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: currentDayLabels,
+                    datasets: [{
+                        label: 'Sesi Ujian Aktif',
+                        data: dynamicTrend,
+                        borderColor: '#6366f1', backgroundColor: gradient, borderWidth: 3,
+                        pointBackgroundColor: '#818cf8', pointBorderColor: '#0f172a', pointBorderWidth: 2,
+                        pointRadius: 5, fill: true, tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748b' }, border: {display: false} },
+                        y: { grid: { color: '#1e293b', borderDash: [3, 3] }, ticks: { color: '#64748b' }, border: {display: false} }
+                    }
+                }
+            });
+        }
+
+        // 5. EKSEKUSI PENARIKAN DATA 
+        // Delay sedikit agar animasi masuk CSS selesai dulu
+        setTimeout(fetchDashboardData, 300);
+
+        // 6. Logika Logout
+        document.body.addEventListener('click', async (e) => {
+            if (e.target.closest('#btn-logout')) {
+                if(confirm("Keluar dari panel kendali?")) {
+                    await supabase.auth.signOut();
+                    window.location.href = '../auth/login.html';
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

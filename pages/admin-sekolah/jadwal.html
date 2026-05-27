@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesi & Jadwal Ujian | Alima CBT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
+        
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
+           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
+             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-blue-600 hover:bg-slate-200 transition-colors shrink-0">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Memuat Data Instansi...</h2>
+           </div>
+           
+           <div class="flex items-center gap-3 shrink-0">
+               <div class="text-right hidden md:block ml-2">
+                   <p class="text-xs font-bold text-slate-800 truncate max-w-[120px]" id="user-name">Memuat...</p>
+                   <p class="text-[9px] font-black text-blue-600 uppercase tracking-widest">Tata Usaha</p>
+               </div>
+               <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black shrink-0" id="user-initial">TU</div>
+           </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
+            <div class="max-w-6xl mx-auto space-y-6 pb-10 animate-in fade-in duration-300">
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-[24px] shadow-sm border border-slate-200">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            Manajemen Sesi Ujian
+                        </h3>
+                        <p class="text-xs font-bold text-slate-400 mt-1">Buat Token dan jadwalkan sesi ujian per ruang/kelas.</p>
+                    </div>
+                    <button id="btn-open-sesi" class="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Buat Jadwal Baru
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm w-full">
+                    <div class="overflow-x-auto w-full custom-scrollbar">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">Mata Pelajaran & Pengawas</th>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider text-center">Kelas/Ruang</th>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider text-center">Token Ujian</th>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider text-center">Jadwal Waktu</th>
+                                    <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider">Status</th>
+                                    <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider w-24">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sesi-table-body" class="divide-y divide-slate-100">
+                                <tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold">Memuat jadwal...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-sesi" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-[24px] w-full max-w-md border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-200">
+             <h2 class="text-lg font-black mb-5 text-slate-800 flex items-center gap-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                 Jadwalkan Sesi Ujian
+             </h2>
+             <form id="form-sesi" class="space-y-4">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div>
+                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Pilih Mapel</label>
+                         <select id="j_mapel" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer uppercase"><option value="">Pilih</option></select>
+                     </div>
+                     <div>
+                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Pengawas / Guru</label>
+                         <select id="j_guru" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer"><option value="">Pilih</option></select>
+                     </div>
+                 </div>
+                 <div class="grid grid-cols-2 gap-4">
+                     <div>
+                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Tingkat Kelas</label>
+                         <select id="j_kelas" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer"><option value="">Pilih</option></select>
+                     </div>
+                     <div>
+                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Sub / Ruang Ujian</label>
+                         <input type="text" id="j_sub" placeholder="Cth: A" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 uppercase">
+                     </div>
+                 </div>
+                 <div class="grid grid-cols-2 gap-4">
+                     <div>
+                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Jam Mulai</label>
+                         <input type="time" id="j_mulai" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500">
+                     </div>
+                     <div>
+                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Jam Selesai</label>
+                         <input type="time" id="j_selesai" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500">
+                     </div>
+                 </div>
+                 <div>
+                     <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Token Ujian (Otomatis)</label>
+                     <div class="flex gap-2">
+                         <input type="text" id="j_token" required readonly class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-lg font-mono font-black text-blue-600 outline-none text-center tracking-[0.3em]">
+                         <button type="button" id="btn-generate" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-xl font-bold transition-colors">Acak</button>
+                     </div>
+                 </div>
+                 
+                 <div class="flex gap-3 mt-6 pt-2 border-t border-slate-100">
+                     <button type="button" id="btn-close-sesi" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-all">Batal</button>
+                     <button type="submit" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all">Simpan Jadwal</button>
+                 </div>
+             </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderAdminSidebar } from '../../js/components/sidebar-admin.js';
+
+        renderAdminSidebar();
+        let schoolId = null;
+
+        const generateToken = () => Math.random().toString(36).substr(2, 6).toUpperCase();
+        document.getElementById('btn-generate').onclick = () => document.getElementById('j_token').value = generateToken();
+
+        async function initPage() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return window.location.href = '../auth/login.html';
+            
+            const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+            schoolId = profile.school_id;
+            
+            document.getElementById('user-name').innerText = profile.name;
+            document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
+            
+            const { data: school } = await supabase.from('schools').select('name').eq('id', schoolId).single();
+            document.getElementById('topbar-school-name').innerText = school ? school.name : schoolId.toUpperCase();
+            
+            loadFormOptions();
+            loadSessions();
+        }
+
+        async function loadFormOptions() {
+            const [{ data: mapels }, { data: gurus }, { data: kelas }] = await Promise.all([
+                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
+                supabase.from('users').select('name, email').eq('school_id', schoolId).eq('status', 'active'),
+                supabase.from('master_classes').select('name').eq('school_id', schoolId)
+            ]);
+
+            if(mapels) document.getElementById('j_mapel').innerHTML += mapels.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+            if(gurus) document.getElementById('j_guru').innerHTML += gurus.map(g => `<option value="${g.email}">${g.name}</option>`).join('');
+            if(kelas) document.getElementById('j_kelas').innerHTML += kelas.map(k => `<option value="${k.name}">${k.name}</option>`).join('');
+            document.getElementById('j_token').value = generateToken();
+        }
+
+        async function loadSessions() {
+            const tbody = document.getElementById('sesi-table-body');
+            try {
+                const { data: sessions, error } = await supabase.from('exam_sessions').select('*').eq('school_id', schoolId).order('created_at', { ascending: false });
+                
+                if(error) throw error;
+
+                if(!sessions || sessions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 m-4 rounded-2xl">Belum ada sesi ujian terjadwal.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = sessions.map(s => `
+                    <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                        <td class="py-3 px-5">
+                            <p class="font-black text-slate-800 text-sm uppercase">${s.mapel || '-'}</p>
+                            <p class="text-[10px] text-slate-500 font-medium font-mono">${s.teacher_email || '-'}</p>
+                        </td>
+                        <td class="py-3 px-5 text-center font-bold text-slate-600 text-xs">Kls ${s.kelas}-${s.sub_kelas||''}</td>
+                        <td class="py-3 px-5 text-center"><span class="font-mono font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 tracking-widest">${s.token}</span></td>
+                        <td class="py-3 px-5 text-center font-bold text-slate-600 text-xs">${s.jam_mulai} <span class="text-slate-300 mx-1">s/d</span> ${s.jam_selesai}</td>
+                        <td class="py-3 px-5 text-center">
+                            <span class="text-[10px] font-black uppercase px-2 py-1 rounded border ${s.status === 'open' ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-100 text-slate-400 border-slate-200'}">
+                                ${s.status === 'open' ? '🔴 Live' : 'Selesai'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-5 text-center">
+                            <button onclick="toggleSession('${s.id}', '${s.status}')" class="text-slate-400 hover:text-blue-600 p-2 rounded-lg transition-colors border border-slate-200 bg-slate-50 hover:bg-blue-50" title="${s.status === 'open' ? 'Tutup Sesi' : 'Buka Kembali'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            </button>
+                            <button onclick="delSession('${s.id}')" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg transition-colors border border-slate-200 bg-slate-50 hover:bg-rose-50" title="Hapus Jadwal">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-red-500 font-bold border-2 border-dashed border-red-200 m-4 rounded-2xl">Gagal memuat: ${err.message}</td></tr>`;
+            }
+        }
+
+        const modal = document.getElementById('modal-sesi');
+        document.getElementById('btn-open-sesi').onclick = () => modal.classList.replace('hidden', 'flex');
+        document.getElementById('btn-close-sesi').onclick = () => modal.classList.replace('flex', 'hidden');
+
+        document.getElementById('form-sesi').onsubmit = async (e) => {
+            e.preventDefault();
+            const { error } = await supabase.from('exam_sessions').insert([{
+                school_id: schoolId,
+                mapel: document.getElementById('j_mapel').value.toUpperCase(),
+                teacher_email: document.getElementById('j_guru').value,
+                kelas: document.getElementById('j_kelas').value,
+                sub_kelas: document.getElementById('j_sub').value.toUpperCase(),
+                jam_mulai: document.getElementById('j_mulai').value,
+                jam_selesai: document.getElementById('j_selesai').value,
+                token: document.getElementById('j_token').value,
+                status: 'open'
+            }]);
+
+            if(!error) { e.target.reset(); modal.classList.replace('flex', 'hidden'); loadSessions(); }
+            else alert("Gagal menyimpan sesi: " + error.message);
+        };
+
+        window.toggleSession = async (id, currentStatus) => {
+            const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+            if(confirm(`Ubah status sesi menjadi ${newStatus.toUpperCase()}?`)) {
+                await supabase.from('exam_sessions').update({status: newStatus}).eq('id', id); loadSessions();
+            }
+        };
+
+        window.delSession = async (id) => {
+            if(confirm("Hapus jadwal ujian ini secara permanen?")) {
+                await supabase.from('exam_sessions').delete().eq('id', id); loadSessions();
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

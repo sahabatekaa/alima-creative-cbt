@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekapitulasi Nilai Ujian | Alima CBT</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        /* ENGINE STYLE UNTUK CETAK PDF RESMI BERKUALITAS KOP SURAT */
+        @media print { 
+          @page { margin: 1.5cm; size: portrait; } 
+          html, body { height: auto !important; overflow: visible !important; background: white !important; color: black !important; }
+          #sidebar-container, header, .print-hidden { display: none !important; }
+          .print-block { display: block !important; }
+          table { width: 100% !important; border-collapse: collapse; margin-top: 15px; border: 2px solid black !important; } 
+          th, td { border: 1px solid black !important; padding: 8px !important; font-size: 12px !important; color: black !important; } 
+          th { background-color: #F1F5F9 !important; font-weight: bold; text-transform: uppercase; } 
+        }
+    </style>
+</head>
+<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
+
+    <div id="sidebar-container" class="print-hidden"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
+        
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
+           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
+             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-blue-600 hover:bg-slate-200 transition-colors shrink-0">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Memuat Data Instansi...</h2>
+           </div>
+           
+           <div class="flex items-center gap-3 shrink-0">
+               <div class="text-right hidden md:block ml-2">
+                   <p class="text-xs font-bold text-slate-800 truncate max-w-[120px]" id="user-name">Memuat...</p>
+                   <p class="text-[9px] font-black text-blue-600 uppercase tracking-widest">Tata Usaha</p>
+               </div>
+               <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black shrink-0" id="user-initial">TU</div>
+           </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
+            <div class="max-w-6xl mx-auto space-y-6 pb-10">
+                
+                <div class="bg-white rounded-[24px] border border-slate-200 shadow-sm p-5 md:p-6 space-y-4 print-hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                       <div>
+                          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Filter Rekap Nilai Siswa</h3>
+                          <p class="text-xs font-bold text-slate-400">Saring data nilai berdasarkan parameter di bawah sebelum di-ekspor.</p>
+                       </div>
+                       <button id="btn-export-excel" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-md shadow-emerald-600/10 transition-all">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Ekspor ke Excel (.xlsx)
+                       </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                        <select id="f-guru" class="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700 cursor-pointer"><option value="">Semua Guru Penguji</option></select>
+                        <select id="f-mapel" class="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700 cursor-pointer"><option value="">Semua Mata Pelajaran</option></select>
+                        <select id="f-kelas" class="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700 cursor-pointer"><option value="">Semua Tingkat Kelas</option></select>
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <button id="btn-print-pdf" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-md transition-all active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Cetak Dokumen / Simpan PDF Resmi
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[24px] border border-slate-200 p-6 md:p-10 shadow-sm w-full relative">
+                    
+                    <div id="official-kop-header" class="hidden print:flex flex-col items-center justify-center mb-6 border-b-4 border-double border-black pb-4 text-center w-full">
+                        <h1 class="text-xl font-black uppercase tracking-widest text-black" id="kop-school-name">NAMA SEKOLAH</h1>
+                        <h2 class="text-xs font-bold text-gray-700 mt-1" id="kop-school-address">Alamat Sekolah Belum Dikonfigurasi</h2>
+                        <p class="mt-0.5 text-[10px] font-bold text-gray-500" id="kop-school-phone">Telepon: -</p>
+                    </div>
+
+                    <h3 class="text-center font-black text-slate-800 text-base md:text-lg underline tracking-wide uppercase mb-6 hidden print:block">DAFTAR REKAPITULASI NILAI UJIAN</h3>
+                    <p class="text-xs font-bold text-slate-700 mb-4 hidden print:block" id="print-meta-filter">Filter: Semua Data</p>
+
+                    <div class="overflow-x-auto w-full custom-scrollbar">
+                        <table class="w-full text-left text-sm whitespace-nowrap" id="table-rekap-utama">
+                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th class="py-4 px-5 text-center w-12 font-black uppercase text-[10px] tracking-wider">No</th>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">Nama Lengkap Siswa</th>
+                                    <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider">Kelas & Ruang</th>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">Mata Pelajaran / Sesi</th>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">Guru Penguji</th>
+                                    <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider w-28">Nilai Akhir</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rekap-table-body" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="6" class="p-10 text-center text-slate-400 font-bold animate-pulse">Menghubungkan ke server leaderboard nilai...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="hidden print:flex justify-end mt-12 text-center text-xs">
+                        <div class="w-64">
+                            <p id="print-date-label">Medan, 2026</p>
+                            <p class="mt-1">Kepala Sekolah,</p>
+                            <br/><br/><br/>
+                            <p class="font-black uppercase border-b border-black pb-0.5" id="print-kepsek-name">_________________________</p>
+                            <p class="text-[10px] mt-1 text-slate-700" id="print-kepsek-nip">NIP. _________________</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderAdminSidebar } from '../../js/components/sidebar-admin.js';
+
+        renderAdminSidebar();
+
+        let schoolId = null;
+        let schoolMeta = null;
+        let rawLeaderboard = [];
+        let filteredData = [];
+
+        async function initPage() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) return window.location.href = '../auth/login.html';
+
+                const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+                if (!profile || profile.role !== 'admin_sekolah') {
+                    await supabase.auth.signOut(); window.location.href = '../auth/login.html'; return;
+                }
+
+                schoolId = profile.school_id;
+                
+                // Ambil Data Profil Sekolah untuk KOP SURAT
+                const { data: school } = await supabase.from('schools').select('*').eq('id', schoolId).single();
+                if(school) {
+                    schoolMeta = school;
+                    document.getElementById('topbar-school-name').innerText = school.name;
+                    document.getElementById('kop-school-name').innerText = school.name.toUpperCase();
+                    document.getElementById('kop-school-address').innerText = school.alamat || 'Alamat Belum Diatur';
+                    document.getElementById('kop-school-phone').innerText = `Telepon: ${school.telepon || '-'}`;
+                    
+                    // Set TTD Cetak
+                    document.getElementById('print-kepsek-name').innerText = school.kepala_sekolah || '_________________________';
+                    document.getElementById('print-kepsek-nip').innerText = `NIP. ${school.nip_kepala_sekolah || '_________________'}`;
+                }
+                
+                // Atur label tanggal otomatis di cetakan
+                const opsiTanggal = { year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('print-date-label').innerText = `Dicetak pada: ${new Date().toLocaleDateString('id-ID', opsiTanggal)}`;
+
+                // Jalankan sedot data utama
+                loadLeaderboardData();
+
+            } catch (err) {
+                console.error("Gagal mengaktifkan halaman rekap:", err);
+            }
+        }
+
+        // 2. Tarik Data Utama Leaderboard (Sesuai Struktur Kode React)
+        async function loadLeaderboardData() {
+            try {
+                const { data: lead, error } = await supabase
+                    .from('leaderboard')
+                    .select('*')
+                    .eq('school_id', schoolId);
+
+                if (error || !lead) {
+                    document.getElementById('rekap-table-body').innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold">Belum ada rekap nilai ujian terkumpul di sekolah ini.</td></tr>`;
+                    return;
+                }
+
+                // Normalisasi struktur field agar sama dengan kode React Bos
+                rawLeaderboard = lead.map(l => ({
+                    id: l.id,
+                    studentName: l.student_name || 'Tanpa Nama',
+                    class: l.kelas || '-',
+                    subKelas: l.sub_kelas || '',
+                    mapel: l.mapel || '-',
+                    teacherEmail: l.teacher_email || '-',
+                    score: l.score || 0
+                }));
+
+                filteredData = [...rawLeaderboard];
+
+                // Daftarkan Opsi Filter Dropdown Unik (Menggunakan Set)
+                buildFilterDropdowns();
+                
+                // Tampilkan ke tabel
+                renderTable();
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 3. Bangun Pilihan Dropdown Dinamis Berdasarkan Data yang Ada
+        function buildFilterDropdowns() {
+            const uniqueGurus = [...new Set(rawLeaderboard.map(l => l.teacherEmail))].filter(Boolean);
+            const uniqueMapels = [...new Set(rawLeaderboard.map(l => l.mapel))].filter(Boolean);
+            const uniqueKelas = [...new Set(rawLeaderboard.map(l => l.class))].filter(Boolean);
+
+            document.getElementById('f-guru').innerHTML = '<option value="">Semua Guru Penguji</option>' + uniqueGurus.map(g => `<option value="${g}">${g}</option>`).join('');
+            document.getElementById('f-mapel').innerHTML = '<option value="">Semua Mata Pelajaran</option>' + uniqueMapels.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('f-kelas').innerHTML = '<option value="">Semua Tingkat Kelas</option>' + uniqueKelas.map(k => `<option value="${k}">Kelas ${k}</option>`).join('');
+
+            // Pasang Event Onchange Saringan
+            document.getElementById('f-guru').onchange = filterAction;
+            document.getElementById('f-mapel').onchange = filterAction;
+            document.getElementById('f-kelas').onchange = filterAction;
+        }
+
+        // Saringan Data Berjalan
+        function filterAction() {
+            const fGuru = document.getElementById('f-guru').value;
+            const fMapel = document.getElementById('f-mapel').value;
+            const fKelas = document.getElementById('f-kelas').value;
+
+            filteredData = rawLeaderboard.filter(l => {
+                return (fGuru === '' || l.teacherEmail === fGuru) &&
+                       (fMapel === '' || l.mapel === fMapel) &&
+                       (fKelas === '' || l.class === fKelas);
+            });
+
+            // Set Meta Teks Cetak PDF
+            document.getElementById('print-meta-filter').innerText = `Guru: ${fGuru || 'Semua'} | Mapel: ${fMapel || 'Semua'} | Kelas: ${fKelas || 'Semua'}`;
+
+            renderTable();
+        }
+
+        // Render visual tabel preview
+        function renderTable() {
+            const tbody = document.getElementById('rekap-table-body');
+            if(filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-bold">Tidak ada data nilai mencocokkan filter penyaringan.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map((l, index) => `
+                <tr class="hover:bg-slate-50/80 transition-colors">
+                    <td class="py-3 px-5 text-center font-bold text-slate-400 text-xs">${index + 1}</td>
+                    <td class="py-3 px-5 font-black text-slate-800 text-sm uppercase">${l.studentName}</td>
+                    <td class="py-3 px-5 text-center font-bold text-slate-600 text-xs">Kelas ${l.class} - ${l.subKelas}</td>
+                    <td class="py-3 px-5 font-bold text-blue-600 text-xs uppercase">${l.mapel}</td>
+                    <td class="py-3 px-5 font-medium text-slate-500 text-xs font-mono">${l.teacherEmail}</td>
+                    <td class="py-3 px-5 text-center">
+                        <span class="text-sm font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-lg">
+                            ${l.score}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ========================================================
+        // 4. LOGIKA EKSPOR EXCEL (.XLSX) MENGGUNAKAN SHEETJS
+        // ========================================================
+        document.getElementById('btn-export-excel').onclick = () => {
+            if(filteredData.length === 0) return alert("Peringatan! Tidak ada data nilai yang bisa di-ekspor.");
+            
+            try {
+                // Rangkum struktur objek kolom khusus excel agar rapi
+                const excelRows = filteredData.map((l, index) => ({
+                    "No": index + 1,
+                    "Nama Siswa": l.studentName,
+                    "Tingkat Kelas": l.class,
+                    "Ruang / SubKelas": l.subKelas,
+                    "Mata Pelajaran": l.mapel,
+                    "Email Guru Penguji": l.teacherEmail,
+                    "Skor Akhir Ujian": l.score
+                }));
+
+                const worksheet = XLSX.utils.json_to_sheet(excelRows);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap_Nilai_CBT");
+                
+                // Atur nama file dinamis berdasarkan ID Sekolah & Tanggal hari ini
+                const namaFile = `REKAP_NILAI_${schoolId.toUpperCase()}_${new Date().toISOString().slice(0,10)}.xlsx`;
+                XLSX.writeFile(workbook, namaFile);
+
+            } catch (err) {
+                alert("Gagal melakukan ekspor berkas excel: " + err.message);
+            }
+        };
+
+        // ========================================================
+        // 5. LOGIKA DOKUMEN CETAK PDF SYSTEM
+        // ========================================================
+        document.getElementById('btn-print-pdf').onclick = () => {
+            if(filteredData.length === 0) return alert("Peringatan! Tabel kosong, tidak ada dokumen untuk dicetak.");
+            // Pemicu window cetak bawaan operating system (Bisa save as PDF otomatis)
+            window.print();
+        };
+
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

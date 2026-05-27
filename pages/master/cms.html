@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMS Front Page | Alima CBT Enterprise</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+</head>
+<body class="flex h-screen bg-[#030712] overflow-hidden font-sans text-slate-200 selection:bg-indigo-500/30">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0">
+        <div class="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <header class="bg-[#0a0f1c]/70 backdrop-blur-xl border-b border-slate-800/50 p-4 md:p-5 flex justify-between items-center z-20 sticky top-0">
+           <div class="flex items-center gap-4">
+             <button id="open-sidebar" class="lg:hidden text-indigo-500 hover:text-white transition-colors">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-sm md:text-base font-black text-white tracking-widest uppercase">Content Management</h2>
+           </div>
+           <div class="flex items-center gap-3">
+               <span class="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">
+                   Status: <span id="cms-status" class="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">Live Production</span>
+               </span>
+               <button id="btn-deploy" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/30 active:scale-95">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                   <span class="hidden md:inline">Deploy Publikasi</span>
+                   <span class="md:hidden">Deploy</span>
+               </button>
+           </div>
+        </header>
+
+        <div class="flex-1 flex flex-col md:flex-row overflow-hidden z-10">
+            
+            <div class="w-full md:w-64 bg-[#0a0f1c]/50 border-b md:border-b-0 md:border-r border-slate-800/50 flex-shrink-0 flex md:flex-col overflow-x-auto md:overflow-y-auto custom-scrollbar p-4 gap-2">
+                <p class="hidden md:block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-2">Kategori Konten</p>
+                
+                <button class="cms-tab-btn active w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 whitespace-nowrap" data-target="tab-testimonial">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-14h.8a8.38 8.38 0 0 1 3.8.9L21 3z"></path></svg>
+                    Data Testimoni
+                </button>
+
+                <button class="cms-tab-btn w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-slate-400 hover:bg-slate-800/50 hover:text-white whitespace-nowrap" data-target="tab-sponsors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                    Logo Klien (Sponsor)
+                </button>
+                
+                <button class="cms-tab-btn w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-slate-400 hover:bg-slate-800/50 hover:text-white whitespace-nowrap" data-target="tab-seo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    SEO & Metadata
+                </button>
+
+                <button class="cms-tab-btn w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-slate-400 hover:bg-slate-800/50 hover:text-white whitespace-nowrap" data-target="tab-contact">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    Footer & Kontak
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative">
+                <form id="form-cms" class="max-w-4xl mx-auto pb-10">
+                    
+                    <div id="tab-testimonial" class="cms-tab-content animate-in fade-in duration-300 block">
+                        <div class="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                            <div>
+                                <h3 class="text-2xl font-black text-white tracking-tight">Data Ulasan Klien</h3>
+                                <p class="text-sm text-slate-400 mt-1">Tambahkan ulasan sebanyak mungkin. Sistem akan otomatis memutarnya (Reel) di halaman depan.</p>
+                            </div>
+                            <button type="button" id="btn-add-testi" class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 px-4 py-2 rounded-xl text-xs font-black transition-all border border-indigo-500/30 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Tambah Ulasan
+                            </button>
+                        </div>
+                        
+                        <div id="testi-list" class="space-y-4">
+                            </div>
+                    </div>
+
+                    <div id="tab-sponsors" class="cms-tab-content animate-in fade-in duration-300 hidden">
+                        <div class="mb-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                            <div>
+                                <h3 class="text-2xl font-black text-white tracking-tight">Klien Terdaftar (Social Proof)</h3>
+                                <p class="text-sm text-slate-400 mt-1">Tambahkan logo instansi yang sudah berlangganan. Logo akan berbaris rapi di Landing Page.</p>
+                            </div>
+                            <button type="button" id="btn-add-sponsor" class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 px-4 py-2 rounded-xl text-xs font-black transition-all border border-indigo-500/30 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Tambah Logo Klien
+                            </button>
+                        </div>
+                        
+                        <div id="sponsor-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            </div>
+                    </div>
+
+                    <div id="tab-seo" class="cms-tab-content animate-in fade-in duration-300 hidden">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-black text-white tracking-tight">SEO & Tag Meta</h3>
+                        </div>
+                        <div class="space-y-6 bg-[#0a0f1c] border border-slate-800/80 p-6 md:p-8 rounded-[2rem] shadow-xl">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Meta Title</label>
+                                <input type="text" id="cms_seo_title" class="w-full p-4 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500" placeholder="Alima CBT - Aplikasi Ujian Sekolah Premium">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Meta Description</label>
+                                <textarea id="cms_seo_desc" rows="3" class="w-full p-4 bg-[#030712] border border-slate-800 rounded-xl text-sm font-semibold text-slate-300 outline-none focus:border-indigo-500 resize-none"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-contact" class="cms-tab-content animate-in fade-in duration-300 hidden">
+                        <div class="mb-6">
+                            <h3 class="text-2xl font-black text-white tracking-tight">Pengaturan Kontak</h3>
+                        </div>
+                        <div class="space-y-6 bg-[#0a0f1c] border border-slate-800/80 p-6 md:p-8 rounded-[2rem] shadow-xl">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">Email Official (CS)</label>
+                                    <input type="email" id="cms_contact_email" class="w-full p-4 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block tracking-widest">WhatsApp Resmi</label>
+                                    <input type="text" id="cms_contact_phone" class="w-full p-4 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-testi" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-[#0a0f1c] p-6 rounded-[2rem] w-full max-w-md border border-slate-800 shadow-2xl">
+             <h2 class="text-xl font-black mb-6 text-white">Tambah Ulasan Baru</h2>
+             <form id="form-testi" class="space-y-4">
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">Nama Tokoh</label>
+                     <input type="text" id="t_name" required placeholder="Dr. Ahmad, M.Pd" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500">
+                 </div>
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">Jabatan & Instansi</label>
+                     <input type="text" id="t_role" required placeholder="Kepala SDIT Al-Falah" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-indigo-400 outline-none focus:border-indigo-500">
+                 </div>
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">Komentar / Ulasan</label>
+                     <textarea id="t_msg" required rows="3" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-semibold text-slate-300 outline-none focus:border-indigo-500 resize-none"></textarea>
+                 </div>
+                 <div class="flex gap-3 mt-6">
+                     <button type="button" id="close-modal-testi" class="flex-1 py-3 bg-slate-800 text-white rounded-xl text-sm font-black">Batal</button>
+                     <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-black">Simpan Ulasan</button>
+                 </div>
+             </form>
+        </div>
+    </div>
+
+    <div id="modal-sponsor" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-[#0a0f1c] p-6 rounded-[2rem] w-full max-w-md border border-slate-800 shadow-2xl">
+             <h2 class="text-xl font-black mb-6 text-white">Tambah Logo Instansi</h2>
+             <form id="form-sponsor" class="space-y-4">
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">Nama Instansi</label>
+                     <input type="text" id="s_name" required placeholder="TK IT Nurul Ilmi" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-indigo-500">
+                 </div>
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1">URL Gambar Logo (Link)</label>
+                     <input type="url" id="s_logo" required placeholder="https://domain.com/logo.png" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-mono text-indigo-400 outline-none focus:border-indigo-500">
+                     <p class="text-[9px] text-slate-500 mt-1 pl-1">Paste link gambar logo dari internet / Google Drive / Supabase Storage.</p>
+                 </div>
+                 <div class="flex gap-3 mt-6">
+                     <button type="button" id="close-modal-sponsor" class="flex-1 py-3 bg-slate-800 text-white rounded-xl text-sm font-black">Batal</button>
+                     <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-black">Simpan Logo</button>
+                 </div>
+             </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderSidebar } from '../../js/components/sidebar.js';
+
+        renderSidebar();
+
+        let cmsData = { testimonials: [], sponsors: [] };
+
+        // Logika Tab
+        const tabBtns = document.querySelectorAll('.cms-tab-btn');
+        const tabContents = document.querySelectorAll('.cms-tab-content');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                tabBtns.forEach(b => { b.classList.remove('bg-indigo-500/10', 'text-indigo-400', 'border-indigo-500/20', 'active'); b.classList.add('text-slate-400', 'border-transparent'); });
+                btn.classList.remove('text-slate-400', 'border-transparent'); btn.classList.add('bg-indigo-500/10', 'text-indigo-400', 'border-indigo-500/20', 'active');
+                
+                const targetId = btn.getAttribute('data-target');
+                tabContents.forEach(content => { content.classList.add('hidden'); content.classList.remove('block'); });
+                document.getElementById(targetId).classList.remove('hidden'); document.getElementById(targetId).classList.add('block');
+            });
+        });
+
+        // ==========================================
+        // 1. TARIK DATA DARI DATABASE SUPABASE
+        // ==========================================
+        async function loadDataFromSupabase() {
+            // A. Ambil Testimoni
+            const { data: testis } = await supabase.from('testimonials').select('*').order('created_at', { ascending: false });
+            if (testis) cmsData.testimonials = testis;
+            
+            // B. Ambil Sponsor
+            const { data: spons } = await supabase.from('sponsors').select('*').order('created_at', { ascending: false });
+            if (spons) cmsData.sponsors = spons;
+
+            // C. Ambil Pengaturan (SEO dll)
+            const { data: settings } = await supabase.from('cms_settings').select('*');
+            if (settings) {
+                settings.forEach(item => {
+                    if (document.getElementById(`cms_${item.key}`)) {
+                        document.getElementById(`cms_${item.key}`).value = item.value;
+                    }
+                });
+            }
+
+            renderTestimonials();
+            renderSponsors();
+        }
+
+        function renderTestimonials() {
+            const list = document.getElementById('testi-list');
+            if(cmsData.testimonials.length === 0) return list.innerHTML = `<div class="p-8 text-center border-2 border-dashed border-slate-800 rounded-2xl text-slate-500 font-bold">Belum ada ulasan klien.</div>`;
+            
+            list.innerHTML = cmsData.testimonials.map(item => `
+                <div class="bg-[#0a0f1c] border border-slate-800/80 p-5 rounded-2xl flex justify-between items-start gap-4">
+                    <div>
+                        <h4 class="text-white font-black text-sm">${item.name}</h4>
+                        <p class="text-indigo-400 text-xs font-bold mb-2">${item.role}</p>
+                        <p class="text-slate-400 text-xs font-medium italic">"${item.msg}"</p>
+                    </div>
+                    <button type="button" onclick="deleteItem('testimonials', ${item.id})" class="text-rose-500 bg-rose-500/10 p-2 rounded-lg hover:bg-rose-500 hover:text-white">Hapus</button>
+                </div>`).join('');
+        }
+
+        function renderSponsors() {
+            const list = document.getElementById('sponsor-list');
+            if(cmsData.sponsors.length === 0) return list.innerHTML = `<div class="col-span-full p-8 text-center border-2 border-dashed border-slate-800 rounded-2xl text-slate-500 font-bold">Belum ada logo klien.</div>`;
+            
+            list.innerHTML = cmsData.sponsors.map(item => `
+                <div class="bg-[#0a0f1c] border border-slate-800/80 p-4 rounded-2xl flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 w-full">
+                        <div class="w-12 h-12 rounded-lg bg-white p-1 flex items-center justify-center shrink-0">
+                            <img src="${item.logo_url}" class="max-w-full max-h-full object-contain">
+                        </div>
+                        <h4 class="text-white font-bold text-xs truncate">${item.name}</h4>
+                    </div>
+                    <button type="button" onclick="deleteItem('sponsors', ${item.id})" class="text-rose-500 bg-rose-500/10 p-2 rounded-lg hover:bg-rose-500 hover:text-white">Hapus</button>
+                </div>`).join('');
+        }
+
+        // ==========================================
+        // 2. LOGIKA HAPUS DATA REALTIME
+        // ==========================================
+        window.deleteItem = async (table, id) => {
+            if(confirm('Yakin ingin menghapus data ini?')) {
+                await supabase.from(table).delete().eq('id', id);
+                loadDataFromSupabase();
+            }
+        };
+
+        // ==========================================
+        // 3. TAMBAH TESTIMONI & SPONSOR KE DATABASE
+        // ==========================================
+        const modalTesti = document.getElementById('modal-testi');
+        document.getElementById('btn-add-testi').onclick = () => modalTesti.classList.replace('hidden', 'flex');
+        document.getElementById('close-modal-testi').onclick = () => modalTesti.classList.replace('flex', 'hidden');
+
+        document.getElementById('form-testi').onsubmit = async (e) => {
+            e.preventDefault();
+            await supabase.from('testimonials').insert([{
+                name: document.getElementById('t_name').value,
+                role: document.getElementById('t_role').value,
+                msg: document.getElementById('t_msg').value
+            }]);
+            e.target.reset(); modalTesti.classList.replace('flex', 'hidden'); loadDataFromSupabase();
+        };
+
+        const modalSponsor = document.getElementById('modal-sponsor');
+        document.getElementById('btn-add-sponsor').onclick = () => modalSponsor.classList.replace('hidden', 'flex');
+        document.getElementById('close-modal-sponsor').onclick = () => modalSponsor.classList.replace('flex', 'hidden');
+
+        document.getElementById('form-sponsor').onsubmit = async (e) => {
+            e.preventDefault();
+            await supabase.from('sponsors').insert([{
+                name: document.getElementById('s_name').value,
+                logo_url: document.getElementById('s_logo').value
+            }]);
+            e.target.reset(); modalSponsor.classList.replace('flex', 'hidden'); loadDataFromSupabase();
+        };
+
+        // ==========================================
+        // 4. SIMPAN PENGATURAN SEO (UPSERT)
+        // ==========================================
+        document.getElementById('btn-deploy').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const btn = e.currentTarget; const orig = btn.innerHTML;
+            btn.innerHTML = 'Menerbitkan...'; btn.disabled = true;
+
+            const settings = [
+                { key: 'seo_title', value: document.getElementById('cms_seo_title').value },
+                { key: 'seo_desc', value: document.getElementById('cms_seo_desc').value },
+                { key: 'seo_keys', value: document.getElementById('cms_seo_keys').value },
+                { key: 'contact_email', value: document.getElementById('cms_contact_email').value },
+                { key: 'contact_phone', value: document.getElementById('cms_contact_phone').value }
+            ];
+
+            await supabase.from('cms_settings').upsert(settings);
+            await supabase.from('system_logs').insert([{ type: 'success', message: 'Konfigurasi SEO & Kontak CMS diperbarui.' }]);
+
+            btn.innerHTML = orig; btn.disabled = false;
+            document.getElementById('cms-status').innerText = "Live Production";
+            document.getElementById('cms-status').className = "text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20";
+        });
+
+        loadDataFromSupabase();
+    </script>
+
+</body>
+</html>

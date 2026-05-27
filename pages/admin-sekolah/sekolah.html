@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Instansi | Alima CBT</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
+           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
+             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-blue-600 hover:bg-slate-200 transition-colors shrink-0">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Memuat Data Instansi...</h2>
+           </div>
+           <div class="flex items-center gap-3 shrink-0">
+               <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-black" id="user-initial">TU</div>
+           </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
+            <div class="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-10">
+                
+                <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-slate-200">
+                   <div class="flex items-center gap-4 border-b border-slate-100 pb-5 mb-6">
+                      <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                      </div>
+                      <div>
+                          <h3 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Profil Instansi</h3>
+                          <p class="text-xs md:text-sm font-medium text-slate-500 mt-1">Data ini akan digunakan sebagai Kop Surat Resmi di laporan cetak.</p>
+                      </div>
+                   </div>
+                   
+                   <form id="form-profil" class="space-y-6">
+                      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                          <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sistem (Read Only)</h4>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">ID Tenant</label><input disabled id="p_id" class="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-500 cursor-not-allowed uppercase" /></div>
+                              <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Nama Instansi</label><input disabled id="p_name" class="w-full p-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-black text-slate-700 cursor-not-allowed" /></div>
+                          </div>
+                      </div>
+
+                      <div class="space-y-4">
+                          <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 border-b border-slate-100 pb-2">Data Operasional</h4>
+                          <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block">Alamat Lengkap</label><textarea id="p_alamat" rows="2" class="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-medium text-slate-700 resize-none" placeholder="Cth: Jl. Pendidikan No. 1..."></textarea></div>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block">Nama Kepala Sekolah</label><input id="p_kepsek" class="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-bold text-slate-700 uppercase" placeholder="Nama & Gelar" /></div>
+                              <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block">NIP Kepala Sekolah</label><input id="p_nip" class="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-mono text-slate-700" placeholder="Opsional" /></div>
+                          </div>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block">Nomor Telepon Sekolah</label><input id="p_telp" class="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-medium text-slate-700" placeholder="021-XXXXX" /></div>
+                              <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block">URL Link Logo</label><input id="p_logo" class="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 text-sm font-mono text-blue-500" placeholder="https://..." /></div>
+                          </div>
+                      </div>
+                      
+                      <button type="submit" id="btn-save" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl text-sm font-black transition-all shadow-md shadow-blue-600/20 active:scale-95">SIMPAN PEMBARUAN PROFIL</button>
+                   </form>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderAdminSidebar } from '../../js/components/sidebar-admin.js';
+
+        renderAdminSidebar();
+        let schoolId = null;
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return window.location.href = '../auth/login.html';
+            
+            const { data: profile } = await supabase.from('users').select('school_id, name').eq('id', session.user.id).single();
+            schoolId = profile.school_id;
+            document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
+            
+            loadProfile();
+        }
+
+        async function loadProfile() {
+            const { data: school } = await supabase.from('schools').select('*').eq('id', schoolId).single();
+            if (school) {
+                document.getElementById('topbar-school-name').innerText = school.name;
+                document.getElementById('p_id').value = school.id;
+                document.getElementById('p_name').value = school.name;
+                document.getElementById('p_alamat').value = school.alamat || '';
+                document.getElementById('p_kepsek').value = school.kepala_sekolah || '';
+                document.getElementById('p_nip').value = school.nip_kepala_sekolah || '';
+                document.getElementById('p_telp').value = school.telepon || school.wa_number || '';
+                document.getElementById('p_logo').value = school.logo_url || '';
+            }
+        }
+
+        document.getElementById('form-profil').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save');
+            btn.innerText = "Menyimpan...";
+            
+            const { error } = await supabase.from('schools').update({
+                alamat: document.getElementById('p_alamat').value,
+                kepala_sekolah: document.getElementById('p_kepsek').value.toUpperCase(),
+                nip_kepala_sekolah: document.getElementById('p_nip').value,
+                telepon: document.getElementById('p_telp').value,
+                logo_url: document.getElementById('p_logo').value
+            }).eq('id', schoolId);
+
+            btn.innerText = "SIMPAN PEMBARUAN PROFIL";
+            if (!error) alert("Profil sekolah berhasil diperbarui!");
+            else alert("Gagal menyimpan: " + error.message);
+        };
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

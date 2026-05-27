@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Pengawas | Alima CBT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+    <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+</head>
+<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
+    <div id="sidebar-container"></div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
+           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
+             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-indigo-600 hover:bg-slate-200 transition-colors shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Portal Pengawas V3</h2>
+           </div>
+           <div class="flex items-center gap-3 shrink-0">
+               <div class="text-right hidden md:block ml-2"><p class="text-xs font-bold text-slate-800 truncate max-w-[120px]" id="user-name">Memuat...</p><p class="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Pengawas Ruang</p></div>
+               <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-black shrink-0" id="user-initial">P</div>
+           </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
+            <div class="max-w-4xl mx-auto space-y-6 pb-10 animate-in fade-in duration-300">
+              
+              <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-slate-200">
+                <div class="flex items-center gap-4 border-b border-slate-100 pb-5 mb-5">
+                  <div class="w-16 h-16 rounded-full bg-indigo-100 border-4 border-indigo-50 flex items-center justify-center text-indigo-700 font-black text-3xl uppercase shadow-inner shrink-0" id="big-initial">P</div>
+                  <div>
+                    <h3 class="text-xl font-black text-slate-800 tracking-tight">Profil Pengawas</h3>
+                    <p class="text-xs font-bold text-slate-500 mt-1">Identitas ini akan dicetak di Berita Acara Ujian.</p>
+                  </div>
+                </div>
+                
+                <form id="form-profil">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="md:col-span-2">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block tracking-widest">Nama Lengkap & Gelar</label>
+                      <input id="in-name" required class="w-full p-3 border border-slate-200 bg-slate-50 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-sm font-bold text-slate-800 transition-colors shadow-inner" />
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block tracking-widest">Email Akun (Login)</label>
+                      <input id="in-email" disabled class="w-full p-3 border border-slate-200 bg-slate-100 rounded-xl text-sm font-bold text-slate-500 cursor-not-allowed" />
+                    </div>
+                  </div>
+                  <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3.5 rounded-xl text-sm font-black shadow-md shadow-indigo-600/30 active:scale-95 transition-all tracking-widest">SIMPAN PERUBAHAN NAMA</button>
+                </form>
+              </div>
+
+              <div class="bg-white p-6 md:p-8 rounded-[24px] shadow-sm border border-slate-200">
+                 <div class="flex items-center gap-3 border-b border-slate-100 pb-4 mb-5">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+                    <div>
+                       <h3 class="text-lg font-black text-slate-800 tracking-tight">Keamanan Akun</h3>
+                       <p class="text-xs font-bold text-slate-500">Perbarui kata sandi Anda secara berkala.</p>
+                    </div>
+                 </div>
+                 <form id="form-password">
+                    <div class="mb-5">
+                       <input type="password" id="in-pass" required minLength="6" placeholder="Masukkan sandi baru (min. 6 karakter)" class="w-full p-3 border border-slate-200 bg-slate-50 rounded-xl outline-none focus:border-amber-500 focus:bg-white text-sm font-bold text-slate-800 transition-colors shadow-inner" />
+                    </div>
+                    <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 py-3.5 rounded-xl text-sm font-black shadow-md shadow-amber-500/30 active:scale-95 transition-all tracking-widest">UPDATE KATA SANDI</button>
+                 </form>
+              </div>
+
+            </div>
+        </div>
+    </main>
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderPengawasSidebar } from '../../js/components/sidebar-pengawas.js';
+        renderPengawasSidebar();
+        let userId = null;
+
+        async function initPage() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return window.location.href = '../auth/login.html';
+            const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+            if(!profile || profile.role !== 'proctor') return;
+            
+            userId = profile.id;
+            document.getElementById('user-name').innerText = profile.name;
+            document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
+            document.getElementById('big-initial').innerText = profile.name.charAt(0).toUpperCase();
+            
+            const { data: school } = await supabase.from('schools').select('name').eq('id', profile.school_id).single();
+            document.getElementById('topbar-school-name').innerText = school ? school.name : profile.school_id.toUpperCase();
+
+            document.getElementById('in-name').value = profile.name;
+            document.getElementById('in-email').value = profile.email;
+        }
+
+        document.getElementById('form-profil').onsubmit = async (e) => {
+            e.preventDefault();
+            const { error } = await supabase.from('users').update({ name: document.getElementById('in-name').value }).eq('id', userId);
+            if(!error) { alert("Nama berhasil diperbarui!"); location.reload(); } else alert(error.message);
+        };
+
+        document.getElementById('form-password').onsubmit = async (e) => {
+            e.preventDefault();
+            if(confirm("Yakin ingin mengubah kata sandi?")) {
+                const { error } = await supabase.auth.updateUser({ password: document.getElementById('in-pass').value });
+                if(!error) { alert("Sandi berhasil diperbarui!"); document.getElementById('form-password').reset(); } else alert(error.message);
+            }
+        };
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

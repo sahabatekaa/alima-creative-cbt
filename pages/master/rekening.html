@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekening Pembayaran | Alima CBT Enterprise</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../css/global.css">
+</head>
+<body class="flex h-screen bg-[#030712] overflow-hidden font-sans text-slate-200 selection:bg-emerald-500/30">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0">
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <header class="bg-[#0a0f1c]/70 backdrop-blur-xl border-b border-slate-800/50 p-4 md:p-5 flex justify-between items-center z-10 sticky top-0">
+           <div class="flex items-center gap-4">
+             <button id="open-sidebar" class="lg:hidden text-indigo-500 hover:text-white transition-colors">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
+             <h2 class="text-sm md:text-base font-black text-white tracking-widest uppercase">Payment Ledger</h2>
+           </div>
+           <button id="btn-add-payment" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 md:px-5 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/30 active:scale-95">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+               <span>Tambah Metode</span>
+           </button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 z-10 custom-scrollbar">
+            <div class="max-w-7xl mx-auto animate-in fade-in duration-500">
+                
+                <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0a0f1c] border border-slate-800/80 p-6 rounded-3xl shadow-lg">
+                    <div>
+                        <h3 class="text-xl font-black text-white flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            Master Rekening Perusahaan
+                        </h3>
+                        <p class="text-sm text-slate-400 mt-1">Kelola data rekening bank tujuan transfer billing yang akan dikirim otomatis ke WhatsApp PIC sekolah klien.</p>
+                    </div>
+                </div>
+
+                <div id="payment-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="col-span-full p-16 text-center text-slate-500 font-bold">Memuat daftar akun rekening...</div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-payment" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 transition-opacity">
+        <div class="bg-[#0a0f1c] p-6 md:p-8 rounded-[2rem] w-full max-w-md border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200">
+             <h2 class="text-xl font-black mb-6 text-white flex items-center gap-3">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                 Tambah Rekening Baru
+             </h2>
+             
+             <form id="form-payment" class="space-y-4">
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1 tracking-widest">Nama Bank / E-Wallet Resmi</label>
+                     <input type="text" id="pay-bank" required placeholder="Cth: Bank Neo Commerce (BNC) / Mandiri" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-emerald-500">
+                 </div>
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1 tracking-widest">Nomor Rekening / No. HP Virtual</label>
+                     <input type="text" id="pay-number" required placeholder="Cth: 1234567890" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-mono font-black text-emerald-400 outline-none focus:border-emerald-500 tracking-widest">
+                 </div>
+                 <div>
+                     <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block pl-1 tracking-widest">Atas Nama Pemilik (A/N)</label>
+                     <input type="text" id="pay-name" required placeholder="Cth: ALIMA CREATIVE STUDIO" class="w-full p-3.5 bg-[#030712] border border-slate-800 rounded-xl text-sm font-bold text-white outline-none focus:border-emerald-500 uppercase">
+                 </div>
+                 
+                 <div class="flex gap-3 pt-6 border-t border-slate-800/50 mt-4">
+                     <button type="button" id="btn-close-payment" class="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-black transition-all">Batal</button>
+                     <button type="submit" class="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-black shadow-lg shadow-emerald-600/30 transition-all">Simpan Metode</button>
+                 </div>
+             </form>
+          </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+        import { renderSidebar } from '../../js/components/sidebar.js';
+
+        renderSidebar();
+
+        let currentPayments = [];
+
+        async function checkAuth() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) window.location.href = '../auth/login.html';
+            else document.getElementById('sidebar-user-email').innerText = session.user.email;
+        }
+        checkAuth();
+
+        // ==========================================
+        // 1. FUNGSI LOAD DATA DARI LOCALSTORAGE
+        // ==========================================
+        function loadPaymentMethods() {
+            const grid = document.getElementById('payment-grid');
+            const savedData = localStorage.getItem('cbt_payment_methods');
+            
+            if (savedData) {
+                currentPayments = JSON.parse(savedData);
+            } else {
+                // Default data awal perusahaan Bos jika kosong
+                currentPayments = [
+                    { id: 'pay_default1', bankName: 'Bank Neo Commerce (BNC)', accNumber: '1234567890', accountName: 'ALIMA CREATIVE STUDIO' }
+                ];
+                localStorage.setItem('cbt_payment_methods', JSON.stringify(currentPayments));
+            }
+
+            renderPaymentCards();
+        }
+
+        // ==========================================
+        // 2. RENDERING UI ATM CARD PREMIUM
+        // ==========================================
+        function renderPaymentCards() {
+            const grid = document.getElementById('payment-grid');
+            
+            if (currentPayments.length === 0) {
+                grid.innerHTML = `<div class="col-span-full p-16 text-center border-2 border-dashed border-slate-800 rounded-3xl text-slate-500 font-bold bg-[#0a0f1c]/30">Belum ada data rekening terdaftar. Klik tombol kanan atas untuk menambah.</div>`;
+                return;
+            }
+
+            let htmlCards = '';
+            currentPayments.forEach(pay => {
+                htmlCards += `
+                <div class="bg-gradient-to-br from-[#0a0f1c] to-[#050912] border border-slate-800 p-6 rounded-[2rem] shadow-xl flex flex-col justify-between h-56 relative group overflow-hidden hover:border-emerald-500/50 transition-colors">
+                     <div class="absolute top-6 right-6 w-10 h-8 bg-gradient-to-tr from-amber-500 to-yellow-300 rounded-lg opacity-40 group-hover:opacity-60 transition-opacity border border-amber-400 shadow-sm flex items-center justify-center">
+                         <div class="w-6 h-5 border border-amber-600/30 rounded"></div>
+                     </div>
+                     
+                     <div>
+                         <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 border border-emerald-500/20 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-base font-black text-white leading-tight">${pay.bankName}</h4>
+                                <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Official Settlement Account</p>
+                            </div>
+                         </div>
+                         
+                         <div class="space-y-0.5">
+                            <p class="text-[9px] font-black text-slate-500 uppercase tracking-wider">ACCOUNT NUMBER</p>
+                            <p class="text-xl md:text-2xl font-mono font-black text-white tracking-widest font-bold select-all" title="Klik untuk memblokir teks">${pay.accNumber}</p>
+                         </div>
+                     </div>
+
+                     <div class="flex justify-between items-center border-t border-slate-800/60 pt-3 mt-2">
+                        <div>
+                            <p class="text-[8px] font-black text-slate-600 uppercase tracking-wider">CARDHOLDER</p>
+                            <p class="text-xs font-black text-amber-500 uppercase truncate max-w-[140px]">${pay.accountName}</p>
+                        </div>
+                        <button data-id="${pay.id}" class="btn-delete-payment text-rose-500 hover:text-white bg-rose-500/10 hover:bg-rose-500 py-1.5 px-3 rounded-xl text-[10px] font-black transition-all border border-rose-500/20 uppercase tracking-wider active:scale-95">
+                            Hapus
+                        </button>
+                     </div>
+                </div>
+                `;
+            });
+
+            grid.innerHTML = htmlCards;
+        }
+
+        loadPaymentMethods();
+
+        // ==========================================
+        // 3. EVENT LISTENER OPEN/CLOSE MODAL
+        // ==========================================
+        document.body.addEventListener('click', (e) => {
+            if (e.target.closest('#btn-add-payment')) {
+                document.getElementById('form-payment').reset();
+                document.getElementById('modal-payment').classList.replace('hidden', 'flex');
+            }
+            if (e.target.closest('#btn-close-payment') || e.target.id === 'modal-payment') {
+                document.getElementById('modal-payment').classList.replace('flex', 'hidden');
+            }
+        });
+
+        // ==========================================
+        // 4. LOGIKA SIMPAN DATA BARU
+        // ==========================================
+        document.getElementById('form-payment').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const newPayment = {
+                id: 'pay_' + Date.now(),
+                bankName: document.getElementById('pay-bank').value,
+                accNumber: document.getElementById('pay-number').value.replace(/[^0-9]/g, ''), // Murni angka saja
+                accountName: document.getElementById('pay-name').value.toUpperCase()
+            };
+
+            currentPayments.push(newPayment);
+            localStorage.setItem('cbt_payment_methods', JSON.stringify(currentPayments));
+
+            // Catat Log ke Supabase untuk Audit Trail
+            supabase.from('system_logs').insert([{ 
+                type: 'success', 
+                message: `Metode pembayaran baru ditambahkan: ${newPayment.bankName} (${newPayment.accNumber})` 
+            }]).then(() => {});
+
+            document.getElementById('modal-payment').classList.replace('flex', 'hidden');
+            renderPaymentCards(); // Rekalkulasi cetak kartu
+        });
+
+        // ==========================================
+        // 5. FUNGSI HAPUS REKENING
+        // ==========================================
+        document.body.addEventListener('click', (e) => {
+            const btnDelete = e.target.closest('.btn-delete-payment');
+            if (btnDelete) {
+                const payId = btnDelete.getAttribute('data-id');
+                const targetPay = currentPayments.find(p => p.id === payId);
+
+                if (confirm(`Apakah Bos yakin ingin menghapus metode pembayaran ${targetPay.bankName}? Akun ini tidak akan muncul lagi di template tagihan.`)) {
+                    currentPayments = currentPayments.filter(p => p.id !== payId);
+                    localStorage.setItem('cbt_payment_methods', JSON.stringify(currentPayments));
+                    
+                    supabase.from('system_logs').insert([{ 
+                        type: 'warn', 
+                        message: `Metode pembayaran ${targetPay.bankName} dihapus oleh Founder.` 
+                    }]).then(() => {});
+
+                    renderPaymentCards();
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
