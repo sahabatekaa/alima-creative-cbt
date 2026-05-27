@@ -28,7 +28,7 @@
         
         <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4 print-hidden">
            <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
-             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-emerald-600 hover:bg-slate-200 transition-colors shrink-0">
+             <button id="open-sidebar" onclick="document.getElementById('pengawas-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay')?.classList.toggle('hidden');" class="md:hidden p-2 bg-slate-100 rounded-lg text-emerald-600 hover:bg-slate-200 transition-colors shrink-0">
                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
              </button>
              <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Teacher Center V3</h2>
@@ -42,7 +42,7 @@
            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full relative">
             <div class="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300 pb-10">
                 
                 <div class="bg-white p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 print-hidden space-y-4">
@@ -60,7 +60,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                         <select id="f-mapel" class="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700 cursor-pointer focus:border-emerald-500"><option value="">-- Semua Mapel --</option></select>
                         <select id="f-kelas" class="w-full p-3 border border-slate-200 rounded-xl bg-white outline-none text-xs font-bold text-slate-700 cursor-pointer focus:border-emerald-500"><option value="">-- Semua Kelas --</option></select>
-                        <select id="f-token" class="w-full p-3 border border-emerald-300 rounded-xl bg-emerald-50 outline-none text-xs font-black text-emerald-800 cursor-pointer focus:border-emerald-500"><option value="">-- Semua Token --</option></select>
+                        <select id="f-token" class="w-full p-3 border border-emerald-300 rounded-xl bg-emerald-50 outline-none text-xs font-black text-emerald-800 cursor-pointer focus:border-emerald-500"><option value="">-- Pilih Token Wajib (Koreksi) --</option></select>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2">
@@ -90,12 +90,13 @@
                                     <th class="py-3 px-4 font-black uppercase text-[10px] tracking-wider">Identitas Siswa</th>
                                     <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider">Kelas / Token</th>
                                     <th class="py-3 px-4 font-black uppercase text-[10px] tracking-wider">Mapel</th>
+                                    <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider">Nilai (PG | Esai)</th>
                                     <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider">Skor Akhir</th>
                                     <th class="py-3 px-4 text-center font-black uppercase text-[10px] tracking-wider w-16 print:hidden">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="rekap-table-body" class="divide-y divide-slate-100">
-                                <tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold">Memuat data...</td></tr>
+                                <tr><td colspan="7" class="p-10 text-center text-slate-400 font-bold">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -112,15 +113,42 @@
 
             </div>
         </div>
+
+        <div id="modal-esai" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] hidden items-center justify-center p-4 print-hidden transition-all duration-300">
+            <div class="bg-white rounded-[2rem] w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] border border-slate-700">
+                <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-amber-50">
+                    <div>
+                        <h2 class="text-lg font-black text-amber-900 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg> Koreksi Esai Cepat</h2>
+                        <p id="esai-progress" class="text-xs font-bold text-amber-700 mt-1">Memuat data...</p>
+                    </div>
+                    <button id="btn-close-esai" class="p-2.5 bg-white rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+                
+                <div id="esai-content" class="p-6 md:p-8 overflow-y-auto flex-1 space-y-6 bg-slate-50 custom-scrollbar">
+                    </div>
+
+                <div class="p-5 border-t border-slate-200 bg-white flex flex-col sm:flex-row gap-4 items-center">
+                    <div class="flex-1 w-full relative">
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Berikan Skor Nilai Esai (Otomatis ditotal)</label>
+                        <input type="number" id="input-skor-esai" class="w-full p-4 bg-amber-50 border-2 border-amber-200 rounded-xl text-2xl font-black text-amber-900 outline-none focus:border-amber-500 transition-colors" placeholder="Ketik nilai...">
+                    </div>
+                    <button id="btn-simpan-esai" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-8 py-5 rounded-xl font-black text-sm tracking-widest active:scale-95 transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2">SIMPAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
         import { renderGuruSidebar } from '../../js/components/sidebar-guru.js';
-        renderGuruSidebar();
+        
+        // Panggil Sidebar dengan penundaan agar DOM termuat
+        setTimeout(() => renderGuruSidebar(), 100);
 
         let schoolId = null; let teacherEmail = null; let teacherName = '';
-        let rawData = []; let filteredData = []; let sessionsMap = {};
+        let rawData = []; let filteredData = []; 
+        let esaiTasks = []; let currentTaskIdx = 0;
 
         async function initPage() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -142,22 +170,15 @@
         }
 
         async function loadLeaderboard() {
-            const [{ data: lead }, { data: sess }] = await Promise.all([
-                supabase.from('leaderboard').select('*').eq('teacher_email', teacherEmail),
-                supabase.from('exam_sessions').select('*').eq('teacher_email', teacherEmail)
-            ]);
+            const { data: lead, error } = await supabase.from('leaderboard').select('*').eq('teacher_email', teacherEmail);
 
-            sessionsMap = {};
-            if(sess) sess.forEach(s => sessionsMap[s.token] = s);
-
-            if (!lead || lead.length === 0) {
-                document.getElementById('rekap-table-body').innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 rounded-xl">Belum ada nilai ujian.</td></tr>`;
+            if (error || !lead || lead.length === 0) {
+                document.getElementById('rekap-table-body').innerHTML = `<tr><td colspan="7" class="p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 rounded-xl">Belum ada nilai ujian.</td></tr>`;
                 return;
             }
 
             rawData = lead;
             
-            // Build Filters
             const mSet = [...new Set(rawData.map(l => l.mapel).filter(Boolean))];
             const kSet = [...new Set(rawData.map(l => l.kelas).filter(Boolean))];
             const tSet = [...new Set(rawData.map(l => l.token).filter(Boolean))];
@@ -180,7 +201,6 @@
 
             filteredData = rawData.filter(l => (m === '' || l.mapel === m) && (k === '' || l.kelas === k) && (t === '' || l.token === t));
             
-            // Set Print Meta
             const dateStr = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('print-meta').innerHTML = `Mata Pelajaran: ${m||'Semua'} <br/> Kelas: ${k||'Semua'} | Token: ${t||'Semua'} <br/> Guru: ${teacherName}`;
             document.getElementById('print-date-label').innerText = `Dicetak pada: ${dateStr}`;
@@ -191,19 +211,22 @@
 
         function renderTable() {
             const tbody = document.getElementById('rekap-table-body');
-            if(filteredData.length === 0) return tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-bold">Data kosong.</td></tr>`;
+            if(filteredData.length === 0) return tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 font-bold">Data kosong.</td></tr>`;
 
             tbody.innerHTML = filteredData.map((l, i) => `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="py-2.5 px-4 text-center font-bold text-slate-400 text-xs">${i + 1}</td>
                     <td class="py-2.5 px-4">
                         <p class="font-black text-slate-800 text-sm uppercase">${l.student_name || 'Anonim'}</p>
-                        ${l.is_essay_graded ? '<span class="text-[8px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border mt-0.5 inline-block">ESAI DINILAI</span>' : ''}
+                        ${l.is_essay_graded ? '<span class="text-[8px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border mt-0.5 inline-block">ESAI SELESAI</span>' : '<span class="text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border mt-0.5 inline-block">PERLU KOREKSI</span>'}
                     </td>
                     <td class="py-2.5 px-4 text-center font-bold text-slate-600 text-xs">${l.kelas}-${l.sub_kelas}<br/><span class="text-[9px] text-emerald-600 font-mono">${l.token}</span></td>
                     <td class="py-2.5 px-4 font-bold text-slate-700 text-xs uppercase">${l.mapel}</td>
+                    <td class="py-2.5 px-4 text-center font-bold text-slate-500 text-xs uppercase bg-slate-50 border-x border-slate-100">
+                        PG: ${l.objective_score||0} <span class="mx-1 text-slate-300">|</span> Esai: <span class="${l.essay_score > 0 ? 'text-amber-600' : 'text-slate-400'}">${l.essay_score||0}</span>
+                    </td>
                     <td class="py-2.5 px-4 text-center">
-                        <span class="text-sm md:text-base font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100">${l.score || 0}</span>
+                        <span class="text-base font-black ${l.score < 70 ? 'text-rose-600' : 'text-emerald-600'}">${l.score || 0}</span>
                     </td>
                     <td class="py-2.5 px-4 text-center print:hidden">
                         <button onclick="delRekap('${l.id}')" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
@@ -212,24 +235,16 @@
             `).join('');
         }
 
-        window.delRekap = async (id) => {
-            if(confirm("Hapus data nilai siswa ini?")) { await supabase.from('leaderboard').delete().eq('id', id); loadLeaderboard(); }
-        };
+        window.delRekap = async (id) => { if(confirm("Hapus data nilai siswa ini?")) { await supabase.from('leaderboard').delete().eq('id', id); loadLeaderboard(); } };
+        document.getElementById('btn-bersihkan').onclick = async () => { const c = prompt("Ketik HAPUS untuk membersihkan semua nilai Anda:"); if(c === "HAPUS") { await supabase.from('leaderboard').delete().eq('teacher_email', teacherEmail); loadLeaderboard(); } };
 
-        document.getElementById('btn-bersihkan').onclick = async () => {
-            const c = prompt("Ketik HAPUS untuk membersihkan semua nilai Anda:");
-            if(c === "HAPUS") { await supabase.from('leaderboard').delete().eq('teacher_email', teacherEmail); loadLeaderboard(); }
-        };
-
-        // EXCEL
         document.getElementById('btn-export-excel').onclick = () => {
             if(filteredData.length===0) return alert("Data Kosong!");
-            const rows = filteredData.map((l, i) => ({ "No": i+1, "Nama Siswa": l.student_name, "Kelas": l.kelas, "Mapel": l.mapel, "Skor Akhir": l.score }));
+            const rows = filteredData.map((l, i) => ({ "No": i+1, "Nama Siswa": l.student_name, "Kelas": l.kelas, "Mapel": l.mapel, "Nilai PG": l.objective_score, "Nilai Esai": l.essay_score, "Skor Akhir": l.score }));
             const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Rekap CBT"); XLSX.writeFile(wb, `Rekap_Nilai_${new Date().toISOString().slice(0,10)}.xlsx`);
         };
 
-        // PDF Print Modes
         window.cetakPDF = (mode) => {
             if(filteredData.length===0) return alert("Data kosong!");
             let title = "DAFTAR NILAI UJIAN";
@@ -239,11 +254,136 @@
             setTimeout(() => window.print(), 300);
         };
 
-        // KOREKSI ESAI TRIGGER
-        document.getElementById('btn-koreksi-esai').onclick = () => {
+        // --- SISTEM KOREKSI ESAI TINDER-STYLE (FIXED) ---
+        document.getElementById('btn-koreksi-esai').onclick = async () => {
             const token = document.getElementById('f-token').value;
-            if(!token) return alert("Anda wajib memilih 1 Token Sesi di filter atas untuk masuk ke mode Koreksi Esai.");
-            alert("Fitur Koreksi Esai Manual (Tinder-Style) akan dimuat untuk token: " + token + "\n\nNote: Komponen antarmuka koreksi membutuhkan modal UI tambahan yang terpisah.");
+            if(!token) return alert("Anda WAJIB memilih 1 Token Sesi di Filter Atas untuk mengkoreksi Esai pada kelas tersebut!");
+            
+            const siswaEsai = filteredData.filter(s => s.answers && Object.keys(s.answers).some(k => typeof s.answers[k] === 'string' && s.answers[k].trim() !== '' && !k.endsWith('_score')));
+            if(siswaEsai.length === 0) return alert("Tidak ada jawaban esai yang ditemukan dari siswa pada sesi ini.");
+
+            document.getElementById('modal-esai').classList.remove('hidden'); document.getElementById('modal-esai').classList.add('flex');
+            document.getElementById('esai-content').innerHTML = '<div class="text-center text-slate-400 p-10 font-bold animate-pulse">Menarik Naskah Esai...</div>';
+
+            const { data: soalList } = await supabase.from('bank_soal').select('*').eq('jenis_soal', 'ESAI').eq('token', token);
+            // Fallback jika tidak ada soal spesifik token, cari by Mapel & Kelas
+            let esaiSoal = soalList;
+            if(!esaiSoal || esaiSoal.length === 0) {
+                const mapel = document.getElementById('f-mapel').value;
+                const { data: soalFallback } = await supabase.from('bank_soal').select('*').eq('jenis_soal', 'ESAI').eq('mapel', mapel);
+                esaiSoal = soalFallback || [];
+            }
+
+            esaiTasks = [];
+            siswaEsai.forEach(siswa => {
+                const ans = siswa.answers || {};
+                Object.keys(ans).forEach(soalId => {
+                    // Abaikan key _score
+                    if(soalId.endsWith('_score')) return;
+                    
+                    const jawabanSiswa = ans[soalId];
+                    if(jawabanSiswa && jawabanSiswa.trim() !== '') {
+                        const soalRef = esaiSoal.find(s => s.id === soalId);
+                        esaiTasks.push({
+                            leaderboard_id: siswa.id,
+                            student_name: siswa.student_name,
+                            question_id: soalId,
+                            pertanyaan: soalRef ? soalRef.pertanyaan : "Soal ID: " + soalId + " (Teks tidak ditemukan di Bank Soal)",
+                            jawaban_siswa: jawabanSiswa,
+                            current_score: ans[`${soalId}_score`] || 0,
+                            objective_score: siswa.objective_score || 0
+                        });
+                    }
+                });
+            });
+
+            if(esaiTasks.length === 0) {
+                document.getElementById('esai-content').innerHTML = '<div class="text-center text-slate-400 p-10 font-bold">Semua jawaban Esai kosong.</div>';
+                return;
+            }
+
+            currentTaskIdx = 0;
+            renderEsaiTask();
+        };
+
+        function renderEsaiTask() {
+            if(currentTaskIdx >= esaiTasks.length) {
+                document.getElementById('esai-content').innerHTML = `
+                    <div class="text-center text-emerald-500 py-16 flex flex-col items-center justify-center animate-in zoom-in duration-300">
+                        <div class="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 border-4 border-emerald-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h2 class="text-3xl font-black text-slate-800 mb-2">Pekerjaan Selesai!</h2>
+                        <p class="font-bold text-slate-500 text-lg">Semua lembar esai telah dikoreksi dan dikalkulasi.</p>
+                    </div>`;
+                document.getElementById('btn-simpan-esai').classList.add('hidden');
+                document.getElementById('input-skor-esai').parentElement.classList.add('hidden');
+                document.getElementById('esai-progress').innerText = "Tuntas 100%";
+                loadLeaderboard(); // Refresh data utama
+                return;
+            }
+
+            const task = esaiTasks[currentTaskIdx];
+            document.getElementById('esai-progress').innerText = `Siswa ke-${currentTaskIdx + 1} dari ${esaiTasks.length}`;
+            
+            document.getElementById('esai-content').innerHTML = `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-right-10 duration-300">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Identitas Peserta</p>
+                    <p class="text-xl font-black text-blue-600 uppercase">${task.student_name}</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in slide-in-from-right-10 duration-300 delay-75">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Butir Pertanyaan Esai</p>
+                    <p class="font-semibold text-slate-800 text-base md:text-lg leading-relaxed whitespace-pre-wrap">${task.pertanyaan}</p>
+                </div>
+                <div class="bg-amber-50 p-6 md:p-8 rounded-2xl border-2 border-amber-200 shadow-inner animate-in slide-in-from-right-10 duration-300 delay-150">
+                    <p class="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Jawaban Siswa:</p>
+                    <p class="font-medium text-slate-900 text-lg whitespace-pre-wrap leading-relaxed">${task.jawaban_siswa}</p>
+                </div>
+            `;
+            
+            document.getElementById('input-skor-esai').value = task.current_score || '';
+            document.getElementById('input-skor-esai').focus();
+            document.getElementById('input-skor-esai').parentElement.classList.remove('hidden');
+            document.getElementById('btn-simpan-esai').classList.remove('hidden');
+        }
+
+        document.getElementById('btn-simpan-esai').onclick = async () => {
+            const task = esaiTasks[currentTaskIdx];
+            const newScore = parseInt(document.getElementById('input-skor-esai').value) || 0;
+            const btn = document.getElementById('btn-simpan-esai');
+            
+            btn.innerHTML = `MENYIMPAN...`; btn.disabled = true;
+
+            // 1. Ambil data asli siswa langsung dari database agar aman
+            const { data: student } = await supabase.from('leaderboard').select('answers, objective_score').eq('id', task.leaderboard_id).single();
+            
+            if(student) {
+                let ans = student.answers || {};
+                ans[`${task.question_id}_score`] = newScore;
+                
+                let totalEsai = 0;
+                Object.keys(ans).forEach(key => { if(key.endsWith('_score')) totalEsai += parseInt(ans[key]); });
+                
+                // KALKULASI SKOR AKHIR = PG + ESAI
+                const finalScore = (student.objective_score || 0) + totalEsai;
+
+                await supabase.from('leaderboard').update({
+                    answers: ans,
+                    essay_score: totalEsai,
+                    score: finalScore,
+                    is_essay_graded: true
+                }).eq('id', task.leaderboard_id);
+            }
+
+            currentTaskIdx++;
+            renderEsaiTask();
+            btn.innerHTML = `SIMPAN <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`; 
+            btn.disabled = false;
+        };
+
+        document.getElementById('btn-close-esai').onclick = () => {
+            document.getElementById('modal-esai').classList.remove('flex'); document.getElementById('modal-esai').classList.add('hidden');
+            loadLeaderboard(); // Segarkan tabel di belakang layar
         };
 
         document.addEventListener('DOMContentLoaded', initPage);
