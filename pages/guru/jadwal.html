@@ -197,7 +197,7 @@
         window.delSession = async (id) => { if(confirm("Hapus sesi ini?")) { await supabase.from('exam_sessions').delete().eq('id', id); loadSessions(); } };
         
         window.bukaQR = (token) => {
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.origin + '/?token=' + token)}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.origin + '/pages/siswa/portal.html/?token=' + token)}`;
             document.getElementById('qr-image').src = qrUrl;
             document.getElementById('qr-token-text').innerText = token;
             document.getElementById('modal-qr').classList.replace('hidden', 'flex');
