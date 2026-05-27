@@ -30,7 +30,7 @@
             <p id="form-subtitle" class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Masuk ke sistem ujian</p>
         </div>
 
-        <div id="alert-box" class="hidden mb-5 p-3.5 rounded-xl text-xs font-bold flex items-start gap-2 shadow-inner border">
+        <div id="alert-box" class="hidden mb-5 p-3.5 rounded-xl text-xs font-bold items-start gap-2 shadow-inner border transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             <span id="alert-text" class="leading-relaxed"></span>
         </div>
@@ -106,6 +106,155 @@
 
     </div>
 
-    <script type="module" src="../../js/pages/auth.js"></script>
+    <script type="module">
+        import { supabase } from '../../js/config/supabase.js';
+
+        const formLogin = document.getElementById('form-login');
+        const formRegister = document.getElementById('form-register');
+        const alertBox = document.getElementById('alert-box');
+        const alertText = document.getElementById('alert-text');
+
+        // --- UI TOGGLES ---
+        document.getElementById('switch-to-register').onclick = () => {
+            formLogin.classList.replace('block', 'hidden');
+            formRegister.classList.replace('hidden', 'block');
+            document.getElementById('form-title').innerText = "Daftar Akun Baru";
+            document.getElementById('form-subtitle').innerText = "Bergabung sebagai Guru";
+            alertBox.classList.remove('flex'); alertBox.classList.add('hidden');
+        };
+
+        document.getElementById('switch-to-login').onclick = () => {
+            formRegister.classList.replace('block', 'hidden');
+            formLogin.classList.replace('hidden', 'block');
+            document.getElementById('form-title').innerText = "Portal Staf Instansi";
+            document.getElementById('form-subtitle').innerText = "Masuk ke sistem ujian";
+            alertBox.classList.remove('flex'); alertBox.classList.add('hidden');
+        };
+
+        // --- ALERT HELPER ---
+        function showAlert(msg, isSuccess = false) {
+            alertBox.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'border-red-200', 'bg-emerald-50', 'text-emerald-600', 'border-emerald-200');
+            alertBox.classList.add('flex');
+            
+            if (isSuccess) {
+                alertBox.classList.add('bg-emerald-50', 'text-emerald-600', 'border-emerald-200');
+            } else {
+                alertBox.classList.add('bg-red-50', 'text-red-600', 'border-red-200');
+            }
+            alertText.innerText = msg;
+        }
+
+        // --- SESSION MANAGEMENT ---
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if(session) redirectUser(session.user.id);
+        }
+        checkSession();
+
+        async function redirectUser(userId) {
+            const { data: profile, error } = await supabase.from('users').select('role, status').eq('id', userId).single();
+            
+            if(error || !profile) {
+                showAlert("Gagal mengambil profil. Hubungi Super Admin.");
+                await supabase.auth.signOut();
+                return;
+            }
+
+            if(profile.status === 'pending') {
+                showAlert("Akun berstatus PENDING. Silakan minta Admin Sekolah untuk mengaktifkan.");
+                await supabase.auth.signOut();
+                return;
+            }
+            
+            if(profile.status === 'suspended') {
+                showAlert("Akun Anda DITANGGUHKAN. Silakan hubungi Admin Sekolah.");
+                await supabase.auth.signOut();
+                return;
+            }
+
+            // Route Redirect based on Role
+            if (profile.role === 'admin') window.location.href = '../admin-sekolah/dashboard.html';
+            else if (profile.role === 'teacher') window.location.href = '../guru/dashboard.html';
+            else if (profile.role === 'proctor') window.location.href = '../pengawas/dashboard.html';
+            else {
+                showAlert("Role pengguna tidak dikenal.");
+                await supabase.auth.signOut();
+            }
+        }
+
+        // --- LOGIN LOGIC ---
+        formLogin.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "MEMVERIFIKASI..."; btn.disabled = true;
+            alertBox.classList.add('hidden');
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: document.getElementById('login-email').value,
+                password: document.getElementById('login-password').value
+            });
+
+            if (error) {
+                showAlert("Email atau Password salah!");
+                btn.innerText = "MASUK SISTEM"; btn.disabled = false;
+            } else {
+                redirectUser(data.user.id);
+            }
+        };
+
+        // --- REGISTER LOGIC ---
+        formRegister.onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-register');
+            btn.innerText = "MENDAFTAR..."; btn.disabled = true;
+            alertBox.classList.add('hidden');
+
+            const name = document.getElementById('reg-name').value;
+            const school_id = document.getElementById('reg-school').value.toUpperCase();
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            // Verifikasi Kode Sekolah
+            const { data: schoolCheck } = await supabase.from('schools').select('id').eq('id', school_id).single();
+            if(!schoolCheck) {
+                showAlert("Kode Instansi tidak valid atau tidak terdaftar!");
+                btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
+                return;
+            }
+
+            // Supabase Auth Signup
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            
+            if (error) {
+                showAlert(error.message);
+                btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
+            } else {
+                // Manual Insert to Users Table (If Supabase Trigger is not configured)
+                if(data.user) {
+                    await supabase.from('users').upsert([{ 
+                        id: data.user.id, 
+                        email: email, 
+                        name: name, 
+                        school_id: school_id, 
+                        role: 'teacher', 
+                        status: 'pending' 
+                    }]);
+                }
+                
+                showAlert("Pendaftaran berhasil! Akun Anda berstatus PENDING. Minta Admin TU untuk mengaktifkan.", true);
+                formRegister.reset();
+                btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
+                
+                // Balik ke tampilan Login setelah sukses
+                setTimeout(() => document.getElementById('switch-to-login').click(), 4000);
+            }
+        };
+
+        // --- GOOGLE OAUTH ---
+        const doGoogleLogin = () => supabase.auth.signInWithOAuth({ provider: 'google' });
+        document.getElementById('btn-google-login').onclick = doGoogleLogin;
+        document.getElementById('btn-google-register').onclick = doGoogleLogin;
+
+    </script>
 </body>
 </html>
