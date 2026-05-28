@@ -3,5 +3,22 @@
   "buildCommand": "exit 0",
   "outputDirectory": ".",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/pages/siswa/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    },
+    {
+      "source": "/pages/guru/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    },
+    {
+      "source": "/pages/pengawas/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    }
+  ]
 }
