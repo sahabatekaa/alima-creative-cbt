@@ -19,6 +19,11 @@
       "source": "/pages/pengawas/(.*)",
       "destination": "/maintenance.html",
       "permanent": false
+    },
+    {
+      "source": "/pages/master/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
     }
   ]
 }
