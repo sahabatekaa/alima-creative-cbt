@@ -1,0 +1,47 @@
+cat << 'EOF' > vercel.json
+{
+  "framework": null,
+  "buildCommand": "exit 0",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/pages/siswa/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    },
+    {
+      "source": "/pages/guru/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    },
+    {
+      "source": "/pages/pengawas/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    },
+    {
+      "source": "/pages/master/(.*)",
+      "destination": "/maintenance.html",
+      "permanent": false
+    }
+  ]
+}
+EOF
+git add vercel.json
+git commit -m "System: MAINTENANCE MODE ON (VVIP Admin Allowed)"
+git push origin main
+  
+  cat << 'EOF' > vercel.json
+{
+  "framework": null,
+  "buildCommand": "exit 0",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "trailingSlash": false
+}
+EOF
+git add vercel.json
+git commit -m "System: MAINTENANCE MODE OFF"
+git push origin main
