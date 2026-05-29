@@ -40,7 +40,7 @@
     </main>
 
     <div id="modal-sesi" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
+        <div class="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h2 class="text-xl font-black text-slate-800" id="modal-title">Rilis Sesi Ujian</h2>
                 <button id="btn-close-modal" class="text-slate-400 hover:text-red-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
@@ -74,8 +74,8 @@
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Pengaturan Bobot Penilaian (%)</label>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><p class="text-xs font-bold text-slate-500 mb-1">Bobot Pilihan Ganda</p><input type="number" id="s_bobot_pg" required min="0" max="100" value="100" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 text-center outline-none"></div>
-                        <div><p class="text-xs font-bold text-slate-500 mb-1">Bobot Esai</p><input type="number" id="s_bobot_esai" required min="0" max="100" value="0" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 text-center outline-none"></div>
+                        <div><p class="text-xs font-bold text-slate-500 mb-1">Bobot Pilihan Ganda</p><input type="number" id="s_bobot_pg" required min="0" max="100" value="40" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 text-center outline-none"></div>
+                        <div><p class="text-xs font-bold text-slate-500 mb-1">Bobot Esai</p><input type="number" id="s_bobot_esai" required min="0" max="100" value="60" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 text-center outline-none"></div>
                     </div>
                 </div>
 
@@ -99,10 +99,9 @@
             schoolId = profile.school_id; teacherEmail = profile.email;
             
             loadSesi();
-            loadBankSoal(); // Menjalankan logika BUG 1
+            loadBankSoal();
         }
 
-        // --- SOLUSI BUG 1: TARIK DATA DARI BANK SOAL ---
         async function loadBankSoal() {
             const { data: soal } = await supabase.from('bank_soal').select('mapel, kelas').eq('teacher_email', teacherEmail);
             if(!soal || soal.length === 0) {
@@ -110,11 +109,10 @@
                 return;
             }
 
-            // Mengelompokkan berdasarkan Mapel dan Kelas, serta menghitung jumlah soal
             const grup = {};
             soal.forEach(s => {
-                const key = `${s.mapel}|||${s.kelas}`;
-                if(!grup[key]) grup[key] = { mapel: s.mapel, kelas: s.kelas, count: 0 };
+                const key = `${s.mapel.trim()}|||${s.kelas.trim()}`;
+                if(!grup[key]) grup[key] = { mapel: s.mapel.trim(), kelas: s.kelas.trim(), count: 0 };
                 grup[key].count++;
             });
 
@@ -127,12 +125,10 @@
             const idx = e.target.value;
             const infoBox = document.getElementById('info-soal');
             if(idx === '') { infoBox.classList.add('hidden'); return; }
-            
             infoBox.classList.remove('hidden');
             document.getElementById('count-soal').innerText = bankSoalGrup[idx].count + ' Soal';
         });
 
-        // --- MANAJEMEN SESI ---
         async function loadSesi() {
             const { data } = await supabase.from('exam_sessions').select('*').eq('teacher_email', teacherEmail).order('created_at', { ascending: false });
             sesiData = data || []; renderSesi();
@@ -153,12 +149,13 @@
                     
                     <div class="bg-slate-50 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-600 mb-4 border border-slate-100">
                         <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${s.durasi || 90} Menit</div>
-                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg> ${s.jumlah_soal || '-'} Soal</div>
-                        <div class="col-span-2 flex items-center gap-1.5 text-[10px] mt-1"><span class="bg-blue-100 text-blue-700 px-1.5 rounded">PG: ${s.bobot_pg||100}%</span> <span class="bg-amber-100 text-amber-700 px-1.5 rounded">Esai: ${s.bobot_esai||0}%</span></div>
+                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg> ${s.jumlah_soal || '-'} Soal</div>
+                        <div class="col-span-2 flex items-center gap-1.5 text-[10px] mt-1"><span class="bg-blue-100 text-blue-700 px-1.5 rounded">PG: ${s.bobot_pg||40}%</span> <span class="bg-amber-100 text-amber-700 px-1.5 rounded">Esai: ${s.bobot_esai||60}%</span></div>
                     </div>
 
-                    <div class="flex gap-2">
-                        <button onclick="toggleSesi('${s.token}', '${s.status}')" class="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-colors ${s.status==='open' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}">${s.status==='open' ? 'Tutup Sesi' : 'Buka Sesi'}</button>
+                    <div class="flex gap-1.5">
+                        <button onclick="toggleSesi('${s.token}', '${s.status}')" class="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-colors ${s.status==='open' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}">${s.status==='open' ? 'Tutup' : 'Buka'}</button>
+                        <button onclick="bukaModalEdit('${s.token}')" class="p-2.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors border border-slate-200" title="Edit Parameter Sesi"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
                         <button onclick="hapusSesi('${s.token}')" class="p-2.5 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors border border-slate-200"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>
                 </div>
@@ -166,8 +163,42 @@
         }
 
         const modal = document.getElementById('modal-sesi');
-        document.getElementById('btn-tambah-sesi').onclick = () => { document.getElementById('form-sesi').reset(); document.getElementById('edit-token').value=''; document.getElementById('info-soal').classList.add('hidden'); modal.classList.remove('hidden'); modal.classList.add('flex'); };
+        
+        document.getElementById('btn-tambah-sesi').onclick = () => { 
+            document.getElementById('form-sesi').reset(); 
+            document.getElementById('edit-token').value = ''; 
+            document.getElementById('info-soal').classList.add('hidden'); 
+            document.getElementById('s_bobot_pg').value = 40;
+            document.getElementById('s_bobot_esai').value = 60;
+            document.getElementById('btn-simpan-sesi').innerText = "BUAT TOKEN SESI";
+            document.getElementById('modal-title').innerText = "Rilis Sesi Ujian";
+            modal.classList.remove('hidden'); modal.classList.add('flex'); 
+        };
+        
         document.getElementById('btn-close-modal').onclick = () => { modal.classList.remove('flex'); modal.classList.add('hidden'); };
+
+        // LOGIKA MEMBUKA MODAL EDIT
+        window.bukaModalEdit = (token) => {
+            const s = sesiData.find(x => x.token === token);
+            if(!s) return;
+            
+            document.getElementById('modal-title').innerText = "Edit Parameter Sesi";
+            document.getElementById('edit-token').value = s.token;
+            
+            const idx = bankSoalGrup.findIndex(g => g.mapel.toUpperCase() === s.mapel.toUpperCase() && g.kelas.toUpperCase() === s.kelas.toUpperCase());
+            if(idx !== -1) {
+                document.getElementById('s_mapel_kelas').value = idx;
+                document.getElementById('s_mapel_kelas').dispatchEvent(new Event('change'));
+            }
+            
+            document.getElementById('s_sub').value = s.sub_kelas || '';
+            document.getElementById('s_durasi').value = s.durasi || 90;
+            document.getElementById('s_bobot_pg').value = s.bobot_pg !== undefined ? s.bobot_pg : 40;
+            document.getElementById('s_bobot_esai').value = s.bobot_esai !== undefined ? s.bobot_esai : 60;
+            
+            document.getElementById('btn-simpan-sesi').innerText = "SIMPAN PERUBAHAN";
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        };
 
         window.toggleSesi = async (token, currentStatus) => {
             const newStatus = currentStatus === 'open' ? 'closed' : 'open';
@@ -176,9 +207,7 @@
         };
 
         window.hapusSesi = async (token) => {
-            if(confirm('Hapus sesi ujian ini permanen? Data siswa yang sedang ujian di sesi ini bisa terganggu!')) {
-                await supabase.from('exam_sessions').delete().eq('token', token); loadSesi();
-            }
+            if(confirm('Hapus sesi ujian ini permanen?')) { await supabase.from('exam_sessions').delete().eq('token', token); loadSesi(); }
         };
 
         document.getElementById('form-sesi').onsubmit = async (e) => {
@@ -186,34 +215,43 @@
             const btn = document.getElementById('btn-simpan-sesi'); btn.innerText = "MENYIMPAN..."; btn.disabled = true;
 
             const idxSoal = document.getElementById('s_mapel_kelas').value;
-            if(!idxSoal) { alert("Pilih sumber soal dari Bank Soal terlebih dahulu!"); btn.innerText = "BUAT TOKEN SESI"; btn.disabled = false; return; }
+            if(!idxSoal) { alert("Pilihan soal wajib diisi!"); btn.innerText = "BUAT TOKEN SESI"; btn.disabled = false; return; }
 
             const mapel = bankSoalGrup[idxSoal].mapel;
             const kelas = bankSoalGrup[idxSoal].kelas;
             const jumlah_soal = bankSoalGrup[idxSoal].count;
             
-            const sub = document.getElementById('s_sub').value.toUpperCase();
+            const sub = document.getElementById('s_sub').value.toUpperCase().trim();
             const durasi = document.getElementById('s_durasi').value;
             const bobotPg = document.getElementById('s_bobot_pg').value;
             const bobotEsai = document.getElementById('s_bobot_esai').value;
-
-            // Generate Token Cerdas
-            const token = Math.random().toString(36).substr(2, 5).toUpperCase();
             
-            // Kalkulasi Jam Selesai berbasis Durasi
+            const tokenExisting = document.getElementById('edit-token').value;
+
             const d = new Date(); d.setMinutes(d.getMinutes() + parseInt(durasi));
             const jam_selesai = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
-            const payload = {
-                token: token, school_id: schoolId, teacher_email: teacherEmail,
-                mapel: mapel, kelas: kelas, sub_kelas: sub,
-                durasi: parseInt(durasi), bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
-                jumlah_soal: jumlah_soal, jam_mulai: '00:00', jam_selesai: jam_selesai, status: 'open'
-            };
+            if(tokenExisting) {
+                // UPDATE JALUR EDIT
+                await supabase.from('exam_sessions').update({
+                    mapel: mapel, kelas: kelas, sub_kelas: sub,
+                    durasi: parseInt(durasi), bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
+                    jumlah_soal: jumlah_soal, jam_selesai: jam_selesai
+                }).eq('token', tokenExisting);
+            } else {
+                // INSERT JALUR BARU
+                const tokenBaru = Math.random().toString(36).substr(2, 5).toUpperCase();
+                await supabase.from('exam_sessions').insert([{
+                    token: tokenBaru, school_id: schoolId, teacher_email: teacherEmail,
+                    mapel: mapel, kelas: kelas, sub_kelas: sub,
+                    durasi: parseInt(durasi), bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
+                    jumlah_soal: jumlah_soal, jam_mulai: '00:00', jam_selesai: jam_selesai, status: 'open'
+                }]);
+            }
 
-            await supabase.from('exam_sessions').insert([payload]);
             modal.classList.remove('flex'); modal.classList.add('hidden');
             loadSesi();
+            btn.disabled = false;
         };
 
         document.addEventListener('DOMContentLoaded', initPage);
