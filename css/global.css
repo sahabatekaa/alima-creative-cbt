@@ -24,3 +24,17 @@
     background-size: contain;
     user-select: none;
 }
+
+/* TWEAK KHUSUS BAHASA ARAB */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+
+.font-arabic {
+    font-family: 'Amiri', serif !important;
+    font-size: 1.5em; /* Huruf Arab butuh ukuran lebih besar agar harakatnya jelas */
+    line-height: 2;
+}
+
+/* Memastikan input textarea otomatis cerdas */
+textarea[dir="auto"], input[dir="auto"] {
+    text-align: start;
+}
