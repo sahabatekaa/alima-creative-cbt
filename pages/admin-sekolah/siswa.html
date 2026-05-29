@@ -41,7 +41,7 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
                         <div>
                             <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Database Peserta Ujian</h3>
-                            <p class="text-xs font-bold text-slate-400 mt-1">Kelola data siswa, generate password massal, dan cetak kartu ujian.</p>
+                            <p class="text-xs font-bold text-slate-400 mt-1">Kelola data siswa, import database massal, dan cetak kartu ujian resmi.</p>
                         </div>
                         <div class="flex gap-2 w-full md:w-auto flex-wrap">
                             <button onclick="cetakKartuUTBK()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-md shadow-indigo-600/20 active:scale-95 flex items-center gap-2 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Cetak Kartu UTBK</button>
@@ -56,11 +56,11 @@
                         <table class="w-full text-left text-sm whitespace-nowrap">
                             <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 text-[10px] uppercase font-black tracking-wider">
                                 <tr>
-                                    <th class="p-4">NISN / Username</th>
+                                    <th class="p-4 text-center w-12">No</th>
+                                    <th class="p-4">Nomor Ujian / NISN</th>
                                     <th class="p-4">Nama Lengkap</th>
-                                    <th class="p-4 text-center">Kelas</th>
-                                    <th class="p-4 text-center">Password</th>
-                                    <th class="p-4 text-center">Aksi</th>
+                                    <th class="p-4 text-center">Kelas / Ruang</th>
+                                    <th class="p-4 text-center w-24">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="siswa-body" class="divide-y divide-slate-100">
@@ -101,12 +101,12 @@
             const tbody = document.getElementById('siswa-body');
             if(siswaData.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold">Belum ada siswa terdaftar. Import Excel sekarang!</td></tr>';
 
-            tbody.innerHTML = siswaData.map(s => `
+            tbody.innerHTML = siswaData.map((s, idx) => `
                 <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 text-center font-bold text-slate-400 text-xs">${idx + 1}</td>
                     <td class="p-4 font-mono font-bold text-slate-600">${s.nisn}</td>
                     <td class="p-4 font-black text-slate-800 uppercase">${s.name}</td>
                     <td class="p-4 text-center"><span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-xs font-bold border border-blue-100">${s.kelas}-${s.sub_kelas}</span></td>
-                    <td class="p-4 text-center font-mono font-bold text-rose-500">${s.password}</td>
                     <td class="p-4 text-center"><button onclick="hapusSiswa('${s.id}')" class="text-slate-400 hover:text-red-500 p-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>
                 </tr>
             `).join('');
@@ -116,7 +116,7 @@
             if(confirm("Hapus siswa ini dari database?")) { await supabase.from('students').delete().eq('id', id); loadSiswa(); }
         };
 
-        // --- IMPORT EXCEL ---
+        // --- IMPORT EXCEL (TANPA PASSWORD) ---
         document.getElementById('btn-import-siswa').onclick = () => document.getElementById('file-import-siswa').click();
         document.getElementById('file-import-siswa').onchange = (e) => {
             const file = e.target.files[0]; if(!file) return;
@@ -126,8 +126,11 @@
                 const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).slice(1);
                 
                 const payload = json.filter(r => r[0] && r[1]).map(r => ({
-                    school_id: schoolId, nisn: String(r[0]), name: String(r[1]),
-                    kelas: String(r[2]||''), sub_kelas: String(r[3]||''), password: String(r[4] || Math.floor(100000 + Math.random() * 900000))
+                    school_id: schoolId, 
+                    nisn: String(r[0]).trim(), 
+                    name: String(r[1]).trim(),
+                    kelas: String(r[2]||'').trim(), 
+                    sub_kelas: String(r[3]||'').trim()
                 }));
 
                 if(payload.length > 0) {
@@ -137,7 +140,7 @@
             reader.readAsArrayBuffer(file);
         };
 
-        // --- CETAK KARTU UTBK STYLE ---
+        // --- CETAK KARTU UTBK STYLE (TANPA PASSWORD) ---
         window.cetakKartuUTBK = () => {
             if(siswaData.length === 0) return alert("Database siswa kosong!");
             
@@ -159,17 +162,16 @@
                         <div class="kartu-foto-box">PAS FOTO<br>3 x 4</div>
                         <div style="flex-grow:1; font-size:11px;">
                             <table style="width:100%; margin-bottom:10px;">
-                                <tr><td style="width:30%; font-weight:bold; color:#64748b; padding-bottom:4px;">NOMOR UJIAN</td><td style="width:5%; padding-bottom:4px;">:</td><td style="font-weight:900; font-family:monospace; font-size:14px; padding-bottom:4px;">${s.nisn}</td></tr>
-                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:4px;">NAMA PESERTA</td><td style="padding-bottom:4px;">:</td><td style="font-weight:900; text-transform:uppercase; padding-bottom:4px;">${s.name}</td></tr>
-                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:4px;">KELAS/RUANG</td><td style="padding-bottom:4px;">:</td><td style="font-weight:bold; padding-bottom:4px;">${s.kelas} ${s.sub_kelas}</td></tr>
-                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:4px;">KATA SANDI</td><td style="padding-bottom:4px;">:</td><td style="font-weight:900; color:#e11d48; font-family:monospace; padding-bottom:4px;">${s.password}</td></tr>
+                                <tr><td style="width:35%; font-weight:bold; color:#64748b; padding-bottom:6px;">NOMOR UJIAN / NISN</td><td style="width:5%; padding-bottom:6px;">:</td><td style="font-weight:900; font-family:monospace; font-size:14px; padding-bottom:6px;">${s.nisn}</td></tr>
+                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:6px;">NAMA PESERTA</td><td style="padding-bottom:6px;">:</td><td style="font-weight:900; text-transform:uppercase; padding-bottom:6px;">${s.name}</td></tr>
+                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:6px;">KELAS / RUANG</td><td style="padding-bottom:6px;">:</td><td style="font-weight:bold; padding-bottom:6px;">${s.kelas} ${s.sub_kelas}</td></tr>
                             </table>
                         </div>
                     </div>
                     
                     <div style="display:flex; justify-content:space-between; margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:10px;">
                         <div style="font-size:8px; color:#94a3b8; width:50%;">
-                            <b>PENTING:</b><br>1. Bawa kartu ini saat ujian berlangsung.<br>2. Dilarang memberikan password ke orang lain.
+                            <b>PENTING:</b><br>1. Gunakan Nomor Ujian untuk cek data/profil.<br>2. Masukkan Token Sesi yang valid untuk memulai ujian.
                         </div>
                         <div style="text-align:center; font-size:10px; width:40%;">
                             <p style="margin:0 0 35px 0;">Kepala Instansi,</p>
