@@ -12,20 +12,24 @@ export function renderGuruSidebar() {
 
     const sidebarHTML = `
         <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
-        <aside id="guru-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col transition-transform -translate-x-full md:relative md:translate-x-0 shadow-2xl md:shadow-none">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center">
-                <h1 class="text-lg font-black text-emerald-700 flex gap-2 items-center tracking-tight">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg> CBT GURU
-                </h1>
-                <button id="close-sidebar" class="md:hidden text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            </div>
+        
+        <aside id="guru-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col h-screen transition-transform -translate-x-full md:relative md:translate-x-0 shadow-2xl md:shadow-none">
             
-            <div class="p-4 mx-3 mt-3 mb-1 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black text-xl uppercase shadow-inner shrink-0" id="sidebar-initial">G</div>
-              <div class="min-w-0">
-                <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-0.5" id="sidebar-role">GURU MAPEL</p>
-                <p class="text-xs font-bold truncate text-slate-800" id="sidebar-name">Memuat...</p>
-              </div>
+            <div class="shrink-0">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <h1 class="text-lg font-black text-emerald-700 flex gap-2 items-center tracking-tight">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg> CBT GURU
+                    </h1>
+                    <button id="close-sidebar" class="md:hidden text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+                
+                <div class="p-4 mx-3 mt-3 mb-1 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black text-xl uppercase shadow-inner shrink-0" id="sidebar-initial">G</div>
+                  <div class="min-w-0">
+                    <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-0.5" id="sidebar-role">GURU MAPEL</p>
+                    <p class="text-xs font-bold truncate text-slate-800" id="sidebar-name">Memuat...</p>
+                  </div>
+                </div>
             </div>
 
             <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto custom-scrollbar">
@@ -49,7 +53,8 @@ export function renderGuruSidebar() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="${iconColor('profil.html')}"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Profil Saya
                 </a>
             </nav>
-            <div class="p-4 border-t border-slate-100">
+            
+            <div class="shrink-0 p-4 border-t border-slate-100 bg-white">
                 <button id="btn-logout-sidebar" class="w-full flex items-center justify-center gap-2 p-3 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 rounded-xl font-bold text-sm transition-colors shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Keluar Akun</button>
             </div>
         </aside>

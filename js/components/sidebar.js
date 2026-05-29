@@ -1,21 +1,23 @@
 // js/components/sidebar.js
 
 const sidebarHTML = `
-<aside id="main-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0f1c] border-r border-slate-800/50 flex flex-col transition-transform -translate-x-full lg:translate-x-0 lg:relative shadow-2xl">
+<aside id="main-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0a0f1c] border-r border-slate-800/50 flex flex-col h-screen transition-transform -translate-x-full lg:translate-x-0 lg:relative shadow-2xl">
     
-    <div class="p-6 border-b border-slate-800/50 flex justify-between items-center">
-        <h1 class="text-2xl font-black text-white flex gap-2 items-center tracking-widest">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="11 3 11 11 14 8 17 11 17 3"></polyline></svg>
-            ROOT
-        </h1>
-        <button id="close-sidebar" class="lg:hidden text-slate-500 hover:text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-    </div>
+    <div class="shrink-0">
+        <div class="p-6 border-b border-slate-800/50 flex justify-between items-center">
+            <h1 class="text-2xl font-black text-white flex gap-2 items-center tracking-widest">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="11 3 11 11 14 8 17 11 17 3"></polyline></svg>
+                ROOT
+            </h1>
+            <button id="close-sidebar" class="lg:hidden text-slate-500 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
 
-    <div class="p-4 border-b border-slate-800/50 bg-[#030712]/50">
-        <p class="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1">FOUNDER PANEL</p>
-        <p class="text-xs font-bold truncate text-white uppercase" id="sidebar-user-email">Memuat...</p>
+        <div class="p-4 border-b border-slate-800/50 bg-[#030712]/50">
+            <p class="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1">FOUNDER PANEL</p>
+            <p class="text-xs font-bold truncate text-white uppercase" id="sidebar-user-email">Memuat...</p>
+        </div>
     </div>
 
     <nav class="flex-1 p-3 space-y-1.5 overflow-y-auto mt-2 custom-scrollbar">
@@ -63,7 +65,7 @@ const sidebarHTML = `
         </a>
     </nav>
 
-    <div class="p-4 border-t border-slate-800/50">
+    <div class="shrink-0 p-4 border-t border-slate-800/50 bg-[#0a0f1c]">
         <button id="btn-logout" class="w-full flex items-center justify-center gap-2 p-3 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-xl text-sm font-bold transition-all border border-rose-500/20 active:scale-95">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> 
             Shutdown Session
@@ -88,7 +90,7 @@ function setupSidebarLogic() {
     const sidebar = document.getElementById('main-sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const btnClose = document.getElementById('close-sidebar');
-    const btnOpen = document.getElementById('open-sidebar'); // Harus ada di Header HTML utama
+    const btnOpen = document.getElementById('open-sidebar');
 
     // 1. Highlight Menu Aktif Berdasarkan URL
     const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
@@ -96,7 +98,6 @@ function setupSidebarLogic() {
     
     navLinks.forEach(link => {
         if (link.getAttribute('data-page') === currentPage) {
-            // Beri warna indigo untuk menu yang sedang terbuka
             link.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
             link.classList.add('bg-indigo-500', 'text-white', 'font-black', 'shadow-lg', 'shadow-indigo-500/20');
         }
@@ -121,6 +122,18 @@ function setupSidebarLogic() {
         overlay.addEventListener('click', () => {
             sidebar.classList.add('-translate-x-full');
             overlay.classList.add('hidden');
+        });
+    }
+    
+    // 3. Setup Tombol Logout
+    const btnLogout = document.getElementById('btn-logout');
+    if(btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            if(confirm("Yakin ingin melakukan Shutdown Session?")) { 
+                const { supabase } = await import('../config/supabase.js');
+                await supabase.auth.signOut(); 
+                window.location.href = '../auth/login.html'; 
+            }
         });
     }
 }
