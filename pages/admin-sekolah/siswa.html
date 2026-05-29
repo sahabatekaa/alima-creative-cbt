@@ -9,9 +9,9 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="../../css/global.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;700;900&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;900&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        /* CSS KHUSUS CETAK KARTU UTBK COCOK DENGAN DESIGN BARU */
+        /* CSS KHUSUS CETAK KARTU UTBK */
         @media print {
             @page { size: A4 portrait; margin: 1cm; }
             body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -37,15 +37,25 @@
 
         <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
             <div class="max-w-6xl mx-auto space-y-6 pb-10">
-                <div class="bg-white p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 space-y-4">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+                <div class="bg-white p-4 md:p-5 rounded-[24px] shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
                         <div>
-                            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Database Peserta Ujian</h3>
-                            <p class="text-xs font-bold text-slate-400 mt-1">Saring, kelola, dan cetak dokumen ujian resmi sekolah.</p>
+                            <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/xl" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg> Database Peserta Ujian</h3>
                         </div>
-                        <div class="flex gap-2 w-full md:w-auto flex-wrap">
-                            <button onclick="cetakKartuUTBK()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-md shadow-indigo-600/20 active:scale-95 flex items-center gap-2 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Cetak Kartu UTBK</button>
-                            <button id="btn-import-siswa" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Import Excel</button>
+                        
+                        <div class="grid grid-cols-2 sm:flex gap-1.5 w-full lg:w-auto">
+                            <button id="btn-tambah-manual" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-xl text-[11px] font-black tracking-wider shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> ADD MANUAL
+                            </button>
+                            <button id="btn-download-template" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-[11px] font-black tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg> DOWNLOAD
+                            </button>
+                            <button id="btn-import-siswa" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-xl text-[11px] font-black tracking-wider transition-all flex items-center justify-center gap-1 active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline></svg> UPLOAD
+                            </button>
+                            <button onclick="cetakKartuUTBK()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-[11px] font-black tracking-wider shadow-sm transition-all col-span-2 sm:col-span-1 flex items-center justify-center gap-1 active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><rect x="6" y="14" width="12" height="8"></rect></svg> CETAK KARTU UJIAN
+                            </button>
                             <input type="file" id="file-import-siswa" accept=".xlsx, .xls" class="hidden">
                         </div>
                     </div>
@@ -74,6 +84,44 @@
         </div>
     </main>
 
+    <div id="modal-siswa" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden flex flex-col border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="text-base font-black text-slate-800" id="modal-title">Form Input Siswa</h2>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-red-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            
+            <form id="form-siswa" class="p-5 space-y-4">
+                <input type="hidden" id="student-id">
+                
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">Nomor Ujian (ID Utama)</label>
+                    <input type="text" id="in-nomor-ujian" required placeholder="Cth: UTBK-2026-001" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-500 transition-colors">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">Nama Lengkap Siswa</label>
+                    <input type="text" id="in-nama" required placeholder="Ketik nama lengkap..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-500 transition-colors">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">NISN (Boleh Dikosongkan)</label>
+                    <input type="text" id="in-nisn" placeholder="Cth: 0012345678" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-500 transition-colors">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">Tingkat Kelas</label>
+                        <input type="text" id="in-kelas" required placeholder="Cth: 7 / 8 / 9" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:bg-white focus:border-blue-500 transition-colors">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">Sub / Ruang</label>
+                        <input type="text" id="in-sub" placeholder="Cth: MTS / A / IPA" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 uppercase outline-none focus:bg-white focus:border-blue-500 transition-colors">
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-simpan-siswa" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-black text-xs tracking-widest active:scale-95 transition-all shadow-md shadow-blue-600/20 mt-2">SIMPAN PERUBAHAN</button>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
         import { renderAdminSidebar } from '../../js/components/sidebar-admin.js';
@@ -98,7 +146,7 @@
             siswaData = data || [];
             
             const tbody = document.getElementById('siswa-body');
-            if(siswaData.length === 0) return tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold">Belum ada siswa terdaftar. Silakan Import Excel!</td></tr>';
+            if(siswaData.length === 0) return tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold">Belum ada siswa terdaftar. Silakan Import Excel atau Add Manual!</td></tr>';
 
             tbody.innerHTML = siswaData.map((s, idx) => `
                 <tr class="hover:bg-slate-50 transition-colors">
@@ -107,16 +155,83 @@
                     <td class="p-4 font-black text-slate-800 uppercase">${s.name}</td>
                     <td class="p-4 text-center font-mono text-slate-500 text-xs">${s.nisn || '<span class="text-slate-300">-</span>'}</td>
                     <td class="p-4 text-center"><span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-xs font-bold border border-blue-100">${s.kelas}${s.sub_kelas ? '-' + s.sub_kelas : ''}</span></td>
-                    <td class="p-4 text-center"><button onclick="hapusSiswa('${s.id}')" class="text-slate-400 hover:text-red-500 p-2 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>
+                    <td class="p-4 text-center print:hidden">
+                        <div class="flex justify-center items-center gap-1.5">
+                            <button onclick="bukaModalEdit('${s.id}')" title="Edit Data" class="text-blue-600 hover:text-white p-2 rounded-lg bg-blue-50 hover:bg-blue-500 border border-blue-100 transition-colors shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+                            <button onclick="hapusSiswa('${s.id}')" title="Hapus Data" class="text-rose-600 hover:text-white p-2 rounded-lg bg-rose-50 hover:bg-rose-500 border border-rose-100 transition-colors shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
         }
 
-        window.hapusSiswa = async (id) => {
-            if(confirm("Hapus siswa ini dari database?")) { await supabase.from('students').delete().eq('id', id); loadSiswa(); }
+        // --- SISTEM MODAL POPUP (ADD & EDIT) ---
+        const sModal = document.getElementById('modal-siswa');
+        
+        document.getElementById('btn-tambah-manual').onclick = () => {
+            document.getElementById('form-siswa').reset();
+            document.getElementById('student-id').value = '';
+            document.getElementById('modal-title').innerText = "Tambah Siswa Manual";
+            sModal.classList.remove('hidden'); sModal.classList.add('flex');
         };
 
-        // --- IMPORT EXCEL (STRUKTUR BARU 4 KOLOM UTAMA) ---
+        window.bukaModalEdit = (id) => {
+            const s = siswaData.find(x => x.id === id);
+            if(!s) return;
+            document.getElementById('modal-title').innerText = "Edit Data Siswa";
+            document.getElementById('student-id').value = s.id;
+            document.getElementById('in-nomor-ujian').value = s.nomor_ujian || s.nisn || '';
+            document.getElementById('in-nama').value = s.name || '';
+            document.getElementById('in-nisn').value = s.nisn || '';
+            document.getElementById('in-kelas').value = s.kelas || '';
+            document.getElementById('in-sub').value = s.sub_kelas || '';
+            
+            sModal.classList.remove('hidden'); sModal.classList.add('flex');
+        };
+
+        document.getElementById('btn-close-modal').onclick = () => { sModal.classList.remove('flex'); sModal.classList.add('hidden'); };
+
+        document.getElementById('form-siswa').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-simpan-siswa'); btn.innerText = "MENYIMPAN..."; btn.disabled = true;
+
+            const recordId = document.getElementById('student-id').value;
+            const payload = {
+                school_id: schoolId,
+                nomor_ujian: document.getElementById('in-nomor-ujian').value.trim(),
+                name: document.getElementById('in-nama').value.trim(),
+                nisn: document.getElementById('in-nisn').value.trim() || null,
+                kelas: document.getElementById('in-kelas').value.trim(),
+                sub_kelas: document.getElementById('in-sub').value.trim().toUpperCase()
+            };
+
+            if(recordId) {
+                await supabase.from('students').update(payload).eq('id', recordId);
+            } else {
+                await supabase.from('students').insert([payload]);
+            }
+
+            sModal.classList.remove('flex'); sModal.classList.add('hidden');
+            loadSiswa();
+            btn.innerText = "SIMPAN PERUBAHAN"; btn.disabled = false;
+        };
+
+        window.hapusSiswa = async (id) => {
+            if(confirm("Hapus siswa ini secara permanen dari database instansi?")) { await supabase.from('students').delete().eq('id', id); loadSiswa(); }
+        };
+
+        // --- EXCEL TEMPLATE DOWNLOAD ---
+        document.getElementById('btn-download-template').onclick = () => {
+            const template = [
+                ['Nomor Ujian', 'Nama Siswa', 'NISN (Opsional)', 'Tingkat Kelas', 'Sub Kelas / Ruang'],
+                ['UTBK-2026-001', 'EKA KURNIAWAN', '0021445672', '8', 'SDIT'],
+                ['UTBK-2026-002', 'BUDI SETIAWAN', '', '7', 'MTS']
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(template); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template_Siswa"); XLSX.writeFile(wb, "Template_Database_Siswa.xlsx");
+        };
+
+        // --- BULK IMPORT EXCEL ---
         document.getElementById('btn-import-siswa').onclick = () => document.getElementById('file-import-siswa').click();
         document.getElementById('file-import-siswa').onchange = (e) => {
             const file = e.target.files[0]; if(!file) return;
@@ -126,22 +241,18 @@
                 const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).slice(1);
                 
                 const payload = json.filter(r => r[0] && r[1]).map(r => ({
-                    school_id: schoolId, 
-                    nomor_ujian: String(r[0]).trim(), 
-                    name: String(r[1]).trim(),
-                    nisn: r[2] ? String(r[2]).trim() : null, // Jika kosong, set NULL di DB
-                    kelas: String(r[3]||'').trim(), 
-                    sub_kelas: String(r[4]||'').trim()
+                    school_id: schoolId, nomor_ujian: String(r[0]).trim(), name: String(r[1]).trim(),
+                    nisn: r[2] ? String(r[2]).trim() : null, kelas: String(r[3]||'').trim(), sub_kelas: String(r[4]||'').trim().toUpperCase()
                 }));
 
                 if(payload.length > 0) {
-                    await supabase.from('students').insert(payload); alert("Database siswa berhasil diperbarui!"); loadSiswa();
+                    await supabase.from('students').insert(payload); alert(`Berhasil mengimpor ${payload.length} data peserta ujian!`); loadSiswa();
                 }
             };
             reader.readAsArrayBuffer(file);
         };
 
-        // --- CETAK KARTU UTBK (STRUKTUR BARU) ---
+        // --- CETAK KARTU UTBK ---
         window.cetakKartuUTBK = () => {
             if(siswaData.length === 0) return alert("Database siswa kosong!");
             const area = document.getElementById('print-area');
