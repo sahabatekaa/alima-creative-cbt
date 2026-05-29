@@ -210,25 +210,33 @@
             btn.innerText = "MENDAFTAR..."; btn.disabled = true;
             alertBox.classList.add('hidden');
 
-            const name = document.getElementById('reg-name').value;
-            const school_id = document.getElementById('reg-school').value.toUpperCase();
-            const email = document.getElementById('reg-email').value;
+            const name = document.getElementById('reg-name').value.trim();
+            // Pembersihan kode sekolah: Hapus spasi depan-belakang agar akurat
+            const rawSchoolId = document.getElementById('reg-school').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
             const password = document.getElementById('reg-password').value;
 
-            // Verifikasi Kode Sekolah menggunakan maybeSingle() agar tidak CRASH saat diblokir RLS
-            const { data: schoolCheck, error: errCek } = await supabase.from('schools').select('id').eq('id', school_id).maybeSingle();
-            
+            // PENCARIAN TAHAN BANTING (Abaikan case sensitive)
+            const { data: schools, error: errCek } = await supabase
+                .from('schools')
+                .select('id')
+                .ilike('id', rawSchoolId)
+                .limit(1);
+
             if (errCek) {
-                showAlert("Akses database diblokir! Pastikan Anda sudah menjalankan perintah SQL GRANT SELECT ON TABLE schools TO anon;");
+                showAlert("Akses database diblokir RLS! Jalankan SQL: ALTER TABLE schools DISABLE ROW LEVEL SECURITY;");
                 btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
                 return;
             }
 
-            if(!schoolCheck) {
-                showAlert("Kode Instansi tidak valid atau tidak terdaftar!");
+            if(!schools || schools.length === 0) {
+                showAlert(`Kode Instansi "${rawSchoolId}" tidak ditemukan di database!`);
                 btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
                 return;
             }
+
+            // Ambil ID yang benar-benar ada di DB (Menghindari masalah format huruf)
+            const validSchoolId = schools[0].id;
 
             // Supabase Auth Signup
             const { data, error } = await supabase.auth.signUp({ email, password });
@@ -243,7 +251,7 @@
                         id: data.user.id, 
                         email: email, 
                         name: name, 
-                        school_id: school_id, 
+                        school_id: validSchoolId, 
                         role: 'teacher', 
                         status: 'pending' 
                     }]);
