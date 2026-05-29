@@ -18,25 +18,25 @@
         <div class="absolute inset-0 bg-red-900/20 animate-pulse"></div>
         <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-500 mb-6 animate-bounce relative z-10"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <h1 class="text-3xl md:text-4xl font-black text-white tracking-widest relative z-10 mb-2">UJIAN DIBLOKIR!</h1>
-        <p class="mt-2 text-red-400 font-bold text-lg md:text-xl relative z-10 max-w-lg">Anda melanggar aturan keamanan (Pindah Tab/Keluar Layar) 3 kali.</p>
+        <p class="mt-2 text-red-400 font-bold text-lg md:text-xl relative z-10 max-w-lg">Anda melanggar aturan keamanan 3 kali.</p>
         <div class="mt-8 bg-white/10 p-5 md:p-6 rounded-2xl border border-white/20 backdrop-blur-sm relative z-10 max-w-md">
-           <p class="text-white text-sm md:text-base font-medium">Bawa perangkat Anda menghadap Pengawas untuk membuka layar.</p>
+           <p class="text-white text-sm md:text-base font-medium">Lapor Pengawas untuk membuka layar.</p>
         </div>
     </div>
 
     <div id="layer-fullscreen" class="fixed inset-0 bg-slate-900 z-[150] flex-col items-center justify-center p-6 text-center flex">
         <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-6 text-emerald-400 animate-pulse"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         <h1 class="text-2xl md:text-3xl font-black mb-4 tracking-wider text-white">Sistem Keamanan Aktif</h1>
-        <p class="text-slate-400 mb-10 max-w-md text-base md:text-lg">Gunakan layar penuh untuk memulai ujian. Jika menggunakan aplikasi Exambro, tekan masuk.</p>
+        <p class="text-slate-400 mb-10 max-w-md text-base md:text-lg">Gunakan layar penuh untuk memulai. Jika di aplikasi Exambro, tekan masuk.</p>
         <button onclick="enterFS()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl active:scale-95 transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)] tracking-widest">MASUK UJIAN</button>
     </div>
 
     <div id="blur-warning" class="fixed inset-0 z-[140] hidden flex-col items-center justify-center bg-black/50 backdrop-blur-xl pointer-events-none transition-all">
         <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4 animate-pulse border-[6px] border-red-500 text-center max-w-sm mx-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-red-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-red-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
             <div>
               <h2 class="font-black text-3xl text-red-600 mb-2">FOKUS HILANG!</h2>
-              <p class="font-bold text-slate-700">Kembali ke layar ujian. Pindah tab atau aplikasi dianggap sebagai kecurangan!</p>
+              <p class="font-bold text-slate-700">Kembali ke layar ujian segera!</p>
             </div>
         </div>
     </div>
@@ -66,9 +66,7 @@
           </div>
         </header>
 
-        <div id="offline-alert" class="bg-red-50 border-b border-red-200 p-1.5 text-center text-red-600 text-[11px] font-bold shadow-inner z-30 relative hidden">
-            ⚠️ KONEKSI TERPUTUS! Jawaban otomatis aman tersimpan di perangkat.
-        </div>
+        <div id="offline-alert" class="bg-red-50 border-b border-red-200 p-1.5 text-center text-red-600 text-[11px] font-bold shadow-inner z-30 relative hidden">⚠️ KONEKSI TERPUTUS! Jawaban otomatis aman tersimpan di perangkat.</div>
 
         <main class="flex-1 max-w-7xl mx-auto w-full p-3 sm:p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 mt-1 items-start">
           <div class="lg:col-span-3 space-y-4">
@@ -81,10 +79,13 @@
             </div>
 
             <div class="bg-white p-5 sm:p-6 lg:p-8 rounded-[1.5rem] shadow-sm border border-slate-200 relative overflow-hidden" id="soal-box">
-                <div class="text-center p-10 font-bold text-slate-400">Menyiapkan Naskah Ujian...</div>
+                <div class="text-center p-10 font-bold text-slate-400 flex flex-col items-center justify-center">
+                    <svg class="animate-spin h-10 w-10 text-emerald-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Menyiapkan Naskah Ujian...
+                </div>
             </div>
 
-            <div class="flex flex-wrap gap-2 md:gap-3">
+            <div class="flex flex-wrap gap-2 md:gap-3" id="nav-buttons-bawah">
               <button id="btn-prev" class="flex-1 py-3.5 px-4 bg-white border border-slate-200 text-slate-600 rounded-xl font-black shadow-sm active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg> <span class="hidden sm:inline">SEBELUMNYA</span></button>
               <button id="btn-ragu" class="flex-1 py-3.5 px-4 bg-white border border-slate-200 text-amber-500 rounded-xl font-black shadow-sm active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> RAGU</button>
               <button id="btn-next" class="flex-1 py-3.5 px-4 bg-emerald-600 text-white rounded-xl font-black shadow-md shadow-emerald-500/20 active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5"><span class="hidden sm:inline">SELANJUTNYA</span> <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -156,20 +157,42 @@
                 if(timeLeft <= 0) return submitExam();
             }
 
-            const { data: qData } = await supabase.from('bank_soal').select('*').eq('mapel', studentData.mapel).eq('kelas', studentData.class).eq('teacher_email', studentData.teacherEmail);
-            if(qData) {
-                const savedOrder = localStorage.getItem(`${storageKey}_order`);
-                if(savedOrder) {
-                    const orderIds = JSON.parse(savedOrder);
-                    questions = orderIds.map(id => qData.find(q => q.id === id)).filter(Boolean);
-                } else {
-                    const groups = {};
-                    qData.forEach(q => { const kw = q.kode_wacana || `single_${q.id}`; if(!groups[kw]) groups[kw]=[]; groups[kw].push(q); });
-                    const selectedGroups = Object.keys(groups).map(k => groups[k]).sort(() => Math.random() - 0.5);
-                    selectedGroups.forEach(grp => { questions = questions.concat(grp); });
-                    localStorage.setItem(`${storageKey}_order`, JSON.stringify(questions.map(q=>q.id)));
-                }
+            // PERBAIKAN BUG 2: MENGGUNAKAN .ilike() AGAR HURUF BESAR KECIL/SPASI DIABAIKAN
+            const cleanMapel = (studentData.mapel || '').trim();
+            const cleanKelas = (studentData.class || '').trim();
+
+            const { data: qData, error: qErr } = await supabase.from('bank_soal')
+                .select('*')
+                .ilike('mapel', `%${cleanMapel}%`)
+                .ilike('kelas', `%${cleanKelas}%`)
+                .eq('teacher_email', studentData.teacherEmail);
+            
+            // JIKA DATABASE ERROR ATAU TERKUNCI RLS
+            if (qErr) {
+                document.getElementById('soal-box').innerHTML = `<div class="text-center p-8 bg-red-50 rounded-2xl border-2 border-red-200 text-red-600"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto mb-3"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><h2 class="text-lg font-black mb-1">Akses Database Ditolak</h2><p class="text-sm font-semibold">Gagal menarik soal. Hubungi Admin Ujian.</p><p class="text-xs mt-2 opacity-70">${qErr.message}</p></div>`;
+                document.getElementById('nav-buttons-bawah').classList.add('hidden');
+                return;
             }
+
+            // JIKA SOAL BENAR-BENAR KOSONG
+            if(!qData || qData.length === 0) {
+                document.getElementById('soal-box').innerHTML = `<div class="text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 text-slate-500"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto mb-3 opacity-50"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg><h2 class="text-lg font-black mb-1 text-slate-600">Naskah Ujian Kosong</h2><p class="text-sm font-semibold">Guru Anda belum merilis soal untuk Mapel <b>${cleanMapel}</b> Kelas <b>${cleanKelas}</b>.</p><p class="text-[10px] mt-3 font-bold text-slate-400">Silakan lapor ke Pengawas Ruangan.</p></div>`;
+                document.getElementById('nav-buttons-bawah').classList.add('hidden');
+                return;
+            }
+
+            const savedOrder = localStorage.getItem(`${storageKey}_order`);
+            if(savedOrder) {
+                const orderIds = JSON.parse(savedOrder);
+                questions = orderIds.map(id => qData.find(q => q.id === id)).filter(Boolean);
+            } else {
+                const groups = {};
+                qData.forEach(q => { const kw = q.kode_wacana || `single_${q.id}`; if(!groups[kw]) groups[kw]=[]; groups[kw].push(q); });
+                const selectedGroups = Object.keys(groups).map(k => groups[k]).sort(() => Math.random() - 0.5);
+                selectedGroups.forEach(grp => { questions = questions.concat(grp); });
+                localStorage.setItem(`${storageKey}_order`, JSON.stringify(questions.map(q=>q.id)));
+            }
+            
             updateSubmitUI(); renderUI(); startTimer(); subscribeRealtime();
             syncAns();
         }
@@ -187,7 +210,7 @@
             `;
             if(q.teks_wacana) html += `<div class="mb-5 p-4 bg-slate-50 border-l-[3px] border-slate-400 text-sm katex-render">${q.teks_wacana}</div>`;
             if(q.gambar) html += `<div class="mb-5 flex justify-center"><img src="${q.gambar}" class="max-h-72 object-contain rounded-lg"/></div>`;
-            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3">${q.pertanyaan || ''}</div>`;
+            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3 whitespace-pre-wrap">${q.pertanyaan || ''}</div>`;
 
             if(type === 'PG') {
                 html += `<div class="space-y-2.5 pl-3">`;
@@ -219,7 +242,7 @@
 
             document.getElementById('btn-prev').disabled = currentIndex === 0;
             document.getElementById('btn-next').disabled = currentIndex === questions.length - 1;
-            document.getElementById('btn-ragu').className = ragu[q.id] ? "flex-1 py-3.5 bg-amber-400 text-white border-amber-500 rounded-xl font-black flex items-center justify-center" : "flex-1 py-3.5 bg-white border border-slate-200 text-amber-500 rounded-xl font-black flex items-center justify-center";
+            document.getElementById('btn-ragu').className = ragu[q.id] ? "flex-1 py-3.5 bg-amber-400 text-white border-amber-500 rounded-xl font-black flex items-center justify-center gap-1.5" : "flex-1 py-3.5 bg-white border border-slate-200 text-amber-500 rounded-xl font-black flex items-center justify-center gap-1.5";
         }
 
         window.goTo = (idx) => { currentIndex = idx; renderUI(); };
@@ -235,7 +258,6 @@
             localStorage.setItem(`${storageKey}_ans`, JSON.stringify(answers)); renderUI();
             if(navigator.onLine && questions.length > 0) {
                 const prog = Math.round((Object.keys(answers).length/questions.length)*100);
-                // INTEGRASI LINTAS PERANGKAT: Setor jawaban real-time ke kolom khusus di server Supabase
                 await supabase.from('live_students').update({ progress: prog, answers: answers }).eq('id', studentData.id);
             }
         }
@@ -243,9 +265,9 @@
         function updateSubmitUI() {
             const box = document.getElementById('submit-box');
             if (timeLeft <= 600) {
-                box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-black">KUMPULKAN</button>`;
+                box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-black tracking-widest">KUMPULKAN</button>`;
             } else {
-                box.innerHTML = `<div class="w-full p-4 bg-slate-50 border-2 border-dashed text-slate-400 rounded-xl text-center"><span class="text-[10px] font-black tracking-widest uppercase block text-slate-500">Tombol Kumpul Dikunci</span><span class="text-[9px] font-bold text-slate-400">Terbuka di 10 Menit Terakhir</span></div>`;
+                box.innerHTML = `<div class="w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl text-center"><span class="text-[10px] font-black tracking-widest uppercase block text-slate-500 mb-0.5">Tombol Kumpul Dikunci</span><span class="text-[9px] font-bold text-slate-400">Terbuka di 10 Menit Terakhir</span></div>`;
             }
         }
 
@@ -259,11 +281,11 @@
             }, 1000);
         }
 
-        window.submitExamCheck = () => { if(confirm("Yakin ingin mengakhiri ujian?")) submitExam(); };
+        window.submitExamCheck = () => { if(confirm("Yakin ingin mengakhiri dan mengumpulkan jawaban ujian ini?")) submitExam(); };
 
         async function submitExam() {
             if(isSubmitting) return; isSubmitting=true;
-            if(!navigator.onLine) { alert("OFFLINE! Gagal mengirim."); isSubmitting=false; return; }
+            if(!navigator.onLine) { alert("OFFLINE! Pastikan koneksi menyala sebelum mengumpulkan."); isSubmitting=false; return; }
             
             let pts = 0; let tot = 0;
             questions.forEach(q => {
@@ -293,7 +315,7 @@
                 
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
                 window.location.href = `result.html?score=${skor}`;
-            } catch(e) { alert("Gagal kumpul!"); isSubmitting=false; }
+            } catch(e) { alert("Gagal kumpul data! Silakan coba lagi."); isSubmitting=false; }
         }
 
         window.enterFS = () => { 
@@ -329,9 +351,8 @@
 
         function subscribeRealtime() {
             supabase.channel('siswa').on('postgres_changes', { event:'UPDATE', schema:'public', table:'live_students', filter:`id=eq.${studentData.id}` }, p => {
-                // SENSOR KICK DETEKSI LOGIN GANDA: Tendang keluar jika token sesi browser tidak cocok dengan server!
                 if(p.new.session_id && p.new.session_id !== studentData.sessionId) {
-                    alert("🚨 DETEKSI LOGIN GANDA!\nAkun Anda telah login di perangkat/device lain. Sesi di layar ini ditutup otomatis.");
+                    alert("🚨 DETEKSI LOGIN GANDA!\nAkun Anda login di perangkat lain. Sesi ini ditutup otomatis.");
                     localStorage.clear(); window.location.href = 'portal.html'; return;
                 }
                 if(p.new.warnings===0 && isLocked) { isLocked=false; warnings=0; localStorage.setItem(`${storageKey}_lock`,'false'); cekCheat(); alert("Kunci dibuka pengawas."); }
