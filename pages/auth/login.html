@@ -215,8 +215,15 @@
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
 
-            // Verifikasi Kode Sekolah
-            const { data: schoolCheck } = await supabase.from('schools').select('id').eq('id', school_id).single();
+            // Verifikasi Kode Sekolah menggunakan maybeSingle() agar tidak CRASH saat diblokir RLS
+            const { data: schoolCheck, error: errCek } = await supabase.from('schools').select('id').eq('id', school_id).maybeSingle();
+            
+            if (errCek) {
+                showAlert("Akses database diblokir! Pastikan Anda sudah menjalankan perintah SQL GRANT SELECT ON TABLE schools TO anon;");
+                btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
+                return;
+            }
+
             if(!schoolCheck) {
                 showAlert("Kode Instansi tidak valid atau tidak terdaftar!");
                 btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
@@ -230,7 +237,7 @@
                 showAlert(error.message);
                 btn.innerText = "DAFTARKAN AKUN"; btn.disabled = false;
             } else {
-                // Manual Insert to Users Table (If Supabase Trigger is not configured)
+                // Manual Insert to Users Table
                 if(data.user) {
                     await supabase.from('users').upsert([{ 
                         id: data.user.id, 
