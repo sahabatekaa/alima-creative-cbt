@@ -63,10 +63,11 @@
                         <input type="text" id="s_sub" placeholder="Cth: A / B / IPA 1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 uppercase outline-none focus:border-emerald-500">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Durasi Waktu</label>
-                        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-500">
-                            <input type="number" id="s_durasi" required min="10" value="90" class="w-full p-3 bg-transparent text-sm font-bold text-slate-800 outline-none text-right">
-                            <span class="px-3 text-xs font-bold text-slate-400 bg-slate-100 border-l border-slate-200 h-full flex items-center">Menit</span>
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Jadwal Waktu Ujian</label>
+                        <div class="flex items-center gap-1.5">
+                            <input type="time" id="s_jam_mulai" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 text-center">
+                            <span class="font-black text-slate-400">-</span>
+                            <input type="time" id="s_jam_selesai" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 text-center">
                         </div>
                     </div>
                 </div>
@@ -81,6 +82,21 @@
 
                 <button type="submit" id="btn-simpan-sesi" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black text-sm tracking-widest active:scale-95 transition-all shadow-lg shadow-emerald-500/30">BUAT TOKEN SESI</button>
             </form>
+        </div>
+    </div>
+
+    <div id="modal-qr" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center p-4 z-[120]">
+        <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl flex flex-col items-center text-center relative animate-in zoom-in duration-300">
+            <button id="close-qr" class="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 rounded-full transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight mb-2">GERBANG MASUK</h2>
+            <p class="text-sm text-slate-500 font-bold mb-6">Arahkan kamera siswa ke QR ini.</p>
+            <div class="bg-white p-3 rounded-2xl border-4 border-emerald-500 shadow-xl mb-6 flex justify-center">
+                <img id="qr-image" src="" alt="QR Code" class="w-[200px] h-[200px] object-contain" />
+            </div>
+            <div class="bg-slate-50 border border-slate-200 px-6 py-3 rounded-xl w-full">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ATAU KODE TOKEN MANUAL</p>
+                <p id="qr-token-text" class="text-3xl font-black font-mono text-emerald-600 tracking-[0.2em]"></p>
+            </div>
         </div>
     </div>
 
@@ -148,13 +164,14 @@
                     <p class="text-xs font-bold text-slate-500 mb-4">Kelas ${s.kelas} ${s.sub_kelas ? '- '+s.sub_kelas : ''}</p>
                     
                     <div class="bg-slate-50 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-600 mb-4 border border-slate-100">
-                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${s.durasi || 90} Menit</div>
-                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg> ${s.jumlah_soal || '-'} Soal</div>
+                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${s.jam_mulai||'07:00'} - ${s.jam_selesai||'09:00'}</div>
+                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg> ${s.jumlah_soal || '-'} Soal</div>
                         <div class="col-span-2 flex items-center gap-1.5 text-[10px] mt-1"><span class="bg-blue-100 text-blue-700 px-1.5 rounded">PG: ${s.bobot_pg||40}%</span> <span class="bg-amber-100 text-amber-700 px-1.5 rounded">Esai: ${s.bobot_esai||60}%</span></div>
                     </div>
 
                     <div class="flex gap-1.5">
                         <button onclick="toggleSesi('${s.token}', '${s.status}')" class="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-colors ${s.status==='open' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}">${s.status==='open' ? 'Tutup' : 'Buka'}</button>
+                        <button onclick="bukaModalQR('${s.token}')" class="p-2.5 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-xl transition-colors border border-slate-200" title="Tampilkan QR Code"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M8 12h8"></path><path d="M12 8v8"></path></svg></button>
                         <button onclick="bukaModalEdit('${s.token}')" class="p-2.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors border border-slate-200" title="Edit Parameter Sesi"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
                         <button onclick="hapusSesi('${s.token}')" class="p-2.5 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors border border-slate-200"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>
@@ -163,11 +180,14 @@
         }
 
         const modal = document.getElementById('modal-sesi');
+        const modalQr = document.getElementById('modal-qr');
         
         document.getElementById('btn-tambah-sesi').onclick = () => { 
             document.getElementById('form-sesi').reset(); 
             document.getElementById('edit-token').value = ''; 
             document.getElementById('info-soal').classList.add('hidden'); 
+            document.getElementById('s_jam_mulai').value = '07:00';
+            document.getElementById('s_jam_selesai').value = '09:00';
             document.getElementById('s_bobot_pg').value = 40;
             document.getElementById('s_bobot_esai').value = 60;
             document.getElementById('btn-simpan-sesi').innerText = "BUAT TOKEN SESI";
@@ -176,6 +196,16 @@
         };
         
         document.getElementById('btn-close-modal').onclick = () => { modal.classList.remove('flex'); modal.classList.add('hidden'); };
+        document.getElementById('close-qr').onclick = () => { modalQr.classList.remove('flex'); modalQr.classList.add('hidden'); };
+
+        // LOGIKA BUKA MODAL QR
+        window.bukaModalQR = (token) => {
+            const targetUrl = window.location.origin + '/pages/siswa/portal/?token=' + token;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(targetUrl)}`;
+            document.getElementById('qr-image').src = qrUrl;
+            document.getElementById('qr-token-text').innerText = token;
+            modalQr.classList.remove('hidden'); modalQr.classList.add('flex');
+        };
 
         // LOGIKA MEMBUKA MODAL EDIT
         window.bukaModalEdit = (token) => {
@@ -192,7 +222,8 @@
             }
             
             document.getElementById('s_sub').value = s.sub_kelas || '';
-            document.getElementById('s_durasi').value = s.durasi || 90;
+            document.getElementById('s_jam_mulai').value = s.jam_mulai || '07:00';
+            document.getElementById('s_jam_selesai').value = s.jam_selesai || '09:00';
             document.getElementById('s_bobot_pg').value = s.bobot_pg !== undefined ? s.bobot_pg : 40;
             document.getElementById('s_bobot_esai').value = s.bobot_esai !== undefined ? s.bobot_esai : 60;
             
@@ -222,21 +253,26 @@
             const jumlah_soal = bankSoalGrup[idxSoal].count;
             
             const sub = document.getElementById('s_sub').value.toUpperCase().trim();
-            const durasi = document.getElementById('s_durasi').value;
+            const jam_mulai = document.getElementById('s_jam_mulai').value;
+            const jam_selesai = document.getElementById('s_jam_selesai').value;
             const bobotPg = document.getElementById('s_bobot_pg').value;
             const bobotEsai = document.getElementById('s_bobot_esai').value;
             
             const tokenExisting = document.getElementById('edit-token').value;
 
-            const d = new Date(); d.setMinutes(d.getMinutes() + parseInt(durasi));
-            const jam_selesai = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            // KALKULASI DURASI DI BALIK LAYAR (Biar database tetap utuh logikanya)
+            const [h1, m1] = jam_mulai.split(':').map(Number);
+            const [h2, m2] = jam_selesai.split(':').map(Number);
+            let kalkulasiDurasi = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if(kalkulasiDurasi <= 0) kalkulasiDurasi = 120; // Default aman kalau jam salah input
 
             if(tokenExisting) {
                 // UPDATE JALUR EDIT
                 await supabase.from('exam_sessions').update({
                     mapel: mapel, kelas: kelas, sub_kelas: sub,
-                    durasi: parseInt(durasi), bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
-                    jumlah_soal: jumlah_soal, jam_selesai: jam_selesai
+                    jam_mulai: jam_mulai, jam_selesai: jam_selesai, durasi: kalkulasiDurasi, 
+                    bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
+                    jumlah_soal: jumlah_soal
                 }).eq('token', tokenExisting);
             } else {
                 // INSERT JALUR BARU
@@ -244,8 +280,9 @@
                 await supabase.from('exam_sessions').insert([{
                     token: tokenBaru, school_id: schoolId, teacher_email: teacherEmail,
                     mapel: mapel, kelas: kelas, sub_kelas: sub,
-                    durasi: parseInt(durasi), bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
-                    jumlah_soal: jumlah_soal, jam_mulai: '00:00', jam_selesai: jam_selesai, status: 'open'
+                    jam_mulai: jam_mulai, jam_selesai: jam_selesai, durasi: kalkulasiDurasi,
+                    bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
+                    jumlah_soal: jumlah_soal, status: 'open'
                 }]);
             }
 
