@@ -3,117 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesi Ujian | Teacher Center</title>
+    <title>Manajemen Sesi Ujian | Teacher Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../../css/global.css">
-    <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;900&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
-<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
+<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800">
     <div id="sidebar-container"></div>
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
-        
-        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
-           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
-             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-emerald-600 hover:bg-slate-200 transition-colors shrink-0">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-             </button>
-             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Teacher Center V3</h2>
-           </div>
-           <div class="flex items-center gap-3 shrink-0">
-               <div class="text-right hidden md:block ml-2">
-                   <p class="text-xs font-bold text-slate-800 truncate max-w-[120px]" id="user-name">Memuat...</p>
-                   <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Guru Mapel</p>
-               </div>
-               <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 font-black shrink-0" id="user-initial">G</div>
+    
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 flex justify-between items-center z-10 sticky top-0 shadow-sm">
+           <div class="flex items-center gap-3">
+             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-emerald-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+             <h2 class="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest">Teacher Center V3</h2>
            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 max-w-7xl mx-auto pb-10 animate-in fade-in duration-300">
-              
-              <div class="bg-white p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 h-fit">
-                <h3 class="text-lg font-black mb-5 text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-emerald-500"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Buka Sesi Ujian
-                </h3>
-                <form id="form-sesi" class="space-y-4">
-                  <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block tracking-widest">Mata Pelajaran</label>
-                    <select id="j_mapel" required class="w-full p-3 border border-slate-200 bg-slate-50 rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-emerald-500"><option value="">-- Pilih Mapel --</option></select>
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
-                     <div>
-                         <label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block tracking-widest">Tingkat</label>
-                         <select id="j_kelas" required class="w-full p-3 border border-slate-200 bg-slate-50 rounded-xl outline-none text-sm font-bold text-slate-700 focus:border-emerald-500"><option value="">Pilih Kelas</option></select>
-                     </div>
-                     <div><label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block tracking-widest">Ruang/Sub</label><input id="j_sub" placeholder="Cth: A" required class="w-full p-3 border border-slate-200 bg-slate-50 rounded-xl uppercase text-sm font-bold text-center outline-none focus:border-emerald-500" /></div>
-                  </div>
-                  
-                  <div class="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl space-y-3">
-                    <label class="text-[10px] font-black text-emerald-800 uppercase flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Kuota & Bobot Penilaian</label>
-                    <div class="grid grid-cols-3 gap-2 pb-2 border-b border-emerald-200/50">
-                        <div><label class="text-[9px] font-bold text-slate-500 mb-1 block">Jml PG</label><input type="number" id="j_kPG" value="0" class="w-full p-2 border border-slate-200 rounded-lg text-xs text-center font-bold outline-none" /></div>
-                        <div><label class="text-[9px] font-bold text-slate-500 mb-1 block">Jml PGK</label><input type="number" id="j_kPGK" value="0" class="w-full p-2 border border-slate-200 rounded-lg text-xs text-center font-bold outline-none" /></div>
-                        <div><label class="text-[9px] font-bold text-slate-500 mb-1 block">Jml Esai</label><input type="number" id="j_kEsai" value="0" class="w-full p-2 border border-slate-200 rounded-lg text-xs text-center font-bold outline-none" /></div>
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
+            <div class="max-w-6xl mx-auto space-y-6 pb-10">
+                <div class="bg-white p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Sesi Ujian Aktif</h3>
+                        <p class="text-xs font-bold text-slate-400 mt-1">Rilis token ujian berdasarkan Bank Soal yang telah Anda buat.</p>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 pt-1 border-b border-emerald-200/50 pb-2">
-                        <div><label class="text-[9px] font-black text-emerald-700 mb-1 flex items-center gap-1">Bobot PG/PGK %</label><input type="number" id="j_bPG" value="70" class="w-full p-2 border border-emerald-300 rounded-lg text-sm text-center font-black text-emerald-800 bg-emerald-100/50 outline-none" /></div>
-                        <div><label class="text-[9px] font-black text-emerald-700 mb-1 flex items-center gap-1">Bobot Esai %</label><input type="number" id="j_bEsai" value="30" class="w-full p-2 border border-emerald-300 rounded-lg text-sm text-center font-black text-emerald-800 bg-emerald-100/50 outline-none" /></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 pt-1">
-                        <div><label class="text-[9px] font-black text-emerald-700 mb-1 flex items-center gap-1">Jam Mulai</label><input type="time" id="j_mulai" value="07:30" required class="w-full p-2 border border-emerald-300 rounded-lg text-xs text-center font-black text-emerald-800 bg-emerald-100/50 outline-none" /></div>
-                        <div><label class="text-[9px] font-black text-emerald-700 mb-1 flex items-center gap-1">Jam Selesai</label><input type="time" id="j_selesai" value="09:00" required class="w-full p-2 border border-emerald-300 rounded-lg text-xs text-center font-black text-emerald-800 bg-emerald-100/50 outline-none" /></div>
-                    </div>
-                  </div>
-
-                  <div>
-                      <label class="text-[10px] font-bold text-slate-500 uppercase mb-1.5 block tracking-widest">Token Sesi</label>
-                      <div class="flex gap-2">
-                          <input id="j_token" required readonly class="w-full p-3 border border-emerald-200 bg-emerald-50 rounded-xl uppercase font-mono text-sm font-black tracking-widest text-emerald-800 outline-none text-center" />
-                          <button type="button" id="btn-generate" class="p-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl active:scale-95 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><circle cx="15.5" cy="8.5" r="1.5"></circle><circle cx="15.5" cy="15.5" r="1.5"></circle><circle cx="8.5" cy="15.5" r="1.5"></circle></svg></button>
-                      </div>
-                  </div>
-                  <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 mt-2 rounded-xl text-sm font-black shadow-md shadow-emerald-600/30 active:scale-95 transition-all tracking-widest">RILIS UJIAN</button>
-                </form>
-              </div>
-              
-              <div class="xl:col-span-2 space-y-4">
-                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> Manajemen Sesi Aktif
-                </h3>
-                <div id="sesi-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-full p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-[24px]">Memuat sesi...</div>
+                    <button id="btn-tambah-sesi" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-xl text-xs font-black shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Buat Sesi Baru
+                    </button>
                 </div>
-              </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="sesi-grid">
+                    <div class="col-span-full text-center p-10 font-bold text-slate-400 border-2 border-dashed border-slate-200 rounded-[24px]">Memuat data sesi...</div>
+                </div>
             </div>
         </div>
     </main>
 
-    <div id="modal-qr" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center p-4 z-[120]">
-        <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl flex flex-col items-center text-center relative">
-            <button id="close-qr" class="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <h2 class="text-2xl font-black text-slate-800 tracking-tight mb-2">SCAN MASUK</h2>
-            <p class="text-sm text-slate-500 font-bold mb-6">Arahkan kamera HP ke QR ini.</p>
-            <div class="bg-white p-3 rounded-2xl border-4 border-emerald-500 shadow-xl mb-6">
-                <img id="qr-image" src="" alt="QR Code" class="w-[200px] h-[200px] object-contain" />
+    <div id="modal-sesi" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="text-xl font-black text-slate-800" id="modal-title">Rilis Sesi Ujian</h2>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-red-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
-            <div class="bg-slate-50 border border-slate-200 px-6 py-3 rounded-xl w-full">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ATAU KODE TOKEN</p>
-                <p id="qr-token-text" class="text-3xl font-black font-mono text-emerald-600 tracking-[0.2em]"></p>
-            </div>
+            
+            <form id="form-sesi" class="p-6 space-y-5">
+                <input type="hidden" id="edit-token">
+                
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <label class="text-[10px] font-black text-blue-800 uppercase tracking-widest block mb-2">1. Pilih Sumber Soal (Otomatis dari Bank Soal)</label>
+                    <select id="s_mapel_kelas" required class="w-full p-3 bg-white border border-blue-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="">-- Sedang mencari soal Anda... --</option>
+                    </select>
+                    <p id="info-soal" class="text-xs font-bold text-blue-600 mt-2 hidden">Jumlah Soal Ditemukan: <span id="count-soal" class="font-black text-lg">0</span></p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Sub Kelas (Opsional)</label>
+                        <input type="text" id="s_sub" placeholder="Cth: A / B / IPA 1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 uppercase outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Durasi Waktu</label>
+                        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-500">
+                            <input type="number" id="s_durasi" required min="10" value="90" class="w-full p-3 bg-transparent text-sm font-bold text-slate-800 outline-none text-right">
+                            <span class="px-3 text-xs font-bold text-slate-400 bg-slate-100 border-l border-slate-200 h-full flex items-center">Menit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Pengaturan Bobot Penilaian (%)</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="text-xs font-bold text-slate-500 mb-1">Bobot Pilihan Ganda</p><input type="number" id="s_bobot_pg" required min="0" max="100" value="40" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 text-center outline-none"></div>
+                        <div><p class="text-xs font-bold text-slate-500 mb-1">Bobot Esai</p><input type="number" id="s_bobot_esai" required min="0" max="100" value="60" class="w-full p-3 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 text-center outline-none"></div>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-simpan-sesi" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-xl font-black text-sm tracking-widest active:scale-95 transition-all shadow-lg shadow-emerald-500/30">BUAT TOKEN SESI</button>
+            </form>
         </div>
     </div>
 
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
         import { renderGuruSidebar } from '../../js/components/sidebar-guru.js';
-        renderGuruSidebar();
+        setTimeout(() => renderGuruSidebar(), 100);
 
-        let schoolId = null;
-        let teacherEmail = null;
-
-        const generateToken = () => Math.random().toString(36).substr(2, 6).toUpperCase();
-        document.getElementById('btn-generate').onclick = () => document.getElementById('j_token').value = generateToken();
+        let schoolId = null; let teacherEmail = null;
+        let sesiData = []; let bankSoalGrup = [];
 
         async function initPage() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -121,88 +98,161 @@
             const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
             schoolId = profile.school_id; teacherEmail = profile.email;
             
-            document.getElementById('user-name').innerText = profile.name;
-            document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
-
-            const [{ data: mapels }, { data: kelas }] = await Promise.all([
-                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
-                supabase.from('master_classes').select('name').eq('school_id', schoolId)
-            ]);
-
-            if(mapels) document.getElementById('j_mapel').innerHTML += mapels.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-            if(kelas) document.getElementById('j_kelas').innerHTML += kelas.map(k => `<option value="${k.name}">${k.name}</option>`).join('');
-            document.getElementById('j_token').value = generateToken();
-
-            loadSessions();
+            loadSesi();
+            loadBankSoal();
         }
 
-        async function loadSessions() {
-            const { data: sessions } = await supabase.from('exam_sessions').select('*').eq('teacher_email', teacherEmail).order('created_at', { ascending: false });
-            const container = document.getElementById('sesi-container');
-            
-            if(!sessions || sessions.length === 0) {
-                container.innerHTML = '<div class="col-span-full p-10 text-center bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 text-sm font-bold">Belum ada sesi yang dirilis.</div>';
+        async function loadBankSoal() {
+            const { data: soal } = await supabase.from('bank_soal').select('mapel, kelas').eq('teacher_email', teacherEmail);
+            if(!soal || soal.length === 0) {
+                document.getElementById('s_mapel_kelas').innerHTML = '<option value="">Bank Soal Anda masih kosong!</option>';
                 return;
             }
 
-            container.innerHTML = sessions.map(s => `
-                <div class="p-5 rounded-2xl border shadow-sm flex flex-col justify-between transition-colors ${s.status==='open'?'bg-white border-emerald-200':'bg-slate-50 border-slate-200 opacity-90'}">
-                    <div>
-                        <div class="flex justify-between items-start mb-3">
-                            <h4 class="text-xl font-black font-mono tracking-widest text-slate-800">${s.token}</h4>
-                            <span class="p-1.5 rounded-lg shadow-sm border ${s.status==='open'?'bg-emerald-50 text-emerald-600 border-emerald-200':'bg-red-50 text-red-600 border-red-200'}">${s.status==='open'?'🔓':'🔒'}</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mb-3">
-                            <span class="text-[10px] font-black bg-emerald-500 text-white px-2.5 py-1 rounded-md shadow-sm">${s.mapel}</span>
-                            <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200">Kls: ${s.kelas}-${s.sub_kelas}</span>
-                        </div>
-                        <div class="flex flex-col gap-1 mb-4">
-                            <div class="text-[9px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 flex justify-between">
-                                <span>BOBOT PG: ${s.bobot_pg || 70}%</span> <span>BOBOT ESAI: ${s.bobot_esai || 30}%</span>
-                            </div>
-                            <div class="text-[9px] font-black text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200 flex justify-between">
-                                <span>WAKTU: ${s.jam_mulai || '--:--'} s/d ${s.jam_selesai || '--:--'}</span>
-                            </div>
-                        </div>
+            const grup = {};
+            soal.forEach(s => {
+                const key = `${s.mapel.trim()}|||${s.kelas.trim()}`;
+                if(!grup[key]) grup[key] = { mapel: s.mapel.trim(), kelas: s.kelas.trim(), count: 0 };
+                grup[key].count++;
+            });
+
+            bankSoalGrup = Object.values(grup);
+            document.getElementById('s_mapel_kelas').innerHTML = '<option value="">-- Pilih Mapel & Kelas --</option>' + 
+                bankSoalGrup.map((g, i) => `<option value="${i}">${g.mapel} - Kelas ${g.kelas}</option>`).join('');
+        }
+
+        document.getElementById('s_mapel_kelas').addEventListener('change', (e) => {
+            const idx = e.target.value;
+            const infoBox = document.getElementById('info-soal');
+            if(idx === '') { infoBox.classList.add('hidden'); return; }
+            infoBox.classList.remove('hidden');
+            document.getElementById('count-soal').innerText = bankSoalGrup[idx].count + ' Soal';
+        });
+
+        async function loadSesi() {
+            const { data } = await supabase.from('exam_sessions').select('*').eq('teacher_email', teacherEmail).order('created_at', { ascending: false });
+            sesiData = data || []; renderSesi();
+        }
+
+        function renderSesi() {
+            const grid = document.getElementById('sesi-grid');
+            if(sesiData.length === 0) return grid.innerHTML = '<div class="col-span-full text-center p-10 font-bold text-slate-400 border-2 border-dashed border-slate-200 rounded-[24px]">Belum ada sesi ujian yang dibuat.</div>';
+
+            grid.innerHTML = sesiData.map(s => `
+                <div class="bg-white p-5 rounded-[20px] shadow-sm border ${s.status==='open' ? 'border-emerald-200 ring-2 ring-emerald-50' : 'border-slate-200 opacity-70'} relative overflow-hidden transition-all group">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="bg-slate-100 text-slate-800 px-3 py-1.5 rounded-lg text-lg font-black font-mono tracking-[0.2em] border border-slate-200 shadow-inner">${s.token}</div>
+                        <span class="text-[9px] font-black px-2.5 py-1 rounded border uppercase tracking-widest ${s.status==='open'?'bg-emerald-100 text-emerald-700 border-emerald-200':'bg-rose-100 text-rose-700 border-rose-200'}">${s.status==='open'?'Aktif':'Ditutup'}</span>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-                        <button onclick="bukaQR('${s.token}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-[10px] font-bold border border-blue-100 transition-colors">QR Code</button>
-                        <button onclick="window.location.href='monitor.html?token=${s.token}'" class="bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-[10px] font-bold transition-colors">Pantau Live</button>
-                        <button onclick="toggleSession('${s.id}', '${s.status}')" class="bg-slate-50 hover:bg-slate-100 text-slate-700 py-2 rounded-lg text-[10px] font-bold border border-slate-200 transition-colors">${s.status==='open'?'Kunci Sesi':'Buka Sesi'}</button>
-                        <button onclick="delSession('${s.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-lg text-[10px] font-bold border border-red-100 transition-colors">Hapus</button>
+                    <h4 class="font-black text-slate-800 uppercase mb-1 leading-tight">${s.mapel}</h4>
+                    <p class="text-xs font-bold text-slate-500 mb-4">Kelas ${s.kelas} ${s.sub_kelas ? '- '+s.sub_kelas : ''}</p>
+                    
+                    <div class="bg-slate-50 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-600 mb-4 border border-slate-100">
+                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${s.durasi || 90} Menit</div>
+                        <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg> ${s.jumlah_soal || '-'} Soal</div>
+                        <div class="col-span-2 flex items-center gap-1.5 text-[10px] mt-1"><span class="bg-blue-100 text-blue-700 px-1.5 rounded">PG: ${s.bobot_pg||40}%</span> <span class="bg-amber-100 text-amber-700 px-1.5 rounded">Esai: ${s.bobot_esai||60}%</span></div>
+                    </div>
+
+                    <div class="flex gap-1.5">
+                        <button onclick="toggleSesi('${s.token}', '${s.status}')" class="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wider transition-colors ${s.status==='open' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}">${s.status==='open' ? 'Tutup' : 'Buka'}</button>
+                        <button onclick="bukaModalEdit('${s.token}')" class="p-2.5 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-xl transition-colors border border-slate-200" title="Edit Parameter Sesi"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+                        <button onclick="hapusSesi('${s.token}')" class="p-2.5 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors border border-slate-200"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>
                 </div>
             `).join('');
         }
 
+        const modal = document.getElementById('modal-sesi');
+        
+        document.getElementById('btn-tambah-sesi').onclick = () => { 
+            document.getElementById('form-sesi').reset(); 
+            document.getElementById('edit-token').value = ''; 
+            document.getElementById('info-soal').classList.add('hidden'); 
+            document.getElementById('s_bobot_pg').value = 40;
+            document.getElementById('s_bobot_esai').value = 60;
+            document.getElementById('btn-simpan-sesi').innerText = "BUAT TOKEN SESI";
+            document.getElementById('modal-title').innerText = "Rilis Sesi Ujian";
+            modal.classList.remove('hidden'); modal.classList.add('flex'); 
+        };
+        
+        document.getElementById('btn-close-modal').onclick = () => { modal.classList.remove('flex'); modal.classList.add('hidden'); };
+
+        // LOGIKA MEMBUKA MODAL EDIT
+        window.bukaModalEdit = (token) => {
+            const s = sesiData.find(x => x.token === token);
+            if(!s) return;
+            
+            document.getElementById('modal-title').innerText = "Edit Parameter Sesi";
+            document.getElementById('edit-token').value = s.token;
+            
+            const idx = bankSoalGrup.findIndex(g => g.mapel.toUpperCase() === s.mapel.toUpperCase() && g.kelas.toUpperCase() === s.kelas.toUpperCase());
+            if(idx !== -1) {
+                document.getElementById('s_mapel_kelas').value = idx;
+                document.getElementById('s_mapel_kelas').dispatchEvent(new Event('change'));
+            }
+            
+            document.getElementById('s_sub').value = s.sub_kelas || '';
+            document.getElementById('s_durasi').value = s.durasi || 90;
+            document.getElementById('s_bobot_pg').value = s.bobot_pg !== undefined ? s.bobot_pg : 40;
+            document.getElementById('s_bobot_esai').value = s.bobot_esai !== undefined ? s.bobot_esai : 60;
+            
+            document.getElementById('btn-simpan-sesi').innerText = "SIMPAN PERUBAHAN";
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        };
+
+        window.toggleSesi = async (token, currentStatus) => {
+            const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+            await supabase.from('exam_sessions').update({ status: newStatus }).eq('token', token);
+            loadSesi();
+        };
+
+        window.hapusSesi = async (token) => {
+            if(confirm('Hapus sesi ujian ini permanen?')) { await supabase.from('exam_sessions').delete().eq('token', token); loadSesi(); }
+        };
+
         document.getElementById('form-sesi').onsubmit = async (e) => {
             e.preventDefault();
-            const bPG = parseInt(document.getElementById('j_bPG').value);
-            const bEsai = parseInt(document.getElementById('j_bEsai').value);
-            if (bPG + bEsai !== 100) return alert("Peringatan: Total Bobot PG dan Esai harus tepat 100%!");
+            const btn = document.getElementById('btn-simpan-sesi'); btn.innerText = "MENYIMPAN..."; btn.disabled = true;
 
-            const { error } = await supabase.from('exam_sessions').insert([{
-                school_id: schoolId, teacher_email: teacherEmail,
-                mapel: document.getElementById('j_mapel').value, kelas: document.getElementById('j_kelas').value, sub_kelas: document.getElementById('j_sub').value.toUpperCase(),
-                kuota_pg: parseInt(document.getElementById('j_kPG').value), kuota_pgk: parseInt(document.getElementById('j_kPGK').value), kuota_esai: parseInt(document.getElementById('j_kEsai').value),
-                bobot_pg: bPG, bobot_esai: bEsai, jam_mulai: document.getElementById('j_mulai').value, jam_selesai: document.getElementById('j_selesai').value,
-                token: document.getElementById('j_token').value, status: 'open'
-            }]);
+            const idxSoal = document.getElementById('s_mapel_kelas').value;
+            if(!idxSoal) { alert("Pilihan soal wajib diisi!"); btn.innerText = "BUAT TOKEN SESI"; btn.disabled = false; return; }
 
-            if(!error) { e.target.reset(); document.getElementById('j_token').value = generateToken(); alert("Sesi Resmi Dibuka!"); loadSessions(); }
-            else alert("Gagal menyimpan sesi: " + error.message);
+            const mapel = bankSoalGrup[idxSoal].mapel;
+            const kelas = bankSoalGrup[idxSoal].kelas;
+            const jumlah_soal = bankSoalGrup[idxSoal].count;
+            
+            const sub = document.getElementById('s_sub').value.toUpperCase().trim();
+            const durasi = document.getElementById('s_durasi').value;
+            const bobotPg = document.getElementById('s_bobot_pg').value;
+            const bobotEsai = document.getElementById('s_bobot_esai').value;
+            
+            const tokenExisting = document.getElementById('edit-token').value;
+
+            const d = new Date(); d.setMinutes(d.getMinutes() + parseInt(durasi));
+            const jam_selesai = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+            if(tokenExisting) {
+                // UPDATE JALUR EDIT
+                await supabase.from('exam_sessions').update({
+                    mapel: mapel, kelas: kelas, sub_kelas: sub,
+                    durasi: parseInt(durasi), bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
+                    jumlah_soal: jumlah_soal, jam_selesai: jam_selesai
+                }).eq('token', tokenExisting);
+            } else {
+                // INSERT JALUR BARU
+                const tokenBaru = Math.random().toString(36).substr(2, 5).toUpperCase();
+                await supabase.from('exam_sessions').insert([{
+                    token: tokenBaru, school_id: schoolId, teacher_email: teacherEmail,
+                    mapel: mapel, kelas: kelas, sub_kelas: sub,
+                    durasi: parseInt(durasi), bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
+                    jumlah_soal: jumlah_soal, jam_mulai: '00:00', jam_selesai: jam_selesai, status: 'open'
+                }]);
+            }
+
+            modal.classList.remove('flex'); modal.classList.add('hidden');
+            loadSesi();
+            btn.disabled = false;
         };
-
-        window.toggleSession = async (id, current) => { await supabase.from('exam_sessions').update({status: current==='open'?'closed':'open'}).eq('id', id); loadSessions(); };
-        window.delSession = async (id) => { if(confirm("Hapus sesi ini?")) { await supabase.from('exam_sessions').delete().eq('id', id); loadSessions(); } };
-        
-        window.bukaQR = (token) => {
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(window.location.origin + '/pages/siswa/portal.html/?token=' + token)}`;
-            document.getElementById('qr-image').src = qrUrl;
-            document.getElementById('qr-token-text').innerText = token;
-            document.getElementById('modal-qr').classList.replace('hidden', 'flex');
-        };
-        document.getElementById('close-qr').onclick = () => document.getElementById('modal-qr').classList.replace('flex', 'hidden');
 
         document.addEventListener('DOMContentLoaded', initPage);
     </script>
