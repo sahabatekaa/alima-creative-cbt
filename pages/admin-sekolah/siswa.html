@@ -3,325 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Siswa | Alima CBT</title>
-    
+    <title>Database Siswa | Admin TU</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="../../css/global.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;900&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* CSS KHUSUS CETAK KARTU UTBK */
+        @media print {
+            @page { size: A4 portrait; margin: 1cm; }
+            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #sidebar-container, header, main > div:not(#print-area) { display: none !important; }
+            #print-area { display: grid !important; grid-template-columns: 1fr 1fr; gap: 1cm; width: 100%; }
+            .kartu-utbk { break-inside: avoid; page-break-inside: avoid; border: 2px solid #000 !important; border-radius: 12px; padding: 15px; background: #fff; position: relative; }
+            .kartu-header { border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; text-align: center; }
+            .kartu-foto-box { width: 3cm; height: 4cm; border: 2px dashed #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #94a3b8; margin-right: 15px; text-transform: uppercase; font-weight: bold; text-align: center; }
+        }
     </style>
 </head>
-<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 selection:bg-blue-200 w-full max-w-[100vw]">
-
+<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800">
     <div id="sidebar-container"></div>
-
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
-        
-        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
-           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
-             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-blue-600 hover:bg-slate-200 transition-colors shrink-0">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-             </button>
-             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Memuat Data Instansi...</h2>
-           </div>
-           
-           <div class="flex items-center gap-3 shrink-0">
-               <div class="text-right hidden md:block ml-2">
-                   <p class="text-xs font-bold text-slate-800 truncate max-w-[120px]" id="user-name">Memuat...</p>
-                   <p class="text-[9px] font-black text-blue-600 uppercase tracking-widest">Tata Usaha</p>
-               </div>
-               <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-black shrink-0" id="user-initial">TU</div>
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 flex justify-between items-center z-10 sticky top-0 shadow-sm">
+           <div class="flex items-center gap-3">
+             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-blue-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+             <h2 class="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest">Pusat Komando</h2>
            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
-            <div class="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-10">
-                
-                <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="hidden" />
+        <div id="print-area" class="hidden"></div>
 
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-[24px] shadow-sm border border-slate-200">
-                    <div>
-                        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
-                            Database Induk Siswa
-                        </h3>
-                        <p class="text-xs font-bold text-slate-400 mt-1">Total Terdata: <span class="font-black text-slate-700" id="count-siswa-label">0</span> Siswa</p>
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
+            <div class="max-w-6xl mx-auto space-y-6 pb-10">
+                <div class="bg-white p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Database Peserta Ujian</h3>
+                            <p class="text-xs font-bold text-slate-400 mt-1">Kelola data siswa, generate password massal, dan cetak kartu ujian.</p>
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto flex-wrap">
+                            <button onclick="cetakKartuUTBK()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-md shadow-indigo-600/20 active:scale-95 flex items-center gap-2 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Cetak Kartu UTBK</button>
+                            <button id="btn-import-siswa" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-xl text-xs font-black shadow-sm active:scale-95 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Import Excel</button>
+                            <input type="file" id="file-import-siswa" accept=".xlsx, .xls" class="hidden">
+                        </div>
                     </div>
-                    
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
-    <button id="btn-download-template" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
-        Excel
-    </button>
-    <button id="btn-trigger-import" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> 
-        Import
-    </button>
-    <button id="btn-open-manual-modal" class="bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-600/10 active:scale-95">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 
-        Tambah
-    </button>
-</div>
-
                 </div>
 
-                <div class="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm w-full">
-                    <div class="overflow-x-auto w-full custom-scrollbar">
+                <div class="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto custom-scrollbar">
                         <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 text-[10px] uppercase font-black tracking-wider">
                                 <tr>
-                                    <th class="py-4 px-5 text-center w-12 font-black uppercase text-[10px] tracking-wider">No</th>
-                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">Nama Lengkap</th>
-                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">Nomor Ujian / Token</th>
-                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">NISN</th>
-                                    <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider">Kelas & Ruang</th>
-                                    <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider w-32">Aksi</th>
+                                    <th class="p-4">NISN / Username</th>
+                                    <th class="p-4">Nama Lengkap</th>
+                                    <th class="p-4 text-center">Kelas</th>
+                                    <th class="p-4 text-center">Password</th>
+                                    <th class="p-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="siswa-table-body" class="divide-y divide-slate-100">
-                                <tr>
-                                    <td colspan="6" class="p-10 text-center text-slate-400 font-bold animate-pulse">Menghubungkan ke pangkalan data siswa...</td>
-                                </tr>
+                            <tbody id="siswa-body" class="divide-y divide-slate-100">
+                                <tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold">Memuat data peserta...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
     </main>
 
-    <div id="modal-manual" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-[24px] w-full max-w-md border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-200">
-             <h2 class="text-lg font-black mb-5 text-slate-800 flex items-center gap-2">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                 <span id="modal-title-text">Tambah Siswa Baru</span>
-             </h2>
-             <form id="form-siswa-manual" class="space-y-4">
-                 <input type="hidden" id="s_id">
-                 
-                 <div>
-                     <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Nama Lengkap Siswa</label>
-                     <input type="text" id="s_name" required placeholder="Cth: ANDI PRATAMA" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 uppercase">
-                 </div>
-                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Nomor Ujian (CBT)</label>
-                         <input type="text" id="s_noujian" required placeholder="Cth: CBT-001" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold text-blue-600 outline-none focus:border-blue-500 uppercase">
-                     </div>
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">NISN (Opsional)</label>
-                         <input type="text" id="s_nisn" placeholder="Cth: 00928311" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none focus:border-blue-500">
-                     </div>
-                 </div>
-                 <div class="grid grid-cols-2 gap-4">
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Tingkat Kelas</label>
-                         <select id="s_kelas" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer">
-                             <option value="">Pilih</option>
-                         </select>
-                     </div>
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Sub Kelas / Ruang</label>
-                         <input type="text" id="s_sub" required placeholder="Cth: A atau MIPA-1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 uppercase">
-                     </div>
-                 </div>
-                 
-                 <div class="flex gap-3 mt-6 pt-2 border-t border-slate-100">
-                     <button type="button" id="btn-close-manual-modal" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-all">Batal</button>
-                     <button type="submit" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all shadow-md shadow-blue-600/10">Simpan Data</button>
-                 </div>
-             </form>
-        </div>
-    </div>
-
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
         import { renderAdminSidebar } from '../../js/components/sidebar-admin.js';
+        setTimeout(() => renderAdminSidebar(), 100);
 
-        renderAdminSidebar();
         let schoolId = null;
-        let schoolClasses = [];
+        let schoolName = "NAMA INSTANSI";
+        let siswaData = [];
 
         async function initPage() {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) return window.location.href = '../auth/login.html';
-
-                const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-                if (!profile || profile.role !== 'admin_sekolah') {
-                    await supabase.auth.signOut();
-                    window.location.href = '../auth/login.html';
-                    return;
-                }
-
-                document.getElementById('user-name').innerText = profile.name;
-                document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
-                schoolId = profile.school_id;
-                
-                const { data: school } = await supabase.from('schools').select('name').eq('id', schoolId).single();
-                document.getElementById('topbar-school-name').innerText = school ? school.name : schoolId.toUpperCase();
-
-                const { data: classes } = await supabase.from('master_classes').select('name').eq('school_id', schoolId).order('name', { ascending: true });
-                if (classes) {
-                    schoolClasses = classes.map(c => c.name);
-                    const selectEl = document.getElementById('s_kelas');
-                    selectEl.innerHTML = '<option value="">Pilih</option>' + classes.map(c => `<option value="${c.name}">Kelas ${c.name}</option>`).join('');
-                }
-
-                fetchStudents();
-            } catch (err) { console.error("Gagal inisialisasi:", err); }
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return window.location.href = '../auth/login.html';
+            const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+            schoolId = profile.school_id;
+            
+            const { data: sData } = await supabase.from('schools').select('name').eq('id', schoolId).single();
+            if(sData) schoolName = sData.name.toUpperCase();
+            
+            loadSiswa();
         }
 
-        async function fetchStudents() {
-            const { data: students, error } = await supabase.from('students').select('*').eq('school_id', schoolId).order('kelas', { ascending: true }).order('name', { ascending: true });
-            const tbody = document.getElementById('siswa-table-body');
-            document.getElementById('count-siswa-label').innerText = students ? students.length : 0;
+        async function loadSiswa() {
+            const { data } = await supabase.from('students').select('*').eq('school_id', schoolId).order('name');
+            siswaData = data || [];
+            
+            const tbody = document.getElementById('siswa-body');
+            if(siswaData.length === 0) return tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold">Belum ada siswa terdaftar. Import Excel sekarang!</td></tr>';
 
-            if (error || !students || students.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 m-4 rounded-xl">Belum ada data siswa terdaftar.</td></tr>`;
-                return;
-            }
-
-            // MENGGUNAKAN DATA ATTRIBUTE AGAR BISA DITANGKAP OLEH EVENT DELEGATION
-            tbody.innerHTML = students.map((s, index) => `
-                <tr class="hover:bg-slate-50/80 transition-colors">
-                    <td class="py-3.5 px-5 text-center font-bold text-slate-400 text-xs">${index + 1}</td>
-                    <td class="py-3.5 px-5 font-black text-slate-800 text-sm uppercase">${s.name}</td>
-                    <td class="py-3.5 px-5 font-mono font-black text-blue-600 text-xs tracking-wider uppercase">${s.nomor_ujian || '-'}</td>
-                    <td class="py-3.5 px-5 font-medium text-slate-500 text-xs">${s.nisn || '-'}</td>
-                    <td class="py-3.5 px-5 text-center font-black text-slate-600 text-xs">Kelas ${s.kelas} - ${s.sub_kelas || ''}</td>
-                    <td class="py-3.5 px-5 text-center flex justify-center gap-2">
-                        <button data-id="${s.id}" data-name="${s.name}" data-noujian="${s.nomor_ujian || ''}" data-nisn="${s.nisn || ''}" data-kelas="${s.kelas}" data-subkelas="${s.sub_kelas || ''}" class="btn-edit-siswa text-slate-400 hover:text-blue-600 bg-slate-50 hover:bg-blue-50 border border-slate-200 p-2 rounded-xl transition-all shadow-sm" title="Edit Siswa">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                        </button>
-                        <button data-id="${s.id}" class="btn-delete-siswa text-slate-400 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 border border-slate-200 p-2 rounded-xl transition-all shadow-sm" title="Hapus Siswa">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                    </td>
+            tbody.innerHTML = siswaData.map(s => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-mono font-bold text-slate-600">${s.nisn}</td>
+                    <td class="p-4 font-black text-slate-800 uppercase">${s.name}</td>
+                    <td class="p-4 text-center"><span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded text-xs font-bold border border-blue-100">${s.kelas}-${s.sub_kelas}</span></td>
+                    <td class="p-4 text-center font-mono font-bold text-rose-500">${s.password}</td>
+                    <td class="p-4 text-center"><button onclick="hapusSiswa('${s.id}')" class="text-slate-400 hover:text-red-500 p-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></td>
                 </tr>
             `).join('');
         }
 
-        // ==========================================
-        // EVENT DELEGATION: SOLUSI ANTI TOMBOL MACET
-        // ==========================================
-        document.getElementById('siswa-table-body').addEventListener('click', async (e) => {
-            const btnDel = e.target.closest('.btn-delete-siswa');
-            const btnEdit = e.target.closest('.btn-edit-siswa');
-
-            // JIKA TOMBOL DELETE DIKLIK
-            if (btnDel) {
-                const id = btnDel.getAttribute('data-id');
-                if (confirm("Apakah Anda yakin ingin menghapus data siswa ini?")) {
-                    const { error } = await supabase.from('students').delete().eq('id', id);
-                    if (!error) fetchStudents(); else alert("Gagal menghapus: " + error.message);
-                }
-            }
-
-            // JIKA TOMBOL EDIT DIKLIK
-            if (btnEdit) {
-                document.getElementById('s_id').value = btnEdit.getAttribute('data-id');
-                document.getElementById('s_name').value = btnEdit.getAttribute('data-name');
-                document.getElementById('s_noujian').value = btnEdit.getAttribute('data-noujian');
-                document.getElementById('s_nisn').value = btnEdit.getAttribute('data-nisn');
-                document.getElementById('s_kelas').value = btnEdit.getAttribute('data-kelas');
-                document.getElementById('s_sub').value = btnEdit.getAttribute('data-subkelas');
-                
-                document.getElementById('modal-title-text').innerText = "Edit Data Siswa";
-                modal.classList.replace('hidden', 'flex');
-            }
-        });
-
-        // ==========================================
-        // LOGIKA MODAL (TAMBAH & EDIT)
-        // ==========================================
-        const modal = document.getElementById('modal-manual');
-        
-        // Membuka modal untuk Tambah (Kosongkan form)
-        document.getElementById('btn-open-manual-modal').onclick = () => {
-            document.getElementById('form-siswa-manual').reset();
-            document.getElementById('s_id').value = '';
-            document.getElementById('modal-title-text').innerText = "Tambah Siswa Baru";
-            modal.classList.replace('hidden', 'flex');
-        };
-        
-        document.getElementById('btn-close-manual-modal').onclick = () => modal.classList.replace('flex', 'hidden');
-
-        document.getElementById('form-siswa-manual').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('s_id').value;
-            
-            const payload = {
-                school_id: schoolId, 
-                name: document.getElementById('s_name').value.toUpperCase(),
-                nomor_ujian: document.getElementById('s_noujian').value.toUpperCase(),
-                nisn: document.getElementById('s_nisn').value || null,
-                kelas: document.getElementById('s_kelas').value, 
-                sub_kelas: document.getElementById('s_sub').value.toUpperCase()
-            };
-
-            let error;
-            if (id) {
-                // Proses Edit (Update)
-                const res = await supabase.from('students').update(payload).eq('id', id);
-                error = res.error;
-            } else {
-                // Proses Tambah (Insert)
-                const res = await supabase.from('students').insert([payload]);
-                error = res.error;
-            }
-
-            if (!error) { 
-                e.target.reset(); 
-                document.getElementById('s_id').value = '';
-                modal.classList.replace('flex', 'hidden'); 
-                fetchStudents(); 
-            } else {
-                alert("Gagal menyimpan data: " + error.message);
-            }
+        window.hapusSiswa = async (id) => {
+            if(confirm("Hapus siswa ini dari database?")) { await supabase.from('students').delete().eq('id', id); loadSiswa(); }
         };
 
-        // ==========================================
-        // LOGIKA EXCEL DOWNLOAD & IMPORT
-        // ==========================================
-        document.getElementById('btn-download-template').onclick = () => {
-            const formatData = [{ "Nama Lengkap": "BUDI SANTOSO", "Nomor Ujian": "CBT-001", "NISN": "0123456789", "Kelas": "10", "SubKelas / Ruang": "MIPA-1" }];
-            const ws = XLSX.utils.json_to_sheet(formatData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Format_Siswa"); XLSX.writeFile(wb, "Template_Import_Siswa.xlsx");
-        };
-
-        const fileInput = document.getElementById('excel-file-input');
-        document.getElementById('btn-trigger-import').onclick = () => {
-            if (schoolClasses.length === 0) return alert("Peringatan! Isi data Kelas terlebih dahulu di Master Data.");
-            fileInput.click();
-        };
-
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0]; if (!file) return;
+        // --- IMPORT EXCEL ---
+        document.getElementById('btn-import-siswa').onclick = () => document.getElementById('file-import-siswa').click();
+        document.getElementById('file-import-siswa').onchange = (e) => {
+            const file = e.target.files[0]; if(!file) return;
             const reader = new FileReader();
-            reader.onload = async (evt) => {
-                try {
-                    const workbook = XLSX.read(evt.target.result, { type: 'binary' });
-                    const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                    const bulkStudents = [];
-                    sheetData.forEach((row) => {
-                        if (row["Nama Lengkap"] && row["Nomor Ujian"] && row["Kelas"]) {
-                            bulkStudents.push({
-                                school_id: schoolId, name: String(row["Nama Lengkap"]).toUpperCase().trim(),
-                                nomor_ujian: String(row["Nomor Ujian"]).toUpperCase().trim(), nisn: row["NISN"] ? String(row["NISN"]).trim() : null,
-                                kelas: String(row["Kelas"]).trim(), sub_kelas: row["SubKelas / Ruang"] ? String(row["SubKelas / Ruang"]).toUpperCase().trim() : ''
-                            });
-                        }
-                    });
-                    if (bulkStudents.length > 0) {
-                        const { error } = await supabase.from('students').insert(bulkStudents);
-                        if (error) throw error; alert(`Berhasil import ${bulkStudents.length} siswa!`); fetchStudents();
-                    } else alert("Gagal import. Pastikan format kolom Excel sesuai template.");
-                } catch (err) { alert("Gagal memproses file: " + err.message); } finally { fileInput.value = ''; }
-            }; reader.readAsBinaryString(file);
+            reader.onload = async (event) => {
+                const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
+                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }).slice(1);
+                
+                const payload = json.filter(r => r[0] && r[1]).map(r => ({
+                    school_id: schoolId, nisn: String(r[0]), name: String(r[1]),
+                    kelas: String(r[2]||''), sub_kelas: String(r[3]||''), password: String(r[4] || Math.floor(100000 + Math.random() * 900000))
+                }));
+
+                if(payload.length > 0) {
+                    await supabase.from('students').insert(payload); alert("Siswa berhasil diimpor!"); loadSiswa();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        // --- CETAK KARTU UTBK STYLE ---
+        window.cetakKartuUTBK = () => {
+            if(siswaData.length === 0) return alert("Database siswa kosong!");
+            
+            const area = document.getElementById('print-area');
+            const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            area.innerHTML = siswaData.map(s => `
+                <div class="kartu-utbk">
+                    <div class="kartu-header">
+                        <div style="flex-shrink:0; margin-right:15px; width:40px; height:40px; border:2px solid #000; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:10px;">LOGO</div>
+                        <div style="flex-grow:1;">
+                            <h2 style="font-size:12px; font-weight:900; letter-spacing:1px; margin:0; text-transform:uppercase;">KARTU PESERTA UJIAN CBT</h2>
+                            <p style="font-size:10px; font-weight:bold; margin:0; color:#475569;">${schoolName}</p>
+                            <p style="font-size:8px; margin:0; color:#64748b;">TAHUN PELAJARAN 2025/2026</p>
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex;">
+                        <div class="kartu-foto-box">PAS FOTO<br>3 x 4</div>
+                        <div style="flex-grow:1; font-size:11px;">
+                            <table style="width:100%; margin-bottom:10px;">
+                                <tr><td style="width:30%; font-weight:bold; color:#64748b; padding-bottom:4px;">NOMOR UJIAN</td><td style="width:5%; padding-bottom:4px;">:</td><td style="font-weight:900; font-family:monospace; font-size:14px; padding-bottom:4px;">${s.nisn}</td></tr>
+                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:4px;">NAMA PESERTA</td><td style="padding-bottom:4px;">:</td><td style="font-weight:900; text-transform:uppercase; padding-bottom:4px;">${s.name}</td></tr>
+                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:4px;">KELAS/RUANG</td><td style="padding-bottom:4px;">:</td><td style="font-weight:bold; padding-bottom:4px;">${s.kelas} ${s.sub_kelas}</td></tr>
+                                <tr><td style="font-weight:bold; color:#64748b; padding-bottom:4px;">KATA SANDI</td><td style="padding-bottom:4px;">:</td><td style="font-weight:900; color:#e11d48; font-family:monospace; padding-bottom:4px;">${s.password}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:10px;">
+                        <div style="font-size:8px; color:#94a3b8; width:50%;">
+                            <b>PENTING:</b><br>1. Bawa kartu ini saat ujian berlangsung.<br>2. Dilarang memberikan password ke orang lain.
+                        </div>
+                        <div style="text-align:center; font-size:10px; width:40%;">
+                            <p style="margin:0 0 35px 0;">Kepala Instansi,</p>
+                            <p style="margin:0; font-weight:bold; text-decoration:underline;">____________________</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            setTimeout(() => { window.print(); }, 500);
         };
 
         document.addEventListener('DOMContentLoaded', initPage);
