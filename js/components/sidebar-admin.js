@@ -15,7 +15,7 @@ export function renderAdminSidebar() {
     const sidebarHTML = `
         <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
 
-        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col h-screen transition-transform -translate-x-full md:relative md:translate-x-0">
+        <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col h-[100dvh] transition-transform -translate-x-full md:relative md:translate-x-0">
             
             <div class="h-20 shrink-0 flex items-center gap-3 px-6 border-b border-slate-100 bg-white">
                 <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white shadow-md shrink-0">

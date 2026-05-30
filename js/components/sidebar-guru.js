@@ -13,7 +13,7 @@ export function renderGuruSidebar() {
     const sidebarHTML = `
         <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
         
-        <aside id="guru-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col h-screen transition-transform -translate-x-full md:relative md:translate-x-0 shadow-2xl md:shadow-none">
+        <aside id="guru-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col h-[100dvh] transition-transform -translate-x-full md:relative md:translate-x-0 shadow-2xl md:shadow-none">
             
             <div class="shrink-0">
                 <div class="p-5 border-b border-slate-100 flex justify-between items-center">
