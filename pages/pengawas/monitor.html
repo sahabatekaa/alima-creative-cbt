@@ -9,172 +9,86 @@
     <link rel="stylesheet" href="../../css/global.css">
     <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
-<body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
+<body class="flex h-[100dvh] bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
     <div id="sidebar-container"></div>
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
-        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
-           <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
-             <button id="open-sidebar" onclick="document.getElementById('pengawas-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay')?.classList.toggle('hidden');" class="md:hidden p-2 bg-slate-100 rounded-lg text-indigo-600 hover:bg-slate-200 transition-colors shrink-0">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-             </button>
-             <h2 class="text-[11px] md:text-xs lg:text-sm font-black text-slate-800 uppercase tracking-widest line-clamp-2 leading-snug break-words" id="topbar-school-name">Portal Pengawas V3</h2>
-           </div>
-           <div class="flex items-center gap-3 shrink-0">
-               <div class="text-right hidden md:block ml-2">
-                   <p class="text-xs font-bold text-slate-800 truncate max-w-[120px]" id="user-name">Memuat...</p>
-                   <p class="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Pengawas Ruang</p>
-               </div>
-               <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-black shrink-0" id="user-initial">P</div>
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative z-0 w-full">
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 flex justify-between items-center z-10 sticky top-0 shadow-sm shrink-0">
+           <div class="flex items-center gap-3">
+             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+             <h2 class="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest">Portal Pengawas V3</h2>
            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
-            <div class="space-y-5 max-w-7xl mx-auto pb-10 animate-in fade-in duration-500">
-              
-              <div class="bg-white border border-slate-200 p-4 rounded-[24px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
-                <div class="flex items-center gap-2 font-black text-slate-800 text-lg shrink-0">
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
+            <div class="space-y-5 max-w-7xl mx-auto pb-10">
+              <div class="bg-white border border-slate-200 p-4 rounded-[20px] flex flex-col md:flex-row justify-between gap-4 shadow-sm">
+                <div class="flex items-center gap-2 font-black text-slate-800 text-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-500"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg> Radar Sesi
                 </div>
-                
-                <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                    <select id="select-token" class="w-full sm:w-auto p-3 rounded-xl border border-slate-200 outline-none text-sm font-bold text-slate-700 bg-slate-50 cursor-pointer shadow-sm focus:border-indigo-500">
-                        <option value="">-- Pilih Sesi Ujian --</option>
-                    </select>
-                    <button id="btn-show-qr" class="hidden w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl text-xs font-black items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-indigo-600/30">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M8 12h8"></path><path d="M12 8v8"></path></svg> Buka QR Sesi
-                    </button>
-                </div>
-              </div>
-
-              <div id="empty-state" class="bg-white p-12 rounded-[24px] border border-dashed border-slate-300 text-center flex flex-col items-center text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mb-4 opacity-30"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                  <h3 class="font-bold text-lg text-slate-500">Silakan Pilih Token Sesi untuk Memantau Ruangan</h3>
+                <select id="select-token" class="w-full sm:w-auto p-3 rounded-xl border border-slate-200 text-sm font-bold bg-slate-50 outline-none">
+                    <option value="">-- Pilih Sesi Ujian --</option>
+                </select>
               </div>
 
               <div id="live-dashboard" class="space-y-5 hidden">
                   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div class="bg-white p-4 rounded-2xl border-l-4 border-l-blue-500 shadow-sm"><p class="text-slate-500 text-[10px] font-bold mb-1 uppercase tracking-wider">Terhubung</p><p class="text-3xl font-black text-slate-800" id="stat-hub">0</p></div>
-                    <div class="bg-white p-4 rounded-2xl border-l-4 border-l-emerald-500 shadow-sm"><p class="text-slate-500 text-[10px] font-bold mb-1 uppercase tracking-wider">Selesai</p><p class="text-3xl font-black text-emerald-600" id="stat-selesai">0</p></div>
-                    <div class="bg-white p-4 rounded-2xl border-l-4 border-l-red-500 shadow-sm"><p class="text-slate-500 text-[10px] font-bold mb-1 uppercase tracking-wider">Pelanggaran</p><p class="text-3xl font-black text-red-600" id="stat-curang">0</p></div>
-                    <div class="bg-slate-900 p-4 rounded-2xl flex flex-col justify-center items-center shadow-lg border border-slate-800">
-                       <button id="btn-force-all" class="w-full h-full bg-red-600 hover:bg-red-500 text-white rounded-xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all flex-col p-2 text-center shadow-lg shadow-red-600/30 text-[11px]">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg> Tarik Paksa Semua
-                       </button>
+                    <div class="bg-white p-4 rounded-2xl border-l-4 border-l-blue-500 shadow-sm"><p class="text-slate-500 text-[10px] font-bold uppercase">Terhubung</p><p class="text-3xl font-black" id="stat-hub">0</p></div>
+                    <div class="bg-white p-4 rounded-2xl border-l-4 border-l-emerald-500 shadow-sm"><p class="text-slate-500 text-[10px] font-bold uppercase">Selesai</p><p class="text-3xl font-black text-emerald-600" id="stat-selesai">0</p></div>
+                    <div class="bg-white p-4 rounded-2xl border-l-4 border-l-red-500 shadow-sm"><p class="text-slate-500 text-[10px] font-bold uppercase">Pelanggaran</p><p class="text-3xl font-black text-red-600" id="stat-curang">0</p></div>
+                    <div class="bg-slate-900 p-4 rounded-2xl flex items-center justify-center">
+                       <button id="btn-force-all" class="w-full h-full bg-red-600 text-white rounded-xl font-black text-[11px] flex flex-col p-2 items-center justify-center gap-1 active:scale-95"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg> Tarik Paksa</button>
                     </div>
                   </div>
-
-                  <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center">
-                    <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-indigo-50 text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></div>
-                    <div class="flex-1 w-full"><input id="input-broadcast" placeholder="Tulis instruksi/pengumuman ke layar siswa..." class="w-full p-3 border border-slate-200 bg-slate-50 rounded-xl outline-none focus:border-indigo-500 focus:bg-white text-sm font-bold text-slate-700" /></div>
-                    <button id="btn-broadcast" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-indigo-600/30 tracking-widest">SIARKAN</button>
-                  </div>
-                  
                   <div id="live-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
               </div>
             </div>
         </div>
     </main>
 
-    <div id="modal-qr" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden items-center justify-center p-4 z-[120]">
-        <div class="bg-white p-8 rounded-[2rem] w-full max-w-sm shadow-2xl flex flex-col items-center text-center relative animate-in zoom-in duration-300">
-            <button id="close-qr" class="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <h2 class="text-2xl font-black text-slate-800 tracking-tight mb-2">GERBANG MASUK</h2>
-            <p class="text-sm text-slate-500 font-bold mb-6">Arahkan kamera siswa ke QR ini.</p>
-            <div class="bg-white p-3 rounded-2xl border-4 border-indigo-500 shadow-xl mb-6 flex justify-center">
-                <img id="qr-image" src="" alt="QR Code" class="w-[200px] h-[200px] object-contain" />
-            </div>
-            <div class="bg-slate-50 border border-slate-200 px-6 py-3 rounded-xl w-full">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">ATAU KODE TOKEN MANUAL</p>
-                <p id="qr-token-text" class="text-3xl font-black font-mono text-indigo-600 tracking-[0.2em]"></p>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
         import { renderPengawasSidebar } from '../../js/components/sidebar-pengawas.js';
-        
         setTimeout(() => renderPengawasSidebar(), 100);
 
-        let pengawasEmail = null; let activeToken = '';
+        let activeToken = '';
 
         async function initPage() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return window.location.href = '../auth/login.html';
-            const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-            if (!profile || profile.role !== 'proctor') return window.location.href = '../auth/login.html';
-            
-            document.getElementById('user-name').innerText = profile.name;
-            document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
-
-            const { data: sessions } = await supabase.from('exam_sessions').select('token, mapel, kelas, sub_kelas').eq('school_id', profile.school_id).eq('status', 'open').order('created_at', { ascending: false });
-            if(sessions && sessions.length > 0) {
-                document.getElementById('select-token').innerHTML += sessions.map(s => `<option value="${s.token}">${s.token} (${s.mapel} / ${s.kelas}-${s.sub_kelas || ''})</option>`).join('');
-            } else {
-                document.getElementById('empty-state').innerHTML = `<h3 class="font-bold text-lg text-slate-500">Tidak ada sesi ujian aktif.</h3>`;
-            }
+            const { data: profile } = await supabase.from('users').select('school_id').eq('id', session.user.id).single();
+            const { data: sessions } = await supabase.from('exam_sessions').select('token, mapel').eq('school_id', profile.school_id).eq('status', 'open').order('created_at', { ascending: false });
+            if(sessions) document.getElementById('select-token').innerHTML += sessions.map(s => `<option value="${s.token}">${s.token} (${s.mapel})</option>`).join('');
         }
 
         document.getElementById('select-token').addEventListener('change', (e) => {
             activeToken = e.target.value;
-            const btnQr = document.getElementById('btn-show-qr');
-
-            if(!activeToken) {
-                document.getElementById('empty-state').classList.remove('hidden');
-                document.getElementById('live-dashboard').classList.add('hidden');
-                btnQr.classList.add('hidden'); return;
-            }
-            
-            document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('live-dashboard').classList.remove('hidden');
-            btnQr.classList.remove('hidden'); btnQr.classList.add('flex');
-
-            fetchLiveStudents();
+            if(!activeToken) { document.getElementById('live-dashboard').classList.add('hidden'); return; }
+            document.getElementById('live-dashboard').classList.remove('hidden'); fetchLiveStudents();
         });
-
-        // PERBAIKAN LINK QR CODE MENJADI STRUKTUR /pages/siswa/portal/?token
-        const showQrModal = () => {
-            if(!activeToken) return;
-            const targetUrl = window.location.origin + '/pages/siswa/portal/?token=' + activeToken;
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(targetUrl)}`;
-            document.getElementById('qr-image').src = qrUrl;
-            document.getElementById('qr-token-text').innerText = activeToken;
-            document.getElementById('modal-qr').classList.remove('hidden'); document.getElementById('modal-qr').classList.add('flex');
-        };
-        document.getElementById('btn-show-qr').onclick = showQrModal;
-        document.getElementById('close-qr').onclick = () => { document.getElementById('modal-qr').classList.remove('flex'); document.getElementById('modal-qr').classList.add('hidden'); };
 
         async function fetchLiveStudents() {
             if(!activeToken) return;
             const { data: students } = await supabase.from('live_students').select('*').eq('token', activeToken).order('name');
             const grid = document.getElementById('live-grid');
-
-            if(!students || students.length === 0) {
-                document.getElementById('stat-hub').innerText = 0; document.getElementById('stat-selesai').innerText = 0; document.getElementById('stat-curang').innerText = 0;
-                grid.innerHTML = '<div class="col-span-full text-center p-10 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 text-sm font-bold">Belum ada peserta di ruangan ini.</div>';
-                return;
-            }
+            if(!students || students.length === 0) return grid.innerHTML = '<div class="col-span-full p-10 text-center font-bold text-slate-400">Belum ada peserta.</div>';
 
             document.getElementById('stat-hub').innerText = students.length;
             document.getElementById('stat-selesai').innerText = students.filter(s => s.status === 'Selesai').length;
             document.getElementById('stat-curang').innerText = students.filter(s => (s.warnings || 0) > 0).length;
 
             grid.innerHTML = students.map(s => `
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3">
-                    <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
-                        <div>
-                        <p class="font-black text-slate-800 text-base leading-tight truncate max-w-[150px]">${s.name || '-'}</p>
-                        <span class="inline-block mt-1 bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold border">${s.kelas}-${s.sub_kelas || ''}</span>
-                        </div>
-                        ${(s.warnings || 0) > 0 ? `<span class="bg-red-50 text-red-600 text-[10px] font-black px-1.5 py-0.5 rounded border border-red-200 animate-pulse whitespace-nowrap">(!Tab ${s.warnings}x)</span>` : ''}
+                <div class="bg-white p-4 rounded-2xl border ${s.status === 'Selesai' ? 'border-emerald-200 bg-emerald-50/30' : (s.warnings >= 3 ? 'border-red-400 bg-red-50/30' : 'border-slate-200')} shadow-sm flex flex-col gap-3">
+                    <div class="flex justify-between items-start border-b border-slate-100 pb-2">
+                        <p class="font-black text-slate-800 text-sm truncate max-w-[140px]">${s.name || '-'}</p>
+                        ${(s.warnings || 0) > 0 ? `<span class="bg-red-50 text-red-600 text-[9px] font-black px-1.5 rounded animate-pulse">(!${s.warnings}x)</span>` : ''}
                     </div>
                     <div>
-                        <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1.5"><span>Progress</span><span class="text-indigo-600">${s.progress || 0}%</span></div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-indigo-500 h-full" style="width:${s.progress || 0}%"></div></div>
+                        <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1"><span>Progress</span><span class="${s.status === 'Selesai'?'text-emerald-600':'text-indigo-600'}">${s.status === 'Selesai' ? '100' : (s.progress || 0)}%</span></div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div class="${s.status === 'Selesai'?'bg-emerald-500':'bg-indigo-500'} h-full" style="width:${s.status === 'Selesai' ? 100 : (s.progress || 0)}%"></div></div>
                     </div>
-                    <div class="flex gap-2 pt-2 border-t mt-1">
-                        <button onclick="tarikSiswa('${s.id}')" ${s.status === 'Selesai' ? 'disabled' : ''} class="flex-1 text-[10px] bg-slate-50 border text-slate-600 py-2 rounded-lg font-bold disabled:opacity-50">Tarik Lembar</button>
-                        ${(s.warnings || 0) >= 3 && s.status !== 'Selesai' ? `<button onclick="bukaKunci('${s.id}')" class="flex-1 text-[10px] bg-indigo-50 border text-indigo-700 py-2 rounded-lg font-bold">Buka Kunci</button>` : ''}
+                    <div class="flex gap-2 pt-1 border-t mt-1">
+                        <button onclick="tarikSiswa('${s.id}')" ${s.status === 'Selesai' || s.force_submit ? 'disabled' : ''} class="flex-1 text-[10px] bg-slate-50 border py-2 rounded-lg font-bold disabled:opacity-50">Tarik Ujian</button>
+                        ${(s.warnings || 0) >= 3 && s.status !== 'Selesai' ? `<button onclick="bukaKunci('${s.id}')" class="flex-1 text-[10px] bg-indigo-50 text-indigo-700 py-2 rounded-lg font-bold">Buka Kunci</button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -182,23 +96,9 @@
 
         window.tarikSiswa = async (id) => { await supabase.from('live_students').update({ force_submit: true }).eq('id', id); fetchLiveStudents(); };
         window.bukaKunci = async (id) => { await supabase.from('live_students').update({ warnings: 0, status: 'Online' }).eq('id', id); fetchLiveStudents(); };
+        document.getElementById('btn-force-all').onclick = async () => { if(confirm("Tarik semua?")) { await supabase.from('live_students').update({ force_submit: true }).eq('token', activeToken).neq('status', 'Selesai'); fetchLiveStudents(); } };
         
-        document.getElementById('btn-force-all').onclick = async () => {
-            if(!activeToken) return;
-            if(confirm("Tarik paksa semua lembar jawaban di sesi ini?")) {
-                await supabase.from('live_students').update({ force_submit: true }).eq('token', activeToken).neq('status', 'Selesai');
-                fetchLiveStudents();
-            }
-        };
-
-        document.getElementById('btn-broadcast').onclick = async () => {
-            const txt = document.getElementById('input-broadcast').value;
-            if(!txt || !activeToken) return;
-            await supabase.from('live_students').update({ broadcast: txt }).eq('token', activeToken);
-            document.getElementById('input-broadcast').value = ''; alert("Disiarkan!");
-        };
-
-        setInterval(() => { if(activeToken) fetchLiveStudents(); }, 5000);
+        setInterval(() => { if(activeToken) fetchLiveStudents(); }, 3000);
         document.addEventListener('DOMContentLoaded', initPage);
     </script>
 </body>
