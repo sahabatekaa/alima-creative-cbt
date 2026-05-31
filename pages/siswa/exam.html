@@ -16,30 +16,30 @@
 </head>
 <body class="min-h-screen bg-[#f1f5f9] font-sans pb-10 select-none relative overflow-x-hidden" translate="no" oncopy="return false" onpaste="return false" oncontextmenu="return false">
 
-    <div id="layer-block" class="fixed inset-0 bg-slate-900 z-[200] flex-col items-center justify-center p-6 text-center hidden">
+    <div id="layer-block" class="fixed inset-0 bg-slate-900 z-[200] flex-col items-center justify-center p-4 sm:p-6 text-center hidden">
         <div class="absolute inset-0 bg-red-900/20 animate-pulse"></div>
-        <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-500 mb-6 animate-bounce relative z-10"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        <h1 class="text-3xl md:text-4xl font-black text-white tracking-widest relative z-10 mb-2">UJIAN DIBEKUKAN!</h1>
-        <p class="mt-2 text-red-400 font-bold text-lg md:text-xl relative z-10 max-w-lg">Anda terdeteksi melakukan kecurangan (Pindah Layar/Tab) lebih dari 3 kali.</p>
-        <div class="mt-8 bg-white/10 p-5 md:p-6 rounded-2xl border border-white/20 backdrop-blur-sm relative z-10 max-w-md">
-           <p class="text-white text-sm md:text-base font-medium">Harap lapor kepada Pengawas Ruangan untuk membuka kembali layar Anda.</p>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-16 h-16 md:w-24 md:h-24 text-red-500 mb-4 md:mb-6 animate-bounce relative z-10"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <h1 class="text-2xl md:text-4xl font-black text-white tracking-widest relative z-10 mb-1 md:mb-2">UJIAN DIBEKUKAN!</h1>
+        <p class="mt-1 md:mt-2 text-red-400 font-bold text-sm md:text-xl relative z-10 max-w-lg">Anda terdeteksi melakukan kecurangan (Pindah Layar/Tab) lebih dari 3 kali.</p>
+        <div class="mt-5 md:mt-8 bg-white/10 p-4 md:p-6 rounded-xl md:rounded-2xl border border-white/20 backdrop-blur-sm relative z-10 max-w-md">
+           <p class="text-white text-xs md:text-base font-medium">Harap lapor kepada Pengawas Ruangan untuk membuka kembali layar Anda.</p>
         </div>
     </div>
 
-    <div id="layer-fullscreen" class="fixed inset-0 bg-slate-900 z-[150] flex-col items-center justify-center p-6 text-center flex">
-        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-6 text-emerald-400 animate-pulse"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-        <h1 class="text-2xl md:text-3xl font-black mb-4 tracking-wider text-white">Layar Keamanan CBT</h1>
-        <p class="text-slate-400 mb-10 max-w-md text-base md:text-lg">Sistem ini membutuhkan tampilan layar penuh untuk mencegah kecurangan. Jangan pernah menekan tombol 'kembali' atau 'home'.</p>
-        <button onclick="enterFS()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl active:scale-95 transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)] tracking-widest">AKTIFKAN UJIAN</button>
+    <div id="layer-fullscreen" class="fixed inset-0 bg-slate-900 z-[150] flex-col items-center justify-center p-5 text-center flex">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-14 h-14 md:w-20 md:h-20 mb-4 md:mb-6 text-emerald-400 animate-pulse"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        <h1 class="text-xl md:text-3xl font-black mb-3 md:mb-4 tracking-wider text-white">Layar Keamanan CBT</h1>
+        <p class="text-slate-400 mb-6 md:mb-10 max-w-md text-sm md:text-lg">Sistem ini membutuhkan tampilan layar penuh untuk mencegah kecurangan. Jangan menekan tombol kembali.</p>
+        <button onclick="enterFS()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 md:px-10 md:py-5 rounded-xl md:rounded-2xl font-black text-sm md:text-xl active:scale-95 transition-all shadow-[0_0_15px_rgba(5,150,105,0.4)] tracking-widest">AKTIFKAN UJIAN</button>
     </div>
 
     <div id="blur-warning" class="fixed inset-0 z-[140] hidden flex-col items-center justify-center bg-black/60 backdrop-blur-xl pointer-events-none transition-all">
-        <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4 animate-pulse border-[6px] border-red-500 text-center max-w-sm mx-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-red-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+        <div class="bg-white p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl flex flex-col items-center gap-3 md:gap-4 animate-pulse border-4 md:border-[6px] border-red-500 text-center max-w-[300px] md:max-w-sm mx-4">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-12 h-12 md:w-16 md:h-16 text-red-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
             <div>
-              <h2 class="font-black text-2xl md:text-3xl text-red-600 mb-2 uppercase">Pelanggaran!</h2>
-              <p class="font-bold text-slate-700">Kembali ke halaman ujian!<br>Tindakan ini dilaporkan ke Pengawas.</p>
-              <p id="warn-count-display" class="mt-2 text-xs font-black bg-red-100 text-red-700 px-3 py-1 rounded-full">Peringatan: 1/3</p>
+              <h2 class="font-black text-lg md:text-3xl text-red-600 mb-1 md:mb-2 uppercase">Pelanggaran!</h2>
+              <p class="font-bold text-slate-700 text-xs md:text-base">Kembali ke halaman ujian!<br>Tindakan ini dilaporkan ke Pengawas.</p>
+              <p id="warn-count-display" class="mt-2 text-[10px] md:text-xs font-black bg-red-100 text-red-700 px-3 py-1 rounded-full inline-block">Peringatan: 1/3</p>
             </div>
         </div>
     </div>
@@ -107,12 +107,12 @@
     </div>
 
     <div id="modal-broadcast" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-md p-4 transition-all">
-        <div class="bg-white rounded-[2rem] p-6 md:p-8 max-w-md w-full shadow-2xl border-4 border-blue-500 text-center transform transition-all">
-            <h3 class="text-2xl font-black text-slate-800 tracking-tight">PENGUMUMAN PENTING!</h3>
-            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 my-6 shadow-inner">
-              <p id="broadcast-text" class="text-slate-800 font-bold text-lg leading-relaxed">Pesan</p>
+        <div class="bg-white rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-8 max-w-[90%] md:max-w-md w-full shadow-2xl border-4 border-blue-500 text-center transform transition-all">
+            <h3 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">PENGUMUMAN PENTING!</h3>
+            <div class="bg-slate-50 p-4 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 my-4 md:my-6 shadow-inner">
+              <p id="broadcast-text" class="text-slate-800 font-bold text-sm md:text-lg leading-relaxed">Pesan</p>
             </div>
-            <button onclick="document.getElementById('modal-broadcast').classList.replace('flex', 'hidden')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black active:scale-95 shadow-lg tracking-widest text-lg">SAYA MENGERTI</button>
+            <button onclick="document.getElementById('modal-broadcast').classList.replace('flex', 'hidden')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 md:py-4 rounded-xl md:rounded-2xl font-black active:scale-95 shadow-lg tracking-widest text-sm md:text-lg">SAYA MENGERTI</button>
         </div>
     </div>
 
@@ -134,7 +134,7 @@
         let isSubmitting = false;
         
         let isExambroMode = false;
-        let isProcessingCheat = false; // FIXED: Definisi variabel yang sebelumnya hilang
+        let isProcessingCheat = false;
 
         document.getElementById('head-nama').innerText = studentData.name;
         document.getElementById('head-mapel').innerText = `${studentData.mapel} • Kls ${studentData.class}`;
@@ -188,21 +188,15 @@
             updateSubmitUI(); renderUI(); startTimer(); subscribeRealtime(); syncAns();
         }
 
-        // FUNGSI RENDER NAVIGASI (MEMPERBAIKI WARNA TOMBOL SOAL)
         function renderNav() {
             document.getElementById('nav-grid').innerHTML = questions.map((x, i) => {
-                let cls = 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'; // Default Belum Jawab (Putih)
-                
-                // FIXED: Pengecekan ada jawaban atau tidak yang lebih solid (Trim spasi)
+                let cls = 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'; 
                 const isAnswered = answers[x.id] && answers[x.id].trim() !== ''; 
                 
-                if(ragu[x.id]) {
-                    cls = 'bg-amber-400 text-white border-amber-500'; // Ragu-ragu (Kuning)
-                } else if(isAnswered) {
-                    cls = 'bg-emerald-600 text-white border-emerald-700 shadow-sm'; // Sudah Dijawab (Hijau)
-                }
+                if(ragu[x.id]) { cls = 'bg-amber-400 text-white border-amber-500'; } 
+                else if(isAnswered) { cls = 'bg-emerald-600 text-white border-emerald-700 shadow-sm'; }
                 
-                if(currentIndex === i) cls += ' ring-4 ring-blue-500/30 scale-110 z-10'; // Sedang dilihat
+                if(currentIndex === i) cls += ' ring-4 ring-blue-500/30 scale-110 z-10'; 
                 return `<button onclick="goTo(${i})" class="h-10 w-full rounded-lg text-sm font-black border transition-all ${cls}">${i+1}</button>`;
             }).join('');
         }
@@ -225,7 +219,7 @@
             if(type === 'PG') {
                 html += `<div class="space-y-2.5 pl-3">`;
                 ['A','B','C','D'].forEach(opt => {
-                    if(!q[`opsi_${opt.toLowerCase()}`]) return; // Lewati jika opsi kosong
+                    if(!q[`opsi_${opt.toLowerCase()}`]) return; 
                     const isSel = answers[q.id] === opt;
                     html += `<button onclick="jawabPG('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isSel?'bg-blue-50 border-blue-500 font-bold shadow-sm':'bg-white border-slate-200 hover:border-blue-300'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm shrink-0 ${isSel?'bg-blue-600 text-white':'bg-slate-100 text-slate-500'}">${opt}</span><div class="flex-1 pt-1 katex-render">${q[`opsi_${opt.toLowerCase()}`]}</div></button>`;
                 });
@@ -245,7 +239,6 @@
             document.getElementById('soal-box').innerHTML = html;
             if(window.renderMathInElement) renderMathInElement(document.getElementById('soal-box'), { delimiters: [{left:"$",right:"$",display:false}, {left:"$$",right:"$$",display:true}] });
             
-            // Panggil fungsi render navigasi terpisah yang sudah diperbaiki
             renderNav();
 
             document.getElementById('btn-prev').disabled = currentIndex === 0;
@@ -264,18 +257,15 @@
         
         async function syncAns() {
             localStorage.setItem(`${storageKey}_ans`, JSON.stringify(answers)); 
-            renderUI(); // Render ulang agar UI soal dan navigasi sinkron
-            
+            renderUI(); 
             if(navigator.onLine && questions.length > 0) {
                 const prog = Math.round((Object.keys(answers).length/questions.length)*100);
-                // Sinkronisasi background, tidak perlu ditunggu agar UI tidak nge-lag
                 supabase.from('live_students').update({ progress: prog, answers: answers }).eq('id', studentData.id).then();
             }
         }
 
         function updateSubmitUI() {
             const box = document.getElementById('submit-box');
-            // Ganti 600 (10 Menit) jadi bebas kumpul kapan saja untuk pengujian
             box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black tracking-widest text-lg shadow-lg shadow-emerald-500/30 transition-all active:scale-95">SELESAIKAN UJIAN</button>`;
         }
 
@@ -318,7 +308,6 @@
                 }]);
                 await supabase.from('live_students').update({status:'Selesai', progress: 100}).eq('id', studentData.id);
                 
-                // Bersihkan cache
                 localStorage.removeItem(storageKey+'_ans'); localStorage.removeItem(storageKey+'_ragu');
                 localStorage.removeItem(storageKey+'_time'); localStorage.removeItem(storageKey+'_warn');
                 localStorage.removeItem(storageKey+'_lock'); localStorage.removeItem(storageKey+'_order');
@@ -337,7 +326,6 @@
             } else { isExambroMode = true; layer.classList.replace('flex','hidden'); }
         };
 
-        // FIXED LOGIKA PELANGGARAN
         async function handleCheat(reason) {
             if(isLocked || isProcessingCheat) return;
             isProcessingCheat = true; 
@@ -348,12 +336,11 @@
             blurLayer.classList.remove('hidden'); blurLayer.classList.add('flex');
             setTimeout(() => { blurLayer.classList.remove('flex'); blurLayer.classList.add('hidden'); }, 3000);
 
-            // Laporkan ke database tanpa menunggu (agar siswa tidak stuck)
             supabase.from('live_students').update({warnings: warnings, status: reason}).eq('id', studentData.id).then();
             
             if(warnings >= 3) { 
                 isLocked = true; localStorage.setItem(`${storageKey}_lock`, 'true'); 
-                cekCheat(); // Panggil fungsi kunci layar
+                cekCheat(); 
             }
             
             setTimeout(() => { isProcessingCheat = false; }, 2000); 
@@ -366,34 +353,28 @@
         
         document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !isExambroMode) document.getElementById('layer-fullscreen').classList.replace('hidden','flex'); });
         
-        // Deteksi Keluar Layar/Tab
         document.addEventListener('visibilitychange', () => { if(document.hidden && !isLocked) handleCheat('Membuka Tab/Aplikasi Lain'); });
         window.addEventListener('blur', () => { if(!isLocked && !document.hidden) handleCheat('Membuka Pop-up/Split Screen'); });
 
-        // FIXED PENDENGAR PERINTAH GURU (REALTIME)
         function subscribeRealtime() {
-            // Gunakan setInterval fallback karena webhook supabase kadang mati jika tab HP tertidur
             setInterval(async () => {
                 const { data, error } = await supabase.from('live_students').select('force_submit, warnings, broadcast').eq('id', studentData.id).single();
                 if(data) {
-                    // 1. Tarik Paksa
                     if(data.force_submit && !isSubmitting) {
                         alert("⚠️ WAKTU HABIS! Lembar jawaban ditarik otomatis oleh Pengawas.");
                         submitExam();
                     }
-                    // 2. Buka Kunci oleh Pengawas
                     if(data.warnings === 0 && isLocked) { 
                         isLocked = false; warnings = 0; localStorage.setItem(`${storageKey}_warn`, 0); localStorage.setItem(`${storageKey}_lock`, 'false'); 
                         cekCheat(); alert("Kunci layar telah dibuka oleh Pengawas."); 
                     }
-                    // 3. Pengumuman
                     if(data.broadcast && data.broadcast !== localStorage.getItem('last_bc')) {
                         localStorage.setItem('last_bc', data.broadcast);
                         document.getElementById('broadcast-text').innerText = data.broadcast;
                         document.getElementById('modal-broadcast').classList.remove('hidden'); document.getElementById('modal-broadcast').classList.add('flex');
                     }
                 }
-            }, 3000); // Polling setiap 3 detik sebagai jaring pengaman utama CBT Mobile
+            }, 3000); 
         }
 
         document.addEventListener('DOMContentLoaded', () => { cekCheat(); initExam(); });
