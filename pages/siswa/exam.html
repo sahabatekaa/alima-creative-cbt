@@ -10,53 +10,49 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
     <link rel="stylesheet" href="../../css/global.css">
+    <link rel="icon" type="image/png" href="../../icon.png">
+    <link rel="manifest" href="../../manifest.json">
     <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-<link rel="icon" type="image/png" href="../../icon.png">
-    <link rel="manifest" href="../../manifest.json">
-<link rel="icon" type="image/png" href="../../icon.png">
-    <link rel="manifest" href="../../manifest.json">
-<link rel="icon" type="image/png" href="../../icon.png">
-    <link rel="manifest" href="../../manifest.json">
-<link rel="icon" type="image/png" href="../../icon.png">
-    <link rel="manifest" href="../../manifest.json">
 </head>
 <body class="min-h-screen bg-[#f1f5f9] font-sans pb-10 select-none relative overflow-x-hidden" translate="no" oncopy="return false" onpaste="return false" oncontextmenu="return false">
 
     <div id="layer-block" class="fixed inset-0 bg-slate-900 z-[200] flex-col items-center justify-center p-6 text-center hidden">
         <div class="absolute inset-0 bg-red-900/20 animate-pulse"></div>
         <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-500 mb-6 animate-bounce relative z-10"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        <h1 class="text-3xl md:text-4xl font-black text-white tracking-widest relative z-10 mb-2">UJIAN DIBLOKIR!</h1>
-        <p class="mt-2 text-red-400 font-bold text-lg md:text-xl relative z-10 max-w-lg">Anda melanggar aturan keamanan 3 kali.</p>
+        <h1 class="text-3xl md:text-4xl font-black text-white tracking-widest relative z-10 mb-2">UJIAN DIBEKUKAN!</h1>
+        <p class="mt-2 text-red-400 font-bold text-lg md:text-xl relative z-10 max-w-lg">Anda terdeteksi melakukan kecurangan (Pindah Layar/Tab) lebih dari 3 kali.</p>
         <div class="mt-8 bg-white/10 p-5 md:p-6 rounded-2xl border border-white/20 backdrop-blur-sm relative z-10 max-w-md">
-           <p class="text-white text-sm md:text-base font-medium">Lapor Pengawas untuk membuka layar.</p>
+           <p class="text-white text-sm md:text-base font-medium">Harap lapor kepada Pengawas Ruangan untuk membuka kembali layar Anda.</p>
         </div>
     </div>
 
     <div id="layer-fullscreen" class="fixed inset-0 bg-slate-900 z-[150] flex-col items-center justify-center p-6 text-center flex">
         <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-6 text-emerald-400 animate-pulse"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-        <h1 class="text-2xl md:text-3xl font-black mb-4 tracking-wider text-white">Sistem Keamanan Aktif</h1>
-        <p class="text-slate-400 mb-10 max-w-md text-base md:text-lg">Gunakan layar penuh untuk memulai. Jika di aplikasi Exambro, tekan masuk.</p>
-        <button onclick="enterFS()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl active:scale-95 transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)] tracking-widest">MASUK UJIAN</button>
+        <h1 class="text-2xl md:text-3xl font-black mb-4 tracking-wider text-white">Layar Keamanan CBT</h1>
+        <p class="text-slate-400 mb-10 max-w-md text-base md:text-lg">Sistem ini membutuhkan tampilan layar penuh untuk mencegah kecurangan. Jangan pernah menekan tombol 'kembali' atau 'home'.</p>
+        <button onclick="enterFS()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 md:px-10 md:py-5 rounded-2xl font-black text-lg md:text-xl active:scale-95 transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)] tracking-widest">AKTIFKAN UJIAN</button>
     </div>
 
-    <div id="blur-warning" class="fixed inset-0 z-[140] hidden flex-col items-center justify-center bg-black/50 backdrop-blur-xl pointer-events-none transition-all">
+    <div id="blur-warning" class="fixed inset-0 z-[140] hidden flex-col items-center justify-center bg-black/60 backdrop-blur-xl pointer-events-none transition-all">
         <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4 animate-pulse border-[6px] border-red-500 text-center max-w-sm mx-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-red-600"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
             <div>
-              <h2 class="font-black text-3xl text-red-600 mb-2">FOKUS HILANG!</h2>
-              <p class="font-bold text-slate-700">Kembali ke layar ujian segera!</p>
+              <h2 class="font-black text-2xl md:text-3xl text-red-600 mb-2 uppercase">Pelanggaran!</h2>
+              <p class="font-bold text-slate-700">Kembali ke halaman ujian!<br>Tindakan ini dilaporkan ke Pengawas.</p>
+              <p id="warn-count-display" class="mt-2 text-xs font-black bg-red-100 text-red-700 px-3 py-1 rounded-full">Peringatan: 1/3</p>
             </div>
         </div>
     </div>
-
-    <div id="watermark-container" class="pointer-events-none fixed inset-0 z-0 flex flex-col items-center justify-center opacity-[0.03] rotate-[-30deg] text-black font-black text-xl md:text-2xl whitespace-nowrap overflow-hidden"></div>
 
     <div id="main-content" class="relative z-10 transition-all duration-300 min-h-screen flex flex-col">
         <header class="sticky top-0 z-40 bg-white w-full shadow-sm border-b-[3px] border-emerald-500">
           <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 hidden sm:flex"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg></div>
-              <div><h1 class="font-black text-sm sm:text-base tracking-widest text-slate-800 leading-tight">YASPENDIK PTPN IV</h1><h2 class="font-bold text-[9px] sm:text-[10px] tracking-widest text-slate-500 uppercase">SMP/MTS DARMA PERTIWI</h2></div>
+              <div>
+                  <h1 class="font-black text-sm sm:text-base tracking-widest text-slate-800 leading-tight">YASPENDIK PTPN IV</h1>
+                  <h2 class="font-bold text-[9px] sm:text-[10px] tracking-widest text-slate-500 uppercase">SMP/MTS DARMA PERTIWI</h2>
+              </div>
             </div>
             <div class="flex items-center gap-3">
               <div class="text-right hidden md:block border-r border-slate-200 pr-4 mr-1">
@@ -102,7 +98,7 @@
 
           <div class="lg:col-span-1 flex flex-col gap-4 lg:sticky lg:top-[5.5rem] pb-10">
             <div class="bg-white p-4 sm:p-5 rounded-[1.5rem] shadow-sm border border-slate-200">
-              <h3 class="font-black text-sm text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-100 pb-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Navigasi</h3>
+              <h3 class="font-black text-sm text-slate-800 mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-slate-100 pb-3"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Peta Soal</h3>
               <div id="nav-grid" class="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2 max-h-[250px] lg:max-h-[40vh] overflow-y-auto pr-1 pb-1 custom-scrollbar"></div>
             </div>
             <div class="bg-white p-4 sm:p-5 rounded-[1.5rem] shadow-sm border border-slate-200" id="submit-box"></div>
@@ -112,11 +108,11 @@
 
     <div id="modal-broadcast" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-md p-4 transition-all">
         <div class="bg-white rounded-[2rem] p-6 md:p-8 max-w-md w-full shadow-2xl border-4 border-blue-500 text-center transform transition-all">
-            <h3 class="text-2xl font-black text-slate-800 tracking-tight">PENGUMUMAN!</h3>
+            <h3 class="text-2xl font-black text-slate-800 tracking-tight">PENGUMUMAN PENTING!</h3>
             <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 my-6 shadow-inner">
               <p id="broadcast-text" class="text-slate-800 font-bold text-lg leading-relaxed">Pesan</p>
             </div>
-            <button onclick="document.getElementById('modal-broadcast').classList.add('hidden')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black active:scale-95 shadow-lg tracking-widest text-lg">SAYA MENGERTI</button>
+            <button onclick="document.getElementById('modal-broadcast').classList.replace('flex', 'hidden')" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black active:scale-95 shadow-lg tracking-widest text-lg">SAYA MENGERTI</button>
         </div>
     </div>
 
@@ -138,6 +134,7 @@
         let isSubmitting = false;
         
         let isExambroMode = false;
+        let isProcessingCheat = false; // FIXED: Definisi variabel yang sebelumnya hilang
 
         document.getElementById('head-nama').innerText = studentData.name;
         document.getElementById('head-mapel').innerText = `${studentData.mapel} • Kls ${studentData.class}`;
@@ -145,15 +142,12 @@
         document.getElementById('mob-mapel').innerText = studentData.mapel;
         document.getElementById('mob-kelas').innerText = `Kls ${studentData.class}-${studentData.subKelas}`;
 
-        const wmContainer = document.getElementById('watermark-container');
-        for(let i=0; i<15; i++) { wmContainer.innerHTML += `<div class="mb-8">${(studentData.name + " - " + studentData.class + " ").repeat(8)}</div>`; }
-
         window.addEventListener('online', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE'; document.getElementById('offline-alert').classList.add('hidden'); });
         window.addEventListener('offline', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE'; document.getElementById('offline-alert').classList.remove('hidden'); });
 
         async function initExam() {
             const { data: session } = await supabase.from('exam_sessions').select('*').eq('token', studentData.token).single();
-            if(!session) return alert("Sesi tidak valid!");
+            if(!session) { alert("Sesi Ujian Ditutup/Tidak Valid!"); window.location.href='portal.html'; return; }
             schoolId = session.school_id;
 
             if (session.jam_selesai) {
@@ -165,7 +159,6 @@
                 if(timeLeft <= 0) return submitExam();
             }
 
-            // PERBAIKAN BUG 2: MENGGUNAKAN .ilike() AGAR HURUF BESAR KECIL/SPASI DIABAIKAN
             const cleanMapel = (studentData.mapel || '').trim();
             const cleanKelas = (studentData.class || '').trim();
 
@@ -175,18 +168,9 @@
                 .ilike('kelas', `%${cleanKelas}%`)
                 .eq('teacher_email', studentData.teacherEmail);
             
-            // JIKA DATABASE ERROR ATAU TERKUNCI RLS
-            if (qErr) {
-                document.getElementById('soal-box').innerHTML = `<div class="text-center p-8 bg-red-50 rounded-2xl border-2 border-red-200 text-red-600"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto mb-3"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><h2 class="text-lg font-black mb-1">Akses Database Ditolak</h2><p class="text-sm font-semibold">Gagal menarik soal. Hubungi Admin Ujian.</p><p class="text-xs mt-2 opacity-70">${qErr.message}</p></div>`;
-                document.getElementById('nav-buttons-bawah').classList.add('hidden');
-                return;
-            }
-
-            // JIKA SOAL BENAR-BENAR KOSONG
-            if(!qData || qData.length === 0) {
-                document.getElementById('soal-box').innerHTML = `<div class="text-center p-8 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 text-slate-500"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mx-auto mb-3 opacity-50"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="15" x2="15" y2="15"></line></svg><h2 class="text-lg font-black mb-1 text-slate-600">Naskah Ujian Kosong</h2><p class="text-sm font-semibold">Guru Anda belum merilis soal untuk Mapel <b>${cleanMapel}</b> Kelas <b>${cleanKelas}</b>.</p><p class="text-[10px] mt-3 font-bold text-slate-400">Silakan lapor ke Pengawas Ruangan.</p></div>`;
-                document.getElementById('nav-buttons-bawah').classList.add('hidden');
-                return;
+            if (qErr || !qData || qData.length === 0) {
+                document.getElementById('soal-box').innerHTML = `<div class="text-center p-8 text-red-600"><h2 class="text-lg font-black mb-1">Soal Kosong/Error!</h2><p class="text-sm font-semibold">Gagal menarik soal. Hubungi Pengawas.</p></div>`;
+                document.getElementById('nav-buttons-bawah').classList.add('hidden'); return;
             }
 
             const savedOrder = localStorage.getItem(`${storageKey}_order`);
@@ -201,8 +185,26 @@
                 localStorage.setItem(`${storageKey}_order`, JSON.stringify(questions.map(q=>q.id)));
             }
             
-            updateSubmitUI(); renderUI(); startTimer(); subscribeRealtime();
-            syncAns();
+            updateSubmitUI(); renderUI(); startTimer(); subscribeRealtime(); syncAns();
+        }
+
+        // FUNGSI RENDER NAVIGASI (MEMPERBAIKI WARNA TOMBOL SOAL)
+        function renderNav() {
+            document.getElementById('nav-grid').innerHTML = questions.map((x, i) => {
+                let cls = 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'; // Default Belum Jawab (Putih)
+                
+                // FIXED: Pengecekan ada jawaban atau tidak yang lebih solid (Trim spasi)
+                const isAnswered = answers[x.id] && answers[x.id].trim() !== ''; 
+                
+                if(ragu[x.id]) {
+                    cls = 'bg-amber-400 text-white border-amber-500'; // Ragu-ragu (Kuning)
+                } else if(isAnswered) {
+                    cls = 'bg-emerald-600 text-white border-emerald-700 shadow-sm'; // Sudah Dijawab (Hijau)
+                }
+                
+                if(currentIndex === i) cls += ' ring-4 ring-blue-500/30 scale-110 z-10'; // Sedang dilihat
+                return `<button onclick="goTo(${i})" class="h-10 w-full rounded-lg text-sm font-black border transition-all ${cls}">${i+1}</button>`;
+            }).join('');
         }
 
         function renderUI() {
@@ -213,70 +215,68 @@
             let html = `
               <div class="absolute top-0 left-0 w-1.5 h-full ${type === 'PG' ? 'bg-blue-500' : type === 'PGK' ? 'bg-orange-500' : 'bg-purple-500'}"></div>
               <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3 pl-3">
-                 <span class="text-[11px] font-black bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border tracking-wider">NO. ${currentIndex+1} / ${questions.length}</span>
+                 <span class="text-[11px] font-black bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border tracking-wider">SOAL KE: ${currentIndex+1} / ${questions.length}</span>
               </div>
             `;
             if(q.teks_wacana) html += `<div class="mb-5 p-4 bg-slate-50 border-l-[3px] border-slate-400 text-sm katex-render">${q.teks_wacana}</div>`;
-            if(q.gambar) html += `<div class="mb-5 flex justify-center"><img src="${q.gambar}" class="max-h-72 object-contain rounded-lg"/></div>`;
-            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3 whitespace-pre-wrap">${q.pertanyaan || ''}</div>`;
+            if(q.gambar) html += `<div class="mb-5 flex justify-center"><img src="${q.gambar}" class="max-h-72 object-contain rounded-lg shadow-sm border border-slate-200"/></div>`;
+            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3 whitespace-pre-wrap leading-relaxed">${q.pertanyaan || ''}</div>`;
 
             if(type === 'PG') {
                 html += `<div class="space-y-2.5 pl-3">`;
                 ['A','B','C','D'].forEach(opt => {
+                    if(!q[`opsi_${opt.toLowerCase()}`]) return; // Lewati jika opsi kosong
                     const isSel = answers[q.id] === opt;
-                    html += `<button onclick="jawabPG('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-[1.5px] flex items-start gap-3 ${isSel?'bg-blue-50 border-blue-500 font-bold':'bg-white border-slate-200 hover:border-blue-300'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm ${isSel?'bg-blue-500 text-white':'bg-slate-100'}">${opt}</span><div class="flex-1 pt-1 katex-render">${q[`opsi_${opt.toLowerCase()}`] || ''}</div></button>`;
+                    html += `<button onclick="jawabPG('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isSel?'bg-blue-50 border-blue-500 font-bold shadow-sm':'bg-white border-slate-200 hover:border-blue-300'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm shrink-0 ${isSel?'bg-blue-600 text-white':'bg-slate-100 text-slate-500'}">${opt}</span><div class="flex-1 pt-1 katex-render">${q[`opsi_${opt.toLowerCase()}`]}</div></button>`;
                 });
                 html += `</div>`;
             } else if(type === 'PGK') {
                 html += `<div class="space-y-2.5 pl-3">`;
                 ['A','B','C','D'].forEach(opt => {
+                    if(!q[`opsi_${opt.toLowerCase()}`]) return;
                     const isSel = answers[q.id] && answers[q.id].split(',').includes(opt);
-                    html += `<button onclick="jawabPGK('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-[1.5px] flex items-start gap-3 ${isSel?'bg-orange-50 border-orange-500 font-bold':'bg-white border-slate-200 hover:border-orange-300'}"><div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg border-[1.5px] mt-0.5 ${isSel?'bg-orange-500 text-white':'bg-slate-100'}">${isSel?'✓':''}</div><div class="flex-1 text-sm pt-0.5 katex-render"><span class="font-black mr-2 opacity-50">${opt}.</span>${q[`opsi_${opt.toLowerCase()}`] || ''}</div></button>`;
+                    html += `<button onclick="jawabPGK('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isSel?'bg-orange-50 border-orange-500 font-bold shadow-sm':'bg-white border-slate-200 hover:border-orange-300'}"><div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg border-2 mt-0.5 ${isSel?'bg-orange-500 border-orange-500 text-white':'bg-slate-100 border-slate-300'}">${isSel?'✓':''}</div><div class="flex-1 text-sm pt-0.5 katex-render"><span class="font-black mr-2 opacity-50">${opt}.</span>${q[`opsi_${opt.toLowerCase()}`]}</div></button>`;
                 });
                 html += `</div>`;
             } else if(type === 'ESAI') {
-                html += `<div class="pl-3"><textarea onchange="jawabEsai('${q.id}', this.value)" placeholder="Ketik jawaban..." class="w-full min-h-[120px] p-3 border rounded-xl bg-slate-50 focus:bg-white">${answers[q.id]||''}</textarea></div>`;
+                html += `<div class="pl-3"><textarea onchange="jawabEsai('${q.id}', this.value)" placeholder="Ketik jawaban esai Anda di sini..." class="w-full min-h-[150px] p-4 border-2 border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-purple-500 outline-none transition-all shadow-inner">${answers[q.id]||''}</textarea></div>`;
             }
 
             document.getElementById('soal-box').innerHTML = html;
             if(window.renderMathInElement) renderMathInElement(document.getElementById('soal-box'), { delimiters: [{left:"$",right:"$",display:false}, {left:"$$",right:"$$",display:true}] });
             
-            document.getElementById('nav-grid').innerHTML = questions.map((x, i) => {
-                let cls = 'bg-slate-50 text-slate-500 border-slate-200';
-                if(ragu[x.id]) cls = 'bg-amber-400 text-white border-amber-500'; else if(answers[x.id]) cls = 'bg-slate-800 text-white border-slate-900';
-                if(currentIndex === i) cls += ' ring-[3px] ring-emerald-400/50 scale-105';
-                return `<button onclick="goTo(${i})" class="h-10 w-full rounded-lg text-sm font-black border">${i+1}</button>`;
-            }).join('');
+            // Panggil fungsi render navigasi terpisah yang sudah diperbaiki
+            renderNav();
 
             document.getElementById('btn-prev').disabled = currentIndex === 0;
             document.getElementById('btn-next').disabled = currentIndex === questions.length - 1;
-            document.getElementById('btn-ragu').className = ragu[q.id] ? "flex-1 py-3.5 bg-amber-400 text-white border-amber-500 rounded-xl font-black flex items-center justify-center gap-1.5" : "flex-1 py-3.5 bg-white border border-slate-200 text-amber-500 rounded-xl font-black flex items-center justify-center gap-1.5";
+            document.getElementById('btn-ragu').className = ragu[q.id] ? "flex-1 py-3.5 bg-amber-400 text-white border border-amber-500 rounded-xl font-black flex items-center justify-center gap-1.5 shadow-sm" : "flex-1 py-3.5 bg-white border-2 border-slate-200 text-amber-500 hover:bg-slate-50 rounded-xl font-black flex items-center justify-center gap-1.5";
         }
 
         window.goTo = (idx) => { currentIndex = idx; renderUI(); };
         document.getElementById('btn-prev').onclick = () => goTo(currentIndex-1);
         document.getElementById('btn-next').onclick = () => goTo(currentIndex+1);
-        document.getElementById('btn-ragu').onclick = () => { const id = questions[currentIndex].id; ragu[id] = !ragu[id]; localStorage.setItem(`${storageKey}_ragu`, JSON.stringify(ragu)); renderUI(); };
+        document.getElementById('btn-ragu').onclick = () => { const id = questions[currentIndex].id; ragu[id] = !ragu[id]; localStorage.setItem(`${storageKey}_ragu`, JSON.stringify(ragu)); renderNav(); renderUI(); };
 
         window.jawabPG = (id, val) => { answers[id] = val; syncAns(); };
         window.jawabPGK = (id, opt) => { const c = answers[id]?answers[id].split(','):[]; answers[id] = (c.includes(opt)?c.filter(x=>x!==opt):[...c, opt]).sort().join(','); syncAns(); };
         window.jawabEsai = (id, val) => { answers[id] = val; syncAns(); };
         
         async function syncAns() {
-            localStorage.setItem(`${storageKey}_ans`, JSON.stringify(answers)); renderUI();
+            localStorage.setItem(`${storageKey}_ans`, JSON.stringify(answers)); 
+            renderUI(); // Render ulang agar UI soal dan navigasi sinkron
+            
             if(navigator.onLine && questions.length > 0) {
                 const prog = Math.round((Object.keys(answers).length/questions.length)*100);
-                await supabase.from('live_students').update({ progress: prog, answers: answers }).eq('id', studentData.id);
+                // Sinkronisasi background, tidak perlu ditunggu agar UI tidak nge-lag
+                supabase.from('live_students').update({ progress: prog, answers: answers }).eq('id', studentData.id).then();
             }
         }
 
         function updateSubmitUI() {
             const box = document.getElementById('submit-box');
-            if (timeLeft <= 600) {
-                box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-black tracking-widest">KUMPULKAN</button>`;
-            } else {
-                box.innerHTML = `<div class="w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl text-center"><span class="text-[10px] font-black tracking-widest uppercase block text-slate-500 mb-0.5">Tombol Kumpul Dikunci</span><span class="text-[9px] font-bold text-slate-400">Terbuka di 10 Menit Terakhir</span></div>`;
-            }
+            // Ganti 600 (10 Menit) jadi bebas kumpul kapan saja untuk pengujian
+            box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black tracking-widest text-lg shadow-lg shadow-emerald-500/30 transition-all active:scale-95">SELESAIKAN UJIAN</button>`;
         }
 
         function startTimer() {
@@ -285,15 +285,17 @@
                 timeLeft--; localStorage.setItem(`${storageKey}_time`, timeLeft);
                 const min = Math.floor(timeLeft/60); const sec = timeLeft%60;
                 document.getElementById('timer-display').innerText = `${min}:${String(sec).padStart(2,'0')}`;
-                updateSubmitUI(); if(timeLeft <= 0) { clearInterval(t); submitExam(); }
+                if(timeLeft <= 0) { clearInterval(t); submitExam(); }
             }, 1000);
         }
 
-        window.submitExamCheck = () => { if(confirm("Yakin ingin mengakhiri dan mengumpulkan jawaban ujian ini?")) submitExam(); };
+        window.submitExamCheck = () => { if(confirm("Yakin ingin menyelesaikan dan mengumpulkan ujian ini?\nJawaban yang sudah dikumpul tidak bisa diubah kembali.")) submitExam(); };
 
         async function submitExam() {
             if(isSubmitting) return; isSubmitting=true;
-            if(!navigator.onLine) { alert("OFFLINE! Pastikan koneksi menyala sebelum mengumpulkan."); isSubmitting=false; return; }
+            if(!navigator.onLine) { alert("OFFLINE! Periksa koneksi internet Anda."); isSubmitting=false; return; }
+            
+            document.getElementById('submit-box').innerHTML = `<div class="w-full py-4 bg-slate-400 text-white rounded-xl font-black text-center animate-pulse">MEMPROSES...</div>`;
             
             let pts = 0; let tot = 0;
             questions.forEach(q => {
@@ -314,16 +316,16 @@
                     kelas: studentData.class, sub_kelas: studentData.subKelas, teacher_email: studentData.teacherEmail,
                     score: skor, objective_score: skor, is_essay_graded: false, answers: answers
                 }]);
-                await supabase.from('live_students').update({status:'Selesai'}).eq('id', studentData.id);
-                localStorage.setItem('studentData_backup', JSON.stringify(studentData));
+                await supabase.from('live_students').update({status:'Selesai', progress: 100}).eq('id', studentData.id);
+                
+                // Bersihkan cache
                 localStorage.removeItem(storageKey+'_ans'); localStorage.removeItem(storageKey+'_ragu');
                 localStorage.removeItem(storageKey+'_time'); localStorage.removeItem(storageKey+'_warn');
                 localStorage.removeItem(storageKey+'_lock'); localStorage.removeItem(storageKey+'_order');
-                localStorage.removeItem('studentData'); 
                 
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
                 window.location.href = `result.html?score=${skor}`;
-            } catch(e) { alert("Gagal kumpul data! Silakan coba lagi."); isSubmitting=false; }
+            } catch(e) { alert("Gagal mengumpulkan data! Lapor ke pengawas."); isSubmitting=false; updateSubmitUI(); }
         }
 
         window.enterFS = () => { 
@@ -335,16 +337,25 @@
             } else { isExambroMode = true; layer.classList.replace('flex','hidden'); }
         };
 
+        // FIXED LOGIKA PELANGGARAN
         async function handleCheat(reason) {
             if(isLocked || isProcessingCheat) return;
-            isProcessingCheat = true; warnings++; localStorage.setItem(`${storageKey}_warn`, warnings);
+            isProcessingCheat = true; 
+            warnings++; localStorage.setItem(`${storageKey}_warn`, warnings);
             
             const blurLayer = document.getElementById('blur-warning');
+            document.getElementById('warn-count-display').innerText = `Peringatan Ke-${warnings}`;
             blurLayer.classList.remove('hidden'); blurLayer.classList.add('flex');
             setTimeout(() => { blurLayer.classList.remove('flex'); blurLayer.classList.add('hidden'); }, 3000);
 
-            try { await supabase.from('live_students').update({warnings: warnings, status: reason}).eq('id', studentData.id); } catch(e) {}
-            if(warnings >= 3) { isLocked = true; localStorage.setItem(`${storageKey}_lock`, 'true'); cekCheat(); }
+            // Laporkan ke database tanpa menunggu (agar siswa tidak stuck)
+            supabase.from('live_students').update({warnings: warnings, status: reason}).eq('id', studentData.id).then();
+            
+            if(warnings >= 3) { 
+                isLocked = true; localStorage.setItem(`${storageKey}_lock`, 'true'); 
+                cekCheat(); // Panggil fungsi kunci layar
+            }
+            
             setTimeout(() => { isProcessingCheat = false; }, 2000); 
         }
 
@@ -354,23 +365,35 @@
         }
         
         document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && !isExambroMode) document.getElementById('layer-fullscreen').classList.replace('hidden','flex'); });
-        document.addEventListener('visibilitychange', () => { if(document.hidden && !isLocked) { handleCheat('Pindah Tab / Tutup Layar'); } });
-        window.addEventListener('blur', () => { if(!isLocked && !document.hidden) { handleCheat('Split Screen / Notifikasi'); } });
+        
+        // Deteksi Keluar Layar/Tab
+        document.addEventListener('visibilitychange', () => { if(document.hidden && !isLocked) handleCheat('Membuka Tab/Aplikasi Lain'); });
+        window.addEventListener('blur', () => { if(!isLocked && !document.hidden) handleCheat('Membuka Pop-up/Split Screen'); });
 
+        // FIXED PENDENGAR PERINTAH GURU (REALTIME)
         function subscribeRealtime() {
-            supabase.channel('siswa').on('postgres_changes', { event:'UPDATE', schema:'public', table:'live_students', filter:`id=eq.${studentData.id}` }, p => {
-                if(p.new.session_id && p.new.session_id !== studentData.sessionId) {
-                    alert("🚨 DETEKSI LOGIN GANDA!\nAkun Anda login di perangkat lain. Sesi ini ditutup otomatis.");
-                    localStorage.clear(); window.location.href = 'portal.html'; return;
+            // Gunakan setInterval fallback karena webhook supabase kadang mati jika tab HP tertidur
+            setInterval(async () => {
+                const { data, error } = await supabase.from('live_students').select('force_submit, warnings, broadcast').eq('id', studentData.id).single();
+                if(data) {
+                    // 1. Tarik Paksa
+                    if(data.force_submit && !isSubmitting) {
+                        alert("⚠️ WAKTU HABIS! Lembar jawaban ditarik otomatis oleh Pengawas.");
+                        submitExam();
+                    }
+                    // 2. Buka Kunci oleh Pengawas
+                    if(data.warnings === 0 && isLocked) { 
+                        isLocked = false; warnings = 0; localStorage.setItem(`${storageKey}_warn`, 0); localStorage.setItem(`${storageKey}_lock`, 'false'); 
+                        cekCheat(); alert("Kunci layar telah dibuka oleh Pengawas."); 
+                    }
+                    // 3. Pengumuman
+                    if(data.broadcast && data.broadcast !== localStorage.getItem('last_bc')) {
+                        localStorage.setItem('last_bc', data.broadcast);
+                        document.getElementById('broadcast-text').innerText = data.broadcast;
+                        document.getElementById('modal-broadcast').classList.remove('hidden'); document.getElementById('modal-broadcast').classList.add('flex');
+                    }
                 }
-                if(p.new.warnings===0 && isLocked) { isLocked=false; warnings=0; localStorage.setItem(`${storageKey}_lock`,'false'); cekCheat(); alert("Kunci dibuka pengawas."); }
-                if(p.new.force_submit) submitExam();
-                if(p.new.broadcast && p.new.broadcast !== localStorage.getItem('last_bc')) {
-                    localStorage.setItem('last_bc', p.new.broadcast);
-                    document.getElementById('broadcast-text').innerText = p.new.broadcast;
-                    document.getElementById('modal-broadcast').classList.remove('hidden'); document.getElementById('modal-broadcast').classList.add('flex');
-                }
-            }).subscribe();
+            }, 3000); // Polling setiap 3 detik sebagai jaring pengaman utama CBT Mobile
         }
 
         document.addEventListener('DOMContentLoaded', () => { cekCheat(); initExam(); });
