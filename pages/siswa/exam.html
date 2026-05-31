@@ -259,7 +259,7 @@
             localStorage.setItem(`${storageKey}_ans`, JSON.stringify(answers)); 
             renderUI(); 
             if(navigator.onLine && questions.length > 0) {
-                const prog = Math.round((Object.keys(answers).length/questions.length)*100);
+                const answeredCount = questions.filter(q => answers[q.id] && answers[q.id].trim().length > 0).length; const prog = Math.round((answeredCount / questions.length) * 100);
                 supabase.from('live_students').update({ progress: prog, answers: answers }).eq('id', studentData.id).then();
             }
         }
