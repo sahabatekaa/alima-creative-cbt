@@ -2,101 +2,104 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hasil Ujian | Alima CBT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hasil Akhir | Alima CBT</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="../../css/global.css">
-    <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;900&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; } /* Tema Gelap Elegan */
+        
+        /* Efek Kaca (Glassmorphism) */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.05); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+        }
+        
+        /* Animasi Muncul dari Bawah */
+        @keyframes slideUpFade { 
+            from { opacity: 0; transform: translateY(40px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-slide-up { animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
 </head>
-<body class="h-screen flex items-center justify-center bg-[#f8fafc] p-4 transition-colors duration-300">
-    <div class="bg-white p-8 md:p-10 rounded-[2rem] shadow-xl w-full max-w-md text-center border border-slate-200 animate-in zoom-in duration-500">
+<body class="min-h-screen flex items-center justify-center p-5 overflow-hidden relative">
+    
+    <div class="absolute top-[-10%] left-[-10%] w-80 h-80 bg-emerald-500 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-blue-500 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-pulse" style="animation-delay: 2s;"></div>
+
+    <div class="glass-card rounded-[2.5rem] p-8 md:p-10 max-w-sm w-full text-center relative z-10 shadow-2xl opacity-0 animate-slide-up">
         
-        <div class="flex justify-center mb-6 relative">
-           <div class="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse"></div>
-           <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500 relative z-10"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <div class="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(52,211,153,0.4)] transform hover:scale-110 transition-transform duration-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-[48px] md:h-[48px]"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
         </div>
         
-        <h1 class="text-3xl font-black mb-2 text-slate-800 tracking-tight">Ujian Selesai!</h1>
-        <p id="res-nama" class="text-slate-500 mb-8 font-bold text-lg uppercase">Mencari Data Siswa...</p>
-        
-        <div class="bg-slate-50 border border-slate-100 py-8 rounded-3xl mb-8 shadow-inner relative overflow-hidden">
-          <div class="absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
-          <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">SKOR AKHIR ANDA</p>
-          <div id="res-skor" class="text-7xl font-black text-emerald-500 tracking-tighter">...</div>
+        <h1 class="text-2xl md:text-3xl font-black text-white mb-1 tracking-wide">UJIAN SELESAI!</h1>
+        <p class="text-slate-400 font-bold mb-8 text-xs md:text-sm" id="student-info">Terima kasih telah mengerjakan dengan jujur.</p>
+
+        <div class="bg-white/5 rounded-[2rem] p-6 mb-8 border border-white/10 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Nilai Akhir Anda</p>
+            <div class="text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-blue-400 drop-shadow-2xl" id="score-display">0</div>
         </div>
-        
-        <div id="res-rank" class="hidden bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 p-5 rounded-2xl mb-8 items-center justify-center gap-4 text-orange-700 shadow-sm transition-all duration-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="animate-bounce shrink-0"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>
-            <div class="text-left">
-               <p class="text-[10px] font-black uppercase tracking-widest opacity-80">Peringkat Kelas Sementara</p>
-               <p id="rank-text" class="text-lg font-black tracking-wide">Juara -</p>
-            </div>
-        </div>
-        
-        <button onclick="keluarKePortal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all tracking-widest text-sm">
-           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> KELUAR & KEMBALI
+
+        <button onclick="keluar()" class="w-full bg-white text-slate-900 hover:bg-slate-200 py-4 rounded-2xl font-black tracking-widest active:scale-95 transition-all shadow-xl text-sm md:text-base">
+            KEMBALI KE PORTAL
         </button>
     </div>
 
-    <script type="module">
-        import { supabase } from '../../js/config/supabase.js';
-        
-        // Mengambil data dari backup (Karena data asli dihapus saat submit untuk mencegah ujian ulang)
-        const sd = JSON.parse(localStorage.getItem('studentData_backup')) || { name: 'Siswa', token: '', class: '', subKelas: '' };
-        document.getElementById('res-nama').innerText = sd.name;
+    <script>
+        // 1. MESIN LEDAKAN CONFETTI
+        function tembakKembangApi() {
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-        // Mengambil skor dari parameter URL (misal: result.html?score=80)
-        const urlParams = new URLSearchParams(window.location.search);
-        let currentScore = urlParams.get('score');
-        document.getElementById('res-skor').innerText = currentScore || '...';
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
 
-        // Logika Peringkat Kelas Real-Time
-        if(sd.token && sd.class) {
-            async function fetchRank() {
-                const { data, error } = await supabase
-                    .from('leaderboard')
-                    .select('student_name, score')
-                    .eq('token', sd.token)
-                    .eq('kelas', sd.class)
-                    .eq('sub_kelas', sd.subKelas || '-');
-                
-                if(data && !error) {
-                    // Urutkan dari nilai terbesar ke terkecil
-                    const sortedClassmates = [...data].sort((a, b) => b.score - a.score);
-                    
-                    // Cari posisi siswa ini
-                    const myIndex = sortedClassmates.findIndex(x => x.student_name === sd.name);
-                    
-                    if(myIndex !== -1) {
-                        const rank = myIndex + 1;
-                        document.getElementById('rank-text').innerText = `Peringkat ${rank} dari ${sortedClassmates.length}`;
-                        document.getElementById('res-rank').classList.replace('hidden', 'flex');
-                    }
-                }
-            }
-            
-            // Eksekusi Panggilan Pertama
-            fetchRank();
-
-            // Berlangganan Live Changes (Jika ada siswa lain baru kumpul, peringkat bisa berubah)
-            const channel = supabase.channel('public:leaderboard')
-                .on('postgres_changes', { 
-                    event: 'INSERT', 
-                    schema: 'public', 
-                    table: 'leaderboard', 
-                    filter: `token=eq.${sd.token}` 
-                }, payload => {
-                    fetchRank(); // Hitung ulang peringkat
-                })
-                .subscribe();
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
         }
 
-        window.keluarKePortal = () => {
-            // Bersihkan jejak backup sebelum kembali ke gerbang
-            localStorage.removeItem('studentData_backup');
+        // 2. AMBIL DATA DAN JALANKAN ANIMASI ANGKA
+        document.addEventListener('DOMContentLoaded', () => {
+            tembakKembangApi(); // Dor kembang api!
+
+            const urlParams = new URLSearchParams(window.location.search);
+            let targetScore = parseInt(urlParams.get('score')) || 0;
+            
+            // Animasi Angka Berjalan (Count Up)
+            let count = 0;
+            const display = document.getElementById('score-display');
+            const speed = targetScore > 0 ? Math.ceil(targetScore / 30) : 1; 
+            
+            const counter = setInterval(() => {
+                if (targetScore === 0) { clearInterval(counter); return; }
+                count += speed;
+                if(count >= targetScore) { count = targetScore; clearInterval(counter); }
+                display.innerText = count;
+            }, 40);
+
+            // Tampilkan Nama & Mapel Siswa
+            const sData = JSON.parse(localStorage.getItem('studentData_backup'));
+            if(sData) {
+                document.getElementById('student-info').innerText = `${sData.name.toUpperCase()} • MAPEL: ${sData.mapel.toUpperCase()}`;
+            }
+        });
+
+        // 3. FUNGSI KELUAR
+        function keluar() {
+            localStorage.clear(); // Bersihkan sisa-sisa kotoran ujian
             window.location.href = 'portal.html';
-        };
+        }
     </script>
 </body>
 </html>
