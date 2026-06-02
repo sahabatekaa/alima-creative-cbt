@@ -74,6 +74,15 @@ export function renderAdminSidebar() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="${iconColor('rekap.html')}"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                     Cetak Rekap Nilai
                 </a>
+
+                <div class="my-4 border-t border-slate-200/60"></div>
+                <p class="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-3 px-2">Sistem & Keamanan</p>
+
+                <a href="cleanup.html" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm group ${isActive('cleanup.html')}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="${iconColor('cleanup.html')}"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    Pembersihan Sistem
+                </a>
+
             </div>
 
             <div class="p-4 shrink-0 border-t border-slate-200 bg-white z-10">
@@ -87,7 +96,6 @@ export function renderAdminSidebar() {
 
     container.innerHTML = sidebarHTML;
 
-    // Definisikan Event Listener Ulang (Sesuai kode sebelumnya)
     const sidebar = document.getElementById('admin-sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const btnClose = document.getElementById('close-sidebar');
