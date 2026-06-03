@@ -135,7 +135,7 @@
         let schoolId = null;
         
         let isSubmitting = false;
-        let isForceSubmitTriggered = false; // ANTI BUG SPAM ALERT TARIK PAKSA
+        let isForceSubmitTriggered = false; 
         let isExambroMode = false;
         let isProcessingCheat = false;
 
@@ -149,6 +149,18 @@
         window.addEventListener('offline', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE'; document.getElementById('offline-alert').classList.remove('hidden'); });
 
         async function initExam() {
+            // =========================================================================
+            // 🚨 OBAT AMPUH ANTI-BUG TARIK PAKSA LES KE-2 🚨
+            // Reset status force_submit peninggalan sesi sebelumnya di Supabase
+            // agar siswa tidak ditendang saat baru masuk Les 2.
+            // =========================================================================
+            supabase.from('live_students').update({ 
+                force_submit: false, 
+                status: 'Online',
+                token: studentData.token // Pastikan tokennya sinkron dengan ruangan baru
+            }).eq('id', studentData.id).then();
+
+
             const { data: session, error: sesErr } = await supabase.from('exam_sessions').select('*').eq('token', studentData.token).single();
             
             if (sesErr) {
@@ -158,9 +170,8 @@
             } else {
                 schoolId = session.school_id;
                 
-                // MENGGUNAKAN LOGIKA DURASI MURNI AGAR SISWA TIDAK PERNAH KEHABISAN WAKTU SAAT LOGIN TELAT
                 let savedTime = parseInt(localStorage.getItem(`${storageKey}_time`));
-                let durasiUjian = session.durasi ? parseInt(session.durasi) * 60 : 5400; // Default 90 Menit
+                let durasiUjian = session.durasi ? parseInt(session.durasi) * 60 : 5400; 
                 if (isNaN(savedTime) || savedTime <= 0) { timeLeft = durasiUjian; } else { timeLeft = savedTime; }
             }
 
@@ -180,11 +191,9 @@
 
             const savedOrder = localStorage.getItem(`${storageKey}_order`);
             if(savedOrder) {
-                // JIKA SUDAH PERNAH ACAK, AMBIL DARI MEMORI
                 const orderIds = JSON.parse(savedOrder);
                 questions = orderIds.map(id => qData.find(q => q.id === id)).filter(Boolean);
             } else {
-                // LOGIKA KUOTA SOAL DAN ACAK BARU DARI REACT V2
                 const groups = {};
                 qData.forEach(q => { const kw = q.kode_wacana || `single_${q.id}`; if(!groups[kw]) groups[kw]=[]; groups[kw].push(q); });
                 
@@ -324,13 +333,11 @@
 
         window.submitExamCheck = () => { if(confirm("Yakin ingin menyelesaikan dan mengumpulkan ujian ini?\nJawaban yang sudah dikumpul tidak bisa diubah kembali.")) submitExam(); };
 
-        // FUNGSI SUBMIT TAHAN BANTING (OFFLINE + TARIK PAKSA SAFE)
         async function submitExam(isForced = false) {
             if(isSubmitting) return; isSubmitting=true;
             
             if(!navigator.onLine) { 
                 if(isForced) {
-                    // Jika ditarik paksa tapi sedang offline -> Kunci UI tanpa menghapus data agar tidak hilang.
                     isLocked = true;
                     document.getElementById('layer-block').classList.replace('hidden', 'flex');
                     document.getElementById('block-content').innerHTML = `
@@ -338,7 +345,6 @@
                         <h1 class="text-2xl md:text-3xl font-black text-white tracking-widest mb-2">UJIAN DITARIK PENGAWAS</h1>
                         <p class="text-amber-400 font-bold text-center max-w-sm">Koneksi terputus! Data tersimpan di HP. JANGAN TUTUP APLIKASI INI dan lapor ke pengawas untuk sinkronisasi.</p>
                     `;
-                    // Terus mencoba submit setiap 5 detik sampai sinyal kembali
                     const retryInt = setInterval(() => { if(navigator.onLine) { clearInterval(retryInt); submitExam(true); } }, 5000);
                     return;
                 } else {
@@ -424,9 +430,8 @@
             setInterval(async () => {
                 const { data, error } = await supabase.from('live_students').select('force_submit, warnings, broadcast').eq('id', studentData.id).single();
                 if(data) {
-                    // ANTI-BUG SPAM ALERT TARIK PAKSA
                     if(data.force_submit && !isForceSubmitTriggered) {
-                        isForceSubmitTriggered = true; // Kunci agar tidak loop terus menerus
+                        isForceSubmitTriggered = true; 
                         alert("⚠️ WAKTU HABIS! Lembar jawaban ditarik otomatis oleh Pengawas.");
                         submitExam(true);
                     }
