@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -146,17 +147,24 @@
         window.addEventListener('offline', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE'; document.getElementById('offline-alert').classList.remove('hidden'); });
 
         async function initExam() {
-            const { data: session } = await supabase.from('exam_sessions').select('*').eq('token', studentData.token).single();
-            if(!session) { alert("Sesi Ujian Ditutup/Tidak Valid!"); window.location.href='portal.html'; return; }
-            schoolId = session.school_id;
-
-            if (session.jam_selesai) {
-                const now = new Date(); const target = new Date();
-                const [h, m] = session.jam_selesai.split(':');
-                target.setHours(parseInt(h, 10), parseInt(m, 10), 0);
-                const diff = Math.floor((target.getTime() - now.getTime()) / 1000);
-                timeLeft = diff > 0 ? diff : 0;
-                if(timeLeft <= 0) return submitExam();
+            // FIX EXAMBRO SLEEP/WAKE BUG: Abaikan pengecekan jika sedang offline atau ada masalah jaringan sementara.
+            const { data: session, error: sesErr } = await supabase.from('exam_sessions').select('*').eq('token', studentData.token).single();
+            
+            if (sesErr) {
+                console.warn("Gagal mengecek sesi ke server. Abaikan jika ini terjadi karena reload Exambrowser saat koneksi belum stabil.");
+            } else if (!session) { 
+                alert("Sesi Ujian Ditutup/Tidak Valid!"); window.location.href='portal.html'; return; 
+            } else {
+                schoolId = session.school_id;
+                // Kalkulasi waktu dari server jika pertama kali load (bukan resume dari localStorage)
+                if (session.jam_selesai && !localStorage.getItem(`${storageKey}_time`)) {
+                    const now = new Date(); const target = new Date();
+                    const [h, m] = session.jam_selesai.split(':');
+                    target.setHours(parseInt(h, 10), parseInt(m, 10), 0);
+                    const diff = Math.floor((target.getTime() - now.getTime()) / 1000);
+                    timeLeft = diff > 0 ? diff : 0;
+                    if(timeLeft <= 0) return submitExam();
+                }
             }
 
             const cleanMapel = (studentData.mapel || '').trim();
@@ -264,9 +272,14 @@
             }
         }
 
+        // KEMBALIKAN FITUR GEMBOK 10 MENIT
         function updateSubmitUI() {
             const box = document.getElementById('submit-box');
-            box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black tracking-widest text-lg shadow-lg shadow-emerald-500/30 transition-all active:scale-95">SELESAIKAN UJIAN</button>`;
+            if (timeLeft <= 600) { // 600 detik = 10 Menit Terakhir
+                box.innerHTML = `<button onclick="window.submitExamCheck()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black tracking-widest text-lg shadow-lg shadow-emerald-500/30 transition-all active:scale-95">SELESAIKAN UJIAN</button>`;
+            } else {
+                box.innerHTML = `<div class="w-full p-4 bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl text-center flex flex-col items-center justify-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mb-1"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span class="text-[10px] md:text-xs font-black tracking-widest uppercase block text-slate-500">Tombol Dikunci</span><span class="text-[9px] md:text-[10px] font-bold text-slate-400">Terbuka di 10 Menit Terakhir</span></div>`;
+            }
         }
 
         function startTimer() {
@@ -275,6 +288,10 @@
                 timeLeft--; localStorage.setItem(`${storageKey}_time`, timeLeft);
                 const min = Math.floor(timeLeft/60); const sec = timeLeft%60;
                 document.getElementById('timer-display').innerText = `${min}:${String(sec).padStart(2,'0')}`;
+                
+                // Minta UI Tombol untuk mengupdate diri setiap detik (ngecek apakah sudah masuk 10 menit)
+                updateSubmitUI(); 
+                
                 if(timeLeft <= 0) { clearInterval(t); submitExam(); }
             }, 1000);
         }
