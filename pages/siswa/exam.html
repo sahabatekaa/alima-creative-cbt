@@ -121,10 +121,15 @@
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
 
+        // 🚨 PROTEKSI RELOAD PALSU: Menandai kapan halaman benar-benar sedang di-refresh
+        window.isUnloading = false;
+        window.addEventListener('beforeunload', () => { window.isUnloading = true; });
+        
         let studentData = JSON.parse(localStorage.getItem('studentData'));
         if(!studentData) window.location.href = 'portal.html';
 
-        const storageKey = `cbt_exam_${studentData.id}`;
+        const storageKey = `cbt_exam_${studentData.id}_${studentData.token}`; 
+        
         let questions = [];
         let currentIndex = 0;
         let answers = JSON.parse(localStorage.getItem(`${storageKey}_ans`) || '{}');
@@ -138,6 +143,9 @@
         let isForceSubmitTriggered = false; 
         let isExambroMode = false;
         let isProcessingCheat = false;
+        
+        // 🚨 KUNCI RACE CONDITION: Menunda pembacaan database unlock selama 5 detik setelah kena blokir
+        let lastCheatTime = Date.now(); 
 
         document.getElementById('head-nama').innerText = studentData.name;
         document.getElementById('head-mapel').innerText = `${studentData.mapel} • Kls ${studentData.class}`;
@@ -149,30 +157,45 @@
         window.addEventListener('offline', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE'; document.getElementById('offline-alert').classList.remove('hidden'); });
 
         async function initExam() {
-            // =========================================================================
-            // 🚨 OBAT AMPUH ANTI-BUG TARIK PAKSA LES KE-2 🚨
-            // Reset status force_submit peninggalan sesi sebelumnya di Supabase
-            // agar siswa tidak ditendang saat baru masuk Les 2.
-            // =========================================================================
             supabase.from('live_students').update({ 
                 force_submit: false, 
                 status: 'Online',
-                token: studentData.token // Pastikan tokennya sinkron dengan ruangan baru
+                token: studentData.token 
             }).eq('id', studentData.id).then();
 
+            // Jika secara lokal sudah melanggar 3x (tapi DB mungkin belum tahu karena mati lampu), kita paksa DB sinkron!
+            if (warnings >= 3) {
+                supabase.from('live_students').update({ warnings: warnings, status: 'Meninggalkan Halaman/Aplikasi' }).eq('id', studentData.id).then();
+            }
 
             const { data: session, error: sesErr } = await supabase.from('exam_sessions').select('*').eq('token', studentData.token).single();
             
             if (sesErr) {
-                console.warn("Koneksi tidak stabil saat startup. Melanjutkan dengan sisa memori lokal...");
+                console.warn("Koneksi tidak stabil saat startup. Melanjutkan dengan memori lokal...");
             } else if (!session) { 
                 alert("Sesi Ujian Ditutup/Tidak Valid!"); window.location.href='portal.html'; return; 
             } else {
                 schoolId = session.school_id;
                 
-                let savedTime = parseInt(localStorage.getItem(`${storageKey}_time`));
-                let durasiUjian = session.durasi ? parseInt(session.durasi) * 60 : 5400; 
-                if (isNaN(savedTime) || savedTime <= 0) { timeLeft = durasiUjian; } else { timeLeft = savedTime; }
+                if (session.jam_selesai) {
+                    const now = new Date();
+                    const target = new Date();
+                    const [h, m] = session.jam_selesai.split(':');
+                    target.setHours(parseInt(h, 10), parseInt(m, 10), 0);
+                    
+                    const diffSeconds = Math.floor((target.getTime() - now.getTime()) / 1000);
+                    
+                    if (diffSeconds > 0) {
+                        timeLeft = diffSeconds;
+                    } else {
+                        alert("Waktu ujian untuk Sesi ini telah habis sesuai Jadwal yang ditetapkan Server!");
+                        return submitExam();
+                    }
+                } else {
+                    let savedTime = parseInt(localStorage.getItem(`${storageKey}_time`));
+                    let durasiUjian = session.durasi ? parseInt(session.durasi) * 60 : 5400; 
+                    if (isNaN(savedTime) || savedTime <= 0) { timeLeft = durasiUjian; } else { timeLeft = savedTime; }
+                }
             }
 
             const cleanMapel = (studentData.mapel || '').trim();
@@ -321,7 +344,10 @@
         function startTimer() {
             const t = setInterval(() => {
                 if(isLocked || isForceSubmitTriggered) return;
-                timeLeft--; localStorage.setItem(`${storageKey}_time`, timeLeft);
+                timeLeft--; 
+                
+                localStorage.setItem(`${storageKey}_time`, timeLeft);
+                
                 const min = Math.floor(timeLeft/60); const sec = timeLeft%60;
                 document.getElementById('timer-display').innerText = `${min}:${String(sec).padStart(2,'0')}`;
                 
@@ -397,8 +423,12 @@
         };
 
         async function handleCheat(reason) {
-            if(isLocked || isProcessingCheat) return;
+            // 🚨 PROTEKSI RELOAD: Jika halaman sedang proses refresh, abaikan sensor kecurangan!
+            if(isLocked || isProcessingCheat || window.isUnloading) return;
+            
             isProcessingCheat = true; 
+            lastCheatTime = Date.now(); // 🚨 KUNCI WAKTU PELANGGARAN TERAKHIR
+
             warnings++; localStorage.setItem(`${storageKey}_warn`, warnings);
             
             const blurLayer = document.getElementById('blur-warning');
@@ -406,7 +436,8 @@
             blurLayer.classList.remove('hidden'); blurLayer.classList.add('flex');
             setTimeout(() => { blurLayer.classList.remove('flex'); blurLayer.classList.add('hidden'); }, 3000);
 
-            supabase.from('live_students').update({warnings: warnings, status: reason}).eq('id', studentData.id).then();
+            // Await untuk memaksa DB menyimpan data sebelum polling berikutnya membaca
+            await supabase.from('live_students').update({warnings: warnings, status: reason}).eq('id', studentData.id);
             
             if(warnings >= 3) { 
                 isLocked = true; localStorage.setItem(`${storageKey}_lock`, 'true'); 
@@ -428,17 +459,24 @@
 
         function subscribeRealtime() {
             setInterval(async () => {
-                const { data, error } = await supabase.from('live_students').select('force_submit, warnings, broadcast').eq('id', studentData.id).single();
+                const { data, error } = await supabase.from('live_students').select('status, force_submit, warnings, broadcast').eq('id', studentData.id).single();
                 if(data) {
                     if(data.force_submit && !isForceSubmitTriggered) {
                         isForceSubmitTriggered = true; 
                         alert("⚠️ WAKTU HABIS! Lembar jawaban ditarik otomatis oleh Pengawas.");
                         submitExam(true);
                     }
-                    if(data.warnings === 0 && isLocked && !isForceSubmitTriggered) { 
-                        isLocked = false; warnings = 0; localStorage.setItem(`${storageKey}_warn`, 0); localStorage.setItem(`${storageKey}_lock`, 'false'); 
-                        cekCheat(); alert("Kunci layar telah dibuka oleh Pengawas."); 
+                    
+                    // 🚨 PERBAIKAN AUTO-UNLOCK: 
+                    // Hanya buka kunci JIKA status di server 'Online' (artinya direset pengawas)
+                    // DAN sudah lewat 5 detik dari pelanggaran terakhir (menghindari Race Condition)
+                    if(data.warnings === 0 && data.status === 'Online' && isLocked && !isForceSubmitTriggered && !isProcessingCheat) { 
+                        if (Date.now() - lastCheatTime > 5000) {
+                            isLocked = false; warnings = 0; localStorage.setItem(`${storageKey}_warn`, 0); localStorage.setItem(`${storageKey}_lock`, 'false'); 
+                            cekCheat(); alert("Kunci layar telah dibuka oleh Pengawas."); 
+                        }
                     }
+
                     if(data.broadcast && data.broadcast !== localStorage.getItem('last_bc')) {
                         localStorage.setItem('last_bc', data.broadcast);
                         document.getElementById('broadcast-text').innerText = data.broadcast;
