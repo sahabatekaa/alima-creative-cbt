@@ -57,19 +57,9 @@
                     <p id="info-soal" class="text-[10px] font-bold text-blue-600 mt-1.5 hidden">Jumlah Soal Ditemukan: <span id="count-soal" class="font-black text-sm">0</span></p>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">Sub Kelas / Ruang</label>
-                        <input type="text" id="s_sub" placeholder="Cth: A / B / IPA 1" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 uppercase outline-none focus:border-emerald-500 focus:bg-white transition-colors">
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">Jadwal Ujian (Jam)</label>
-                        <div class="flex items-center gap-1.5">
-                            <input type="time" id="s_jam_mulai" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 text-center focus:bg-white transition-colors">
-                            <span class="font-black text-slate-400">-</span>
-                            <input type="time" id="s_jam_selesai" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 text-center focus:bg-white transition-colors">
-                        </div>
-                    </div>
+                <div>
+                    <label class="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1 pl-1">Sub Kelas / Ruang</label>
+                    <input type="text" id="s_sub" placeholder="Cth: A / B / IPA 1" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 uppercase outline-none focus:border-emerald-500 focus:bg-white transition-colors">
                 </div>
 
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -162,7 +152,12 @@
             const grid = document.getElementById('sesi-grid');
             if(sesiData.length === 0) return grid.innerHTML = '<div class="col-span-full text-center p-10 font-bold text-slate-400 border-2 border-dashed border-slate-200 rounded-[20px]">Belum ada sesi ujian yang dibuat.</div>';
 
-            grid.innerHTML = sesiData.map(s => `
+            grid.innerHTML = sesiData.map(s => {
+                // Konfigurasi label info penanggalan dinamis di card guru
+                const tglFormat = s.tanggal ? new Date(s.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : 'Menunggu Admin TU';
+                const jamFormat = (s.jam_mulai && s.jam_selesai) ? `${s.jam_mulai} - ${s.jam_selesai}` : 'Jam Belum Diplot';
+
+                return `
                 <div class="bg-white p-4 sm:p-5 rounded-[20px] shadow-sm border ${s.status==='open' ? 'border-emerald-200 ring-2 ring-emerald-50' : 'border-slate-200 opacity-70'} relative overflow-hidden transition-all group flex flex-col h-full">
                     
                     <div class="flex justify-between items-start mb-3">
@@ -175,9 +170,10 @@
                         <p class="text-[11px] font-bold text-slate-500 mb-3">Kelas ${s.kelas} ${s.sub_kelas ? '- '+s.sub_kelas : ''}</p>
                         
                         <div class="bg-slate-50 rounded-xl p-2.5 grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-600 mb-4 border border-slate-100">
-                            <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${s.jam_mulai||'07:00'} - ${s.jam_selesai||'09:00'}</div>
-                            <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg> ${s.jumlah_soal || '-'} Soal</div>
-                            <div class="col-span-2 flex items-center gap-1.5 text-[9px] mt-0.5"><span class="bg-blue-100 text-blue-700 px-1.5 rounded">PG: ${s.bobot_pg||40}%</span> <span class="bg-amber-100 text-amber-700 px-1.5 rounded">Esai: ${s.bobot_esai||60}%</span></div>
+                            <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${jamFormat}</div>
+                            <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-500"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line></svg> ${tglFormat}</div>
+                            <div class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg> ${s.jumlah_soal || '-'} Soal</div>
+                            <div class="flex items-center gap-1.5 text-[9px]"><span class="bg-blue-100 text-blue-700 px-1.5 rounded">PG: ${s.bobot_pg||40}%</span> <span class="bg-amber-100 text-amber-700 px-1.5 rounded">Esai: ${s.bobot_esai||60}%</span></div>
                         </div>
                     </div>
 
@@ -191,7 +187,8 @@
                         <button onclick="hapusSesi('${s.token}')" class="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-colors border border-slate-200 shadow-sm" title="Hapus Sesi"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                     </div>
                 </div>
-            `).join('');
+                `
+            }).join('');
         }
 
         const modal = document.getElementById('modal-sesi');
@@ -201,8 +198,6 @@
             document.getElementById('form-sesi').reset(); 
             document.getElementById('edit-token').value = ''; 
             document.getElementById('info-soal').classList.add('hidden'); 
-            document.getElementById('s_jam_mulai').value = '07:00';
-            document.getElementById('s_jam_selesai').value = '09:00';
             document.getElementById('s_bobot_pg').value = 40;
             document.getElementById('s_bobot_esai').value = 60;
             document.getElementById('btn-simpan-sesi').innerText = "BUAT TOKEN SESI";
@@ -213,7 +208,6 @@
         document.getElementById('btn-close-modal').onclick = () => { modal.classList.remove('flex'); modal.classList.add('hidden'); };
         document.getElementById('close-qr').onclick = () => { modalQr.classList.remove('flex'); modalQr.classList.add('hidden'); };
 
-        // LOGIKA BUKA MODAL QR
         window.bukaModalQR = (token) => {
             const targetUrl = window.location.origin + '/pages/siswa/portal/?token=' + token;
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(targetUrl)}`;
@@ -222,7 +216,6 @@
             modalQr.classList.remove('hidden'); modalQr.classList.add('flex');
         };
 
-        // LOGIKA MEMBUKA MODAL EDIT
         window.bukaModalEdit = (token) => {
             const s = sesiData.find(x => x.token === token);
             if(!s) return;
@@ -237,8 +230,6 @@
             }
             
             document.getElementById('s_sub').value = s.sub_kelas || '';
-            document.getElementById('s_jam_mulai').value = s.jam_mulai || '07:00';
-            document.getElementById('s_jam_selesai').value = s.jam_selesai || '09:00';
             document.getElementById('s_bobot_pg').value = s.bobot_pg !== undefined ? s.bobot_pg : 40;
             document.getElementById('s_bobot_esai').value = s.bobot_esai !== undefined ? s.bobot_esai : 60;
             
@@ -268,34 +259,24 @@
             const jumlah_soal = bankSoalGrup[idxSoal].count;
             
             const sub = document.getElementById('s_sub').value.toUpperCase().trim();
-            const jam_mulai = document.getElementById('s_jam_mulai').value;
-            const jam_selesai = document.getElementById('s_jam_selesai').value;
             const bobotPg = document.getElementById('s_bobot_pg').value;
             const bobotEsai = document.getElementById('s_bobot_esai').value;
             
             const tokenExisting = document.getElementById('edit-token').value;
 
-            // KALKULASI DURASI DI BALIK LAYAR
-            const [h1, m1] = jam_mulai.split(':').map(Number);
-            const [h2, m2] = jam_selesai.split(':').map(Number);
-            let kalkulasiDurasi = (h2 * 60 + m2) - (h1 * 60 + m1);
-            if(kalkulasiDurasi <= 0) kalkulasiDurasi = 120; // Default aman kalau jam salah input
-
             if(tokenExisting) {
-                // UPDATE JALUR EDIT
+                // PROTEKSI SAKTI: Guru dilarang keras menimpa kolom waktu & tanggal milik Admin TU saat melakukan edit parameter
                 await supabase.from('exam_sessions').update({
                     mapel: mapel, kelas: kelas, sub_kelas: sub,
-                    jam_mulai: jam_mulai, jam_selesai: jam_selesai, durasi: kalkulasiDurasi, 
                     bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
                     jumlah_soal: jumlah_soal
                 }).eq('token', tokenExisting);
             } else {
-                // INSERT JALUR BARU
+                // INSERT JALUR BARU: Rilis kosongan tanpa jam/tanggal, menunggu plot mutlak dari Admin TU
                 const tokenBaru = Math.random().toString(36).substr(2, 5).toUpperCase();
                 await supabase.from('exam_sessions').insert([{
                     token: tokenBaru, school_id: schoolId, teacher_email: teacherEmail,
                     mapel: mapel, kelas: kelas, sub_kelas: sub,
-                    jam_mulai: jam_mulai, jam_selesai: jam_selesai, durasi: kalkulasiDurasi,
                     bobot_pg: parseInt(bobotPg), bobot_esai: parseInt(bobotEsai),
                     jumlah_soal: jumlah_soal, status: 'open'
                 }]);

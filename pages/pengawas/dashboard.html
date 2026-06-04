@@ -42,7 +42,7 @@
                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-5">
                   <div class="bg-white p-5 md:p-6 rounded-[20px] border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-400 group transition-all">
                      <div class="flex items-center justify-between mb-4"><div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div></div>
-                     <div><p class="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Total Sesi Aktif</p><h3 class="text-3xl md:text-4xl font-black text-slate-800" id="stat-sesi">0</h3></div>
+                     <div><p class="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Total Sesi Aktif Hari Ini</p><h3 class="text-3xl md:text-4xl font-black text-slate-800" id="stat-sesi">0</h3></div>
                   </div>
                   <div class="bg-white p-5 md:p-6 rounded-[20px] border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-400 group transition-all">
                      <div class="flex items-center justify-between mb-4"><div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div></div>
@@ -73,8 +73,16 @@
             document.getElementById('welcome-name').innerText = profile.name.split(' ')[0];
             document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
 
-            // AMBIL SELURUH SESI DI SEKOLAH TERSEBUT (Tidak peduli email siapa)
-            const { data: sesi, count: cSesi } = await supabase.from('exam_sessions').select('token', {count:'exact'}).eq('school_id', profile.school_id).eq('status', 'open');
+            // [INJEKSI 1] - FILTER STATISTIK HARI INI
+            const hariIniISO = new Date().toISOString().slice(0, 10);
+
+            // AMBIL SELURUH SESI DI SEKOLAH TERSEBUT YANG JADWALNYA HARI INI
+            const { data: sesi, count: cSesi } = await supabase.from('exam_sessions')
+                .select('token', {count:'exact'})
+                .eq('school_id', profile.school_id)
+                .eq('status', 'open')
+                .eq('tanggal', hariIniISO); // Menyingkirkan sesi seminggu lalu
+            
             document.getElementById('stat-sesi').innerText = cSesi || 0;
 
             if(sesi && sesi.length > 0) {

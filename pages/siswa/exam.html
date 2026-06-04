@@ -72,7 +72,10 @@
           </div>
         </header>
 
-        <div id="offline-alert" class="bg-red-50 border-b border-red-200 p-1.5 text-center text-red-600 text-[11px] font-bold shadow-inner z-30 relative hidden">⚠️ KONEKSI TERPUTUS! Jawaban aman di perangkat. Tunggu sinyal stabil sebelum mengumpulkan.</div>
+        <div id="offline-alert" class="bg-red-50 border-b border-red-200 p-2 text-center text-red-600 text-[11px] font-bold shadow-inner z-30 relative hidden flex-col items-center gap-1.5">
+            <span>⚠️ KONEKSI TERPUTUS! Jawaban aman di perangkat. Tunggu sinyal stabil sebelum mengumpulkan.</span>
+            <button onclick="cekKoneksiManual()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded-md text-[9px] uppercase tracking-widest transition-all active:scale-95 shadow-sm">Cari Sinyal 🔄</button>
+        </div>
 
         <main class="flex-1 max-w-7xl mx-auto w-full p-3 sm:p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6 mt-1 items-start">
           <div class="lg:col-span-3 space-y-4">
@@ -121,7 +124,6 @@
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
 
-        // 🚨 PROTEKSI RELOAD PALSU: Menandai kapan halaman benar-benar sedang di-refresh
         window.isUnloading = false;
         window.addEventListener('beforeunload', () => { window.isUnloading = true; });
         
@@ -131,7 +133,8 @@
         const storageKey = `cbt_exam_${studentData.id}_${studentData.token}`; 
         
         let questions = [];
-        let currentIndex = 0;
+        let currentIndex = parseInt(localStorage.getItem(`${storageKey}_current_index`)) || 0;
+        
         let answers = JSON.parse(localStorage.getItem(`${storageKey}_ans`) || '{}');
         let ragu = JSON.parse(localStorage.getItem(`${storageKey}_ragu`) || '{}');
         let timeLeft = 0; 
@@ -143,8 +146,6 @@
         let isForceSubmitTriggered = false; 
         let isExambroMode = false;
         let isProcessingCheat = false;
-        
-        // 🚨 KUNCI RACE CONDITION: Menunda pembacaan database unlock selama 5 detik setelah kena blokir
         let lastCheatTime = Date.now(); 
 
         document.getElementById('head-nama').innerText = studentData.name;
@@ -153,8 +154,45 @@
         document.getElementById('mob-mapel').innerText = studentData.mapel;
         document.getElementById('mob-kelas').innerText = `Kls ${studentData.class}-${studentData.subKelas}`;
 
-        window.addEventListener('online', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE'; document.getElementById('offline-alert').classList.add('hidden'); });
-        window.addEventListener('offline', () => { document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE'; document.getElementById('offline-alert').classList.remove('hidden'); });
+        // [PENYESUAIAN INJEKSI] - Modifikasi listener agar toggle tampilan Flex
+        window.addEventListener('online', () => { 
+            document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE'; 
+            document.getElementById('offline-alert').classList.add('hidden'); 
+            document.getElementById('offline-alert').classList.remove('flex');
+            syncAns();
+        });
+        
+        window.addEventListener('offline', () => { 
+            document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE'; 
+            document.getElementById('offline-alert').classList.remove('hidden'); 
+            document.getElementById('offline-alert').classList.add('flex');
+        });
+
+        // [INJEKSI 5 - ALAT PACU JANTUNG] - Memaksa Exambro mengecek koneksi nyata ke Supabase
+        window.cekKoneksiManual = async () => {
+            const btn = document.querySelector('#offline-alert button');
+            if(btn) btn.innerText = "MENCARI...";
+            try {
+                // Tembakan ringan ke database. Kalau berhasil, berarti internet sebenarnya jalan.
+                const { error } = await supabase.from('schools').select('id').limit(1);
+                if (!error) {
+                    document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE'; 
+                    document.getElementById('offline-alert').classList.add('hidden'); 
+                    document.getElementById('offline-alert').classList.remove('flex');
+                    if(btn) btn.innerText = "CARI SINYAL 🔄";
+                    syncAns(); // Dorong jawaban yang nyangkut
+                } else { throw new Error("Offline"); }
+            } catch (err) {
+                if(btn) btn.innerText = "CARI SINYAL 🔄";
+            }
+        };
+
+        // Robot Pacu Jantung: Otomatis ngetuk server setiap 10 detik kalau statusnya sedang offline
+        setInterval(() => {
+            if (!document.getElementById('offline-alert').classList.contains('hidden')) {
+                window.cekKoneksiManual();
+            }
+        }, 10000);
 
         async function initExam() {
             supabase.from('live_students').update({ 
@@ -163,7 +201,6 @@
                 token: studentData.token 
             }).eq('id', studentData.id).then();
 
-            // Jika secara lokal sudah melanggar 3x (tapi DB mungkin belum tahu karena mati lampu), kita paksa DB sinkron!
             if (warnings >= 3) {
                 supabase.from('live_students').update({ warnings: warnings, status: 'Meninggalkan Halaman/Aplikasi' }).eq('id', studentData.id).then();
             }
@@ -271,6 +308,8 @@
 
         function renderUI() {
             if(questions.length===0) return;
+            localStorage.setItem(`${storageKey}_current_index`, currentIndex);
+            
             const q = questions[currentIndex];
             const type = q.jenis_soal || 'PG';
             
@@ -314,7 +353,11 @@
             document.getElementById('btn-ragu').className = ragu[q.id] ? "flex-1 py-3.5 bg-amber-400 text-white border border-amber-500 rounded-xl font-black flex items-center justify-center gap-1.5 shadow-sm" : "flex-1 py-3.5 bg-white border-2 border-slate-200 text-amber-500 hover:bg-slate-50 rounded-xl font-black flex items-center justify-center gap-1.5";
         }
 
-        window.goTo = (idx) => { currentIndex = idx; renderUI(); };
+        window.goTo = (idx) => { 
+            currentIndex = idx; 
+            localStorage.setItem(`${storageKey}_current_index`, idx); 
+            renderUI(); 
+        };
         document.getElementById('btn-prev').onclick = () => goTo(currentIndex-1);
         document.getElementById('btn-next').onclick = () => goTo(currentIndex+1);
         document.getElementById('btn-ragu').onclick = () => { const id = questions[currentIndex].id; ragu[id] = !ragu[id]; localStorage.setItem(`${storageKey}_ragu`, JSON.stringify(ragu)); renderNav(); renderUI(); };
@@ -363,19 +406,17 @@
             if(isSubmitting) return; isSubmitting=true;
             
             if(!navigator.onLine) { 
-                if(isForced) {
-                    isLocked = true;
-                    document.getElementById('layer-block').classList.replace('hidden', 'flex');
-                    document.getElementById('block-content').innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-16 h-16 md:w-24 md:h-24 text-amber-500 mb-4 animate-bounce"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                        <h1 class="text-2xl md:text-3xl font-black text-white tracking-widest mb-2">UJIAN DITARIK PENGAWAS</h1>
-                        <p class="text-amber-400 font-bold text-center max-w-sm">Koneksi terputus! Data tersimpan di HP. JANGAN TUTUP APLIKASI INI dan lapor ke pengawas untuk sinkronisasi.</p>
-                    `;
-                    const retryInt = setInterval(() => { if(navigator.onLine) { clearInterval(retryInt); submitExam(true); } }, 5000);
-                    return;
-                } else {
-                    alert("OFFLINE! Periksa koneksi internet Anda sebelum mengumpulkan."); isSubmitting=false; return; 
-                }
+                isLocked = true;
+                document.getElementById('layer-block').classList.replace('hidden', 'flex');
+                document.getElementById('block-content').innerHTML = `
+                    <div class="bg-amber-600 p-6 rounded-2xl border-4 border-white text-white text-center shadow-2xl">
+                        <h2 class="text-xl font-black mb-2">PENGIRIMAN TERTUNDA (OFFLINE)</h2>
+                        <p class="text-xs font-semibold leading-relaxed">Koneksi internet terputus! Data jawaban aman di HP.<br><br><b>JANGAN TUTUP APLIKASI</b>. Panggil Pengawas untuk perbaiki WiFi.</p>
+                        <div class="mt-4 animate-pulse text-[10px] font-black tracking-widest">Mencoba mengirim otomatis...</div>
+                    </div>
+                `;
+                const retryInt = setInterval(() => { if(navigator.onLine) { clearInterval(retryInt); submitExam(isForced); } }, 5000);
+                return;
             }
             
             document.getElementById('submit-box').innerHTML = `<div class="w-full py-4 bg-slate-400 text-white rounded-xl font-black text-center animate-pulse">MEMPROSES...</div>`;
@@ -399,11 +440,13 @@
                     kelas: studentData.class, sub_kelas: studentData.subKelas, teacher_email: studentData.teacherEmail,
                     score: skor, objective_score: skor, is_essay_graded: false, answers: answers
                 }]);
-                await supabase.from('live_students').update({status:'Selesai', progress: 100}).eq('id', studentData.id);
+                
+                await supabase.from('live_students').delete().eq('id', studentData.id);
                 
                 localStorage.removeItem(storageKey+'_ans'); localStorage.removeItem(storageKey+'_ragu');
                 localStorage.removeItem(storageKey+'_time'); localStorage.removeItem(storageKey+'_warn');
                 localStorage.removeItem(storageKey+'_lock'); localStorage.removeItem(storageKey+'_order');
+                localStorage.removeItem(`${storageKey}_current_index`);
                 
                 if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
                 window.location.href = `result.html?score=${skor}`;
@@ -423,11 +466,10 @@
         };
 
         async function handleCheat(reason) {
-            // 🚨 PROTEKSI RELOAD: Jika halaman sedang proses refresh, abaikan sensor kecurangan!
             if(isLocked || isProcessingCheat || window.isUnloading) return;
             
             isProcessingCheat = true; 
-            lastCheatTime = Date.now(); // 🚨 KUNCI WAKTU PELANGGARAN TERAKHIR
+            lastCheatTime = Date.now(); 
 
             warnings++; localStorage.setItem(`${storageKey}_warn`, warnings);
             
@@ -436,7 +478,6 @@
             blurLayer.classList.remove('hidden'); blurLayer.classList.add('flex');
             setTimeout(() => { blurLayer.classList.remove('flex'); blurLayer.classList.add('hidden'); }, 3000);
 
-            // Await untuk memaksa DB menyimpan data sebelum polling berikutnya membaca
             await supabase.from('live_students').update({warnings: warnings, status: reason}).eq('id', studentData.id);
             
             if(warnings >= 3) { 
@@ -467,9 +508,6 @@
                         submitExam(true);
                     }
                     
-                    // 🚨 PERBAIKAN AUTO-UNLOCK: 
-                    // Hanya buka kunci JIKA status di server 'Online' (artinya direset pengawas)
-                    // DAN sudah lewat 5 detik dari pelanggaran terakhir (menghindari Race Condition)
                     if(data.warnings === 0 && data.status === 'Online' && isLocked && !isForceSubmitTriggered && !isProcessingCheat) { 
                         if (Date.now() - lastCheatTime > 5000) {
                             isLocked = false; warnings = 0; localStorage.setItem(`${storageKey}_warn`, 0); localStorage.setItem(`${storageKey}_lock`, 'false'); 

@@ -394,7 +394,13 @@
             const content = document.getElementById('analisis-content');
             content.innerHTML = '<div class="text-center p-6 md:p-10 font-bold text-slate-400 animate-pulse text-xs md:text-sm">Memuat naskah soal...</div>';
 
-            const { data: soalList } = await supabase.from('bank_soal').select('*').eq('mapel', student.mapel).eq('kelas', student.kelas);
+            // [INJEKSI PROTEKSI] Tambahkan .eq('teacher_email', teacherEmail) agar tidak menarik soal guru lain
+            const { data: soalList } = await supabase.from('bank_soal')
+                .select('*')
+                .eq('mapel', student.mapel)
+                .eq('kelas', student.kelas)
+                .eq('teacher_email', teacherEmail); // Saringan Wajib
+                
             if(!soalList || soalList.length === 0) {
                 content.innerHTML = '<div class="text-center p-6 text-rose-500 font-bold border-2 border-dashed border-rose-200 rounded-xl text-xs md:text-sm">Soal tidak ditemukan di bank soal.</div>'; return;
             }
@@ -460,7 +466,13 @@
             const content = document.getElementById('koreksi-content');
             content.innerHTML = '<div class="text-center p-6 font-bold text-amber-400 animate-pulse text-xs md:text-sm">Menyiapkan Lembar Koreksi...</div>';
 
-            const { data: soalList } = await supabase.from('bank_soal').select('id, pertanyaan, kunci').eq('mapel', student.mapel).eq('kelas', student.kelas).eq('jenis_soal', 'ESAI');
+            // [INJEKSI PROTEKSI] Tambahkan .eq('teacher_email', teacherEmail) agar tidak menarik soal esai guru lain
+            const { data: soalList } = await supabase.from('bank_soal')
+                .select('id, pertanyaan, kunci')
+                .eq('mapel', student.mapel)
+                .eq('kelas', student.kelas)
+                .eq('jenis_soal', 'ESAI')
+                .eq('teacher_email', teacherEmail); // Saringan Wajib
             
             if(!soalList || soalList.length === 0) {
                 content.innerHTML = '<div class="text-center p-6 text-slate-500 font-bold bg-white rounded-xl text-xs md:text-sm">Sesi ini tidak mengandung Soal Esai.</div>';

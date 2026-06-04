@@ -6,6 +6,7 @@
     <title>Radar Sesi | Alima CBT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <link rel="stylesheet" href="../../css/global.css">
     <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
 </head>
@@ -14,20 +15,27 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden relative z-0 w-full">
         <header class="bg-white border-b border-slate-200 p-4 md:px-6 flex justify-between items-center z-10 sticky top-0 shadow-sm shrink-0">
            <div class="flex items-center gap-3">
-             <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+             <button id="open-sidebar" onclick="document.getElementById('pengawas-sidebar')?.classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay')?.classList.toggle('hidden');" class="md:hidden p-2 bg-slate-100 rounded-lg text-indigo-600">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+             </button>
              <h2 class="text-xs md:text-sm font-black text-slate-800 uppercase tracking-widest">Portal Pengawas V3</h2>
            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative z-0">
             <div class="space-y-5 max-w-7xl mx-auto pb-10">
-              <div class="bg-white border border-slate-200 p-4 rounded-[20px] flex flex-col md:flex-row justify-between gap-4 shadow-sm">
+              <div class="bg-white border border-slate-200 p-4 rounded-[20px] flex flex-col md:flex-row justify-between gap-4 shadow-sm items-center">
                 <div class="flex items-center gap-2 font-black text-slate-800 text-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-500"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line></svg> Radar Sesi
                 </div>
-                <select id="select-token" class="w-full sm:w-auto p-3 rounded-xl border border-slate-200 text-sm font-bold bg-slate-50 outline-none">
-                    <option value="">-- Pilih Sesi Ujian --</option>
-                </select>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <select id="select-token" class="flex-1 md:w-auto p-3 rounded-xl border border-slate-200 text-sm font-bold bg-slate-50 outline-none">
+                        <option value="">-- Pilih Sesi Ujian --</option>
+                    </select>
+                    <button onclick="bukaProyeksiQR()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl text-sm font-black flex items-center justify-center transition-colors shadow-md" title="Proyeksi Barcode">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect></svg>
+                    </button>
+                </div>
               </div>
 
               <div id="live-dashboard" class="space-y-5 hidden">
@@ -43,7 +51,27 @@
               </div>
             </div>
         </div>
+
+        <div id="modal-qr" class="fixed inset-0 bg-slate-900/95 z-[100] hidden flex-col items-center justify-center p-6 text-center transition-all">
+            <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-lg w-full flex flex-col items-center border-4 border-indigo-500">
+                <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight mb-1">PROYEKSI TOKEN UJIAN</h2>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6" id="qr-meta-title">MATA PELAJARAN</p>
+                
+                <div id="qrcode-container" class="bg-slate-50 p-4 rounded-3xl border-2 border-dashed border-slate-200 shadow-inner mb-6 flex justify-center"></div>
+                
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest leading-none">Atau Ketik Kode Token:</h3>
+                <div class="text-5xl font-black text-indigo-600 tracking-wider my-3 font-mono" id="qr-token-string">------</div>
+                
+                <button onclick="document.getElementById('modal-qr').classList.replace('flex','hidden')" class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl font-black text-sm tracking-widest active:scale-95 transition-all">TUTUP PROYEKSI</button>
+            </div>
+        </div>
+
+        <div id="toast-container" class="fixed top-20 right-5 z-[300] space-y-3 w-80 pointer-events-none"></div>
+
     </main>
+
+    <audio id="audio-beep" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav" preload="auto"></audio>
+    <audio id="audio-alarm" src="https://assets.mixkit.co/active_storage/sfx/911/911-600.wav" preload="auto"></audio>
 
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
@@ -51,20 +79,77 @@
         setTimeout(() => renderPengawasSidebar(), 100);
 
         let activeToken = '';
+        let lastKnownWarnings = {}; // [INJEKSI 3.3] Memori peringatan sebelumnya untuk mendeteksi yang baru
 
         async function initPage() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return window.location.href = '../auth/login.html';
             const { data: profile } = await supabase.from('users').select('school_id').eq('id', session.user.id).single();
-            const { data: sessions } = await supabase.from('exam_sessions').select('token, mapel').eq('school_id', profile.school_id).eq('status', 'open').order('created_at', { ascending: false });
-            if(sessions) document.getElementById('select-token').innerHTML += sessions.map(s => `<option value="${s.token}">${s.token} (${s.mapel})</option>`).join('');
+            
+            // [INJEKSI 1] - HANYA TARIK SESI HARI INI
+            const hariIniISO = new Date().toISOString().slice(0, 10);
+            
+            const { data: sessions } = await supabase.from('exam_sessions')
+                .select('token, mapel, kelas')
+                .eq('school_id', profile.school_id)
+                .eq('status', 'open')
+                .eq('tanggal', hariIniISO) // Filter sakti anti-tumpuk
+                .order('created_at', { ascending: false });
+                
+            if(sessions && sessions.length > 0) {
+                document.getElementById('select-token').innerHTML += sessions.map(s => `<option value="${s.token}" data-mapel="${s.mapel}" data-kelas="${s.kelas}">${s.token} (${s.mapel})</option>`).join('');
+            } else {
+                document.getElementById('select-token').innerHTML = '<option value="">-- Tidak ada ujian hari ini --</option>';
+            }
         }
 
         document.getElementById('select-token').addEventListener('change', (e) => {
             activeToken = e.target.value;
             if(!activeToken) { document.getElementById('live-dashboard').classList.add('hidden'); return; }
-            document.getElementById('live-dashboard').classList.remove('hidden'); fetchLiveStudents();
+            document.getElementById('live-dashboard').classList.remove('hidden'); 
+            lastKnownWarnings = {}; // Reset memori saat ganti kelas
+            fetchLiveStudents();
         });
+
+        // [INJEKSI 2.4] FUNGSI PROYEKSI
+        window.bukaProyeksiQR = () => {
+            if(!activeToken) return alert("Pilih token ujian terlebih dahulu!");
+            
+            const select = document.getElementById('select-token');
+            const opt = select.options[select.selectedIndex];
+            
+            document.getElementById('qr-meta-title').innerText = `${opt.getAttribute('data-kelas')} • ${opt.getAttribute('data-mapel')}`;
+            document.getElementById('qr-token-string').innerText = activeToken;
+            
+            const qr = qrcode(0, 'M');
+            qr.addData(activeToken);
+            qr.make();
+            document.getElementById('qrcode-container').innerHTML = qr.createImgTag(8, 0); 
+            
+            document.getElementById('modal-qr').classList.replace('hidden', 'flex');
+        };
+
+        // [INJEKSI 3.4] FUNGSI PEMBUAT TOAST ALERT
+        function showCheatAlert(nama, curangKe) {
+            const tBox = document.getElementById('toast-container');
+            const id = 'toast_' + Date.now();
+            const isBlokir = curangKe >= 3;
+            
+            if(isBlokir) document.getElementById('audio-alarm').play().catch(()=>{}); 
+            else document.getElementById('audio-beep').play().catch(()=>{});
+
+            const html = `
+                <div id="${id}" class="p-4 rounded-2xl shadow-2xl text-white border-2 animate-in slide-in-from-right duration-300 flex gap-3 ${isBlokir ? 'bg-red-600 border-red-300' : 'bg-amber-500 border-amber-200'}">
+                    <div class="flex-1 text-sm">
+                        <p class="font-black uppercase tracking-wider">${isBlokir ? '🔒 LAYAR TERKUNCI!' : '🚨 PELANGGARAN!'}</p>
+                        <p class="font-bold mt-1">${nama}</p>
+                        <p class="mt-0.5 text-xs opacity-90 font-medium">Terdeteksi curang (${curangKe}/3)</p>
+                    </div>
+                </div>
+            `;
+            tBox.insertAdjacentHTML('beforeend', html);
+            setTimeout(() => { document.getElementById(id)?.remove(); }, 6000);
+        }
 
         async function fetchLiveStudents() {
             if(!activeToken) return;
@@ -75,6 +160,18 @@
             document.getElementById('stat-hub').innerText = students.length;
             document.getElementById('stat-selesai').innerText = students.filter(s => s.status === 'Selesai').length;
             document.getElementById('stat-curang').innerText = students.filter(s => (s.warnings || 0) > 0).length;
+
+            // [INJEKSI 3.5] LOGIKA DETEKSI PENAMBAHAN WARNINGS
+            students.forEach(s => {
+                const w = s.warnings || 0;
+                const oldW = lastKnownWarnings[s.id] || 0;
+                
+                // Jika warnings bertambah dari bacaan sebelumnya, keluarkan notifikasi!
+                if (w > oldW && s.status !== 'Selesai') {
+                    showCheatAlert(s.name, w);
+                }
+                lastKnownWarnings[s.id] = w; // Update memori
+            });
 
             grid.innerHTML = students.map(s => `
                 <div class="bg-white p-4 rounded-2xl border ${s.status === 'Selesai' ? 'border-emerald-200 bg-emerald-50/30' : (s.warnings >= 3 ? 'border-red-400 bg-red-50/30' : 'border-slate-200')} shadow-sm flex flex-col gap-3">

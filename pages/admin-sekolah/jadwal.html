@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesi & Jadwal Ujian | Alima CBT</title>
+    <title>Pusat Komando Jadwal | Alima CBT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="../../css/global.css">
@@ -42,12 +42,12 @@
                     <div>
                         <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                            Manajemen Sesi Ujian
+                            Pusat Plotting Jadwal
                         </h3>
-                        <p class="text-xs font-bold text-slate-400 mt-1">Buat Token dan jadwalkan sesi ujian per ruang/kelas.</p>
+                        <p class="text-xs font-bold text-slate-400 mt-1">Tarik token dari guru dan tentukan Tanggal serta Waktu pelaksanaannya.</p>
                     </div>
                     <button id="btn-open-sesi" class="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Buat Jadwal Baru
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Plot Jadwal Baru
                     </button>
                 </div>
 
@@ -59,7 +59,7 @@
                                     <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider">Mata Pelajaran & Pengawas</th>
                                     <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider text-center">Kelas/Ruang</th>
                                     <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider text-center">Token Ujian</th>
-                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider text-center">Jadwal Waktu</th>
+                                    <th class="py-4 px-5 font-black uppercase text-[10px] tracking-wider text-center">Jadwal Pelaksanaan</th>
                                     <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider">Status</th>
                                     <th class="py-4 px-5 text-center font-black uppercase text-[10px] tracking-wider w-24">Aksi</th>
                                 </tr>
@@ -78,30 +78,23 @@
     <div id="modal-sesi" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
         <div class="bg-white p-6 rounded-[24px] w-full max-w-md border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-200">
              <h2 class="text-lg font-black mb-5 text-slate-800 flex items-center gap-2">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                 Jadwalkan Sesi Ujian
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                 Plotting Waktu Sesi
              </h2>
              <form id="form-sesi" class="space-y-4">
-                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Pilih Mapel</label>
-                         <select id="j_mapel" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer uppercase"><option value="">Pilih</option></select>
-                     </div>
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Pengawas / Guru</label>
-                         <select id="j_guru" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer"><option value="">Pilih</option></select>
-                     </div>
+                 
+                 <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                     <label class="text-[10px] font-black text-blue-800 uppercase tracking-widest block mb-1.5 pl-0.5">Tarik Sesi Guru</label>
+                     <select id="j_token_select" required class="w-full p-3 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500 cursor-pointer shadow-sm">
+                         <option value="">-- Sedang mencari sesi guru... --</option>
+                     </select>
                  </div>
-                 <div class="grid grid-cols-2 gap-4">
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Tingkat Kelas</label>
-                         <select id="j_kelas" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer"><option value="">Pilih</option></select>
-                     </div>
-                     <div>
-                         <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Sub / Ruang Ujian</label>
-                         <input type="text" id="j_sub" placeholder="Cth: A" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 uppercase">
-                     </div>
+                 
+                 <div>
+                     <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Tanggal Pelaksanaan</label>
+                     <input type="date" id="j_tanggal" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 cursor-pointer">
                  </div>
+
                  <div class="grid grid-cols-2 gap-4">
                      <div>
                          <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Jam Mulai</label>
@@ -112,17 +105,10 @@
                          <input type="time" id="j_selesai" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500">
                      </div>
                  </div>
-                 <div>
-                     <label class="text-[10px] font-black text-slate-500 uppercase mb-1 block pl-0.5">Token Ujian (Otomatis)</label>
-                     <div class="flex gap-2">
-                         <input type="text" id="j_token" required readonly class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-lg font-mono font-black text-blue-600 outline-none text-center tracking-[0.3em]">
-                         <button type="button" id="btn-generate" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-xl font-bold transition-colors">Acak</button>
-                     </div>
-                 </div>
                  
                  <div class="flex gap-3 mt-6 pt-2 border-t border-slate-100">
                      <button type="button" id="btn-close-sesi" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-all">Batal</button>
-                     <button type="submit" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all">Simpan Jadwal</button>
+                     <button type="submit" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black transition-all shadow-md">Simpan Jadwal</button>
                  </div>
              </form>
         </div>
@@ -134,9 +120,7 @@
 
         renderAdminSidebar();
         let schoolId = null;
-
-        const generateToken = () => Math.random().toString(36).substr(2, 6).toUpperCase();
-        document.getElementById('btn-generate').onclick = () => document.getElementById('j_token').value = generateToken();
+        let sesiMentah = []; // Tempat menyimpan sesi dari guru yang belum diplot
 
         async function initPage() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -151,96 +135,175 @@
             const { data: school } = await supabase.from('schools').select('name').eq('id', schoolId).single();
             document.getElementById('topbar-school-name').innerText = school ? school.name : schoolId.toUpperCase();
             
-            loadFormOptions();
+            document.getElementById('j_tanggal').value = new Date().toISOString().slice(0, 10);
+            
+            loadDropdownSesiMentah();
             loadSessions();
         }
 
-        async function loadFormOptions() {
-            const [{ data: mapels }, { data: gurus }, { data: kelas }] = await Promise.all([
-                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
-                supabase.from('users').select('name, email').eq('school_id', schoolId).eq('status', 'active'),
-                supabase.from('master_classes').select('name').eq('school_id', schoolId)
-            ]);
+        // FUNGSI BARU: Menarik sesi guru yang belum punya jadwal
+        async function loadDropdownSesiMentah() {
+            const select = document.getElementById('j_token_select');
+            const { data } = await supabase.from('exam_sessions')
+                .select('*')
+                .eq('school_id', schoolId)
+                .order('created_at', { ascending: false });
 
-            if(mapels) document.getElementById('j_mapel').innerHTML += mapels.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-            if(gurus) document.getElementById('j_guru').innerHTML += gurus.map(g => `<option value="${g.email}">${g.name}</option>`).join('');
-            if(kelas) document.getElementById('j_kelas').innerHTML += kelas.map(k => `<option value="${k.name}">${k.name}</option>`).join('');
-            document.getElementById('j_token').value = generateToken();
+            if(!data) return select.innerHTML = '<option value="">Gagal memuat data</option>';
+
+            // Simpan semua data untuk kebutuhan fitur EDIT
+            sesiMentah = data;
+
+            // Untuk form TAMBAH BARU, hanya tampilkan yang TANGGAL-nya kosong
+            const waiting = data.filter(s => !s.tanggal || s.tanggal.trim() === '');
+            
+            if(waiting.length === 0) {
+                select.innerHTML = '<option value="">✅ Semua Sesi Sudah Terjadwal</option>';
+            } else {
+                select.innerHTML = '<option value="">-- Pilih Sesi (Token) --</option>' + 
+                    waiting.map(s => `<option value="${s.token}">[${s.token}] Kls ${s.kelas} - ${s.mapel}</option>`).join('');
+            }
         }
 
         async function loadSessions() {
             const tbody = document.getElementById('sesi-table-body');
             try {
-                const { data: sessions, error } = await supabase.from('exam_sessions').select('*').eq('school_id', schoolId).order('created_at', { ascending: false });
-                
+                const { data: sessions, error } = await supabase.from('exam_sessions').select('*').eq('school_id', schoolId).order('tanggal', { ascending: false }).order('jam_mulai', { ascending: true });
                 if(error) throw error;
 
                 if(!sessions || sessions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 m-4 rounded-2xl">Belum ada sesi ujian terjadwal.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold border-2 border-dashed border-slate-100 m-4 rounded-2xl">Belum ada sesi ujian.</td></tr>';
                     return;
                 }
 
-                tbody.innerHTML = sessions.map(s => `
-                    <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                tbody.innerHTML = sessions.map(s => {
+                    const hasSchedule = s.tanggal && s.tanggal.trim() !== '';
+                    const isToday = hasSchedule && s.tanggal === new Date().toISOString().slice(0, 10);
+                    const tglFormat = hasSchedule ? new Date(s.tanggal).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) : '-';
+                    
+                    return `
+                    <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100 ${!hasSchedule ? 'bg-amber-50/20' : ''}">
                         <td class="py-3 px-5">
                             <p class="font-black text-slate-800 text-sm uppercase">${s.mapel || '-'}</p>
                             <p class="text-[10px] text-slate-500 font-medium font-mono">${s.teacher_email || '-'}</p>
                         </td>
                         <td class="py-3 px-5 text-center font-bold text-slate-600 text-xs">Kls ${s.kelas}-${s.sub_kelas||''}</td>
                         <td class="py-3 px-5 text-center"><span class="font-mono font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 tracking-widest">${s.token}</span></td>
-                        <td class="py-3 px-5 text-center font-bold text-slate-600 text-xs">${s.jam_mulai} <span class="text-slate-300 mx-1">s/d</span> ${s.jam_selesai}</td>
+                        
                         <td class="py-3 px-5 text-center">
-                            <span class="text-[10px] font-black uppercase px-2 py-1 rounded border ${s.status === 'open' ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-100 text-slate-400 border-slate-200'}">
-                                ${s.status === 'open' ? '🔴 Live' : 'Selesai'}
+                            ${hasSchedule ? `
+                                <p class="font-black text-xs ${isToday ? 'text-blue-600' : 'text-slate-500'}">${isToday ? '🔥 HARI INI' : tglFormat}</p>
+                                <p class="font-bold text-slate-400 text-[10px]">${s.jam_mulai} <span class="mx-1">s/d</span> ${s.jam_selesai}</p>
+                            ` : `
+                                <span class="bg-amber-100 text-amber-700 text-[9px] font-black px-2 py-1 rounded animate-pulse">BELUM DIATUR</span>
+                            `}
+                        </td>
+
+                        <td class="py-3 px-5 text-center">
+                            <span class="text-[9px] font-black uppercase px-2 py-1.5 rounded border ${!hasSchedule ? 'bg-amber-50 text-amber-600 border-amber-200' : (s.status === 'open' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200')}">
+                                ${!hasSchedule ? '⏳ Menunggu Jadwal' : (s.status === 'open' ? '🔴 Terjadwal' : 'Selesai')}
                             </span>
                         </td>
                         <td class="py-3 px-5 text-center">
-                            <button onclick="toggleSession('${s.id}', '${s.status}')" class="text-slate-400 hover:text-blue-600 p-2 rounded-lg transition-colors border border-slate-200 bg-slate-50 hover:bg-blue-50" title="${s.status === 'open' ? 'Tutup Sesi' : 'Buka Kembali'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            <button onclick="bukaModalEdit('${s.token}')" class="text-slate-400 hover:text-blue-600 p-2 rounded-lg transition-colors border border-slate-200 bg-slate-50 hover:bg-blue-50 shadow-sm" title="${!hasSchedule ? 'Plot Jadwal Sekarang' : 'Edit Jadwal'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             </button>
-                            <button onclick="delSession('${s.id}')" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg transition-colors border border-slate-200 bg-slate-50 hover:bg-rose-50" title="Hapus Jadwal">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            ${hasSchedule ? `
+                            <button onclick="toggleSession('${s.id}', '${s.status}')" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg transition-colors border border-slate-200 bg-slate-50 hover:bg-rose-50 shadow-sm" title="${s.status === 'open' ? 'Tutup Paksa Ujian' : 'Buka Kembali Ujian'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                             </button>
+                            ` : ''}
                         </td>
                     </tr>
-                `).join('');
+                    `
+                }).join('');
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-red-500 font-bold border-2 border-dashed border-red-200 m-4 rounded-2xl">Gagal memuat: ${err.message}</td></tr>`;
             }
         }
 
         const modal = document.getElementById('modal-sesi');
-        document.getElementById('btn-open-sesi').onclick = () => modal.classList.replace('hidden', 'flex');
+        
+        document.getElementById('btn-open-sesi').onclick = () => {
+            document.getElementById('form-sesi').reset();
+            document.getElementById('j_tanggal').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('j_token_select').disabled = false;
+            loadDropdownSesiMentah(); // Refresh dropdown
+            modal.classList.replace('hidden', 'flex');
+        };
+        
         document.getElementById('btn-close-sesi').onclick = () => modal.classList.replace('flex', 'hidden');
 
+        // Fungsi Edit: Mengisi form dari data sesi yang diklik (walau sudah ada jadwalnya)
+        window.bukaModalEdit = (token) => {
+            const sesi = sesiMentah.find(s => s.token === token);
+            if(!sesi) return;
+
+            // Masukkan token ini ke dropdown (kalau sebelumnya tidak ada karena disembunyikan filter waiting)
+            const select = document.getElementById('j_token_select');
+            let optionExists = Array.from(select.options).some(opt => opt.value === token);
+            if (!optionExists) {
+                const opt = document.createElement('option');
+                opt.value = token;
+                opt.text = `[${token}] Kls ${sesi.kelas} - ${sesi.mapel}`;
+                select.add(opt);
+            }
+
+            select.value = token;
+            select.disabled = true; // Kunci dropdown agar tidak salah edit sesi lain
+            
+            document.getElementById('j_tanggal').value = sesi.tanggal || new Date().toISOString().slice(0, 10);
+            document.getElementById('j_mulai').value = sesi.jam_mulai || '07:00';
+            document.getElementById('j_selesai').value = sesi.jam_selesai || '09:00';
+            
+            modal.classList.replace('hidden', 'flex');
+        };
+
+        // Form Submit: KITA HANYA MENG-UPDATE KOLOM TANGGAL & JAM SAJA
         document.getElementById('form-sesi').onsubmit = async (e) => {
             e.preventDefault();
-            const { error } = await supabase.from('exam_sessions').insert([{
-                school_id: schoolId,
-                mapel: document.getElementById('j_mapel').value.toUpperCase(),
-                teacher_email: document.getElementById('j_guru').value,
-                kelas: document.getElementById('j_kelas').value,
-                sub_kelas: document.getElementById('j_sub').value.toUpperCase(),
-                jam_mulai: document.getElementById('j_mulai').value,
-                jam_selesai: document.getElementById('j_selesai').value,
-                token: document.getElementById('j_token').value,
-                status: 'open'
-            }]);
+            const token = document.getElementById('j_token_select').value;
+            if(!token) return alert("Pilih token sesi terlebih dahulu!");
 
-            if(!error) { e.target.reset(); modal.classList.replace('flex', 'hidden'); loadSessions(); }
-            else alert("Gagal menyimpan sesi: " + error.message);
+            // Kalkulasi Durasi
+            const jamMulai = document.getElementById('j_mulai').value;
+            const jamSelesai = document.getElementById('j_selesai').value;
+            const [h1, m1] = jamMulai.split(':').map(Number);
+            const [h2, m2] = jamSelesai.split(':').map(Number);
+            let kalkulasiDurasi = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if(kalkulasiDurasi <= 0) kalkulasiDurasi = 120; 
+
+            const { error } = await supabase.from('exam_sessions')
+                .update({
+                    tanggal: document.getElementById('j_tanggal').value,
+                    jam_mulai: jamMulai,
+                    jam_selesai: jamSelesai,
+                    durasi: kalkulasiDurasi,
+                    status: 'open' // Aktifkan langsung saat diplot
+                })
+                .eq('token', token);
+
+            if(!error) { 
+                modal.classList.replace('flex', 'hidden'); 
+                loadSessions(); 
+                loadDropdownSesiMentah(); // Refresh stok sesi yang belum diplot
+            } else {
+                alert("Gagal menyimpan jadwal: " + error.message);
+            }
         };
 
         window.toggleSession = async (id, currentStatus) => {
             const newStatus = currentStatus === 'open' ? 'closed' : 'open';
-            if(confirm(`Ubah status sesi menjadi ${newStatus.toUpperCase()}?`)) {
+            if(confirm(`Ubah status akses ujian menjadi ${newStatus.toUpperCase()}?`)) {
                 await supabase.from('exam_sessions').update({status: newStatus}).eq('id', id); loadSessions();
             }
         };
 
+        // Admin TU tetap bisa hapus jadwal jika memang guru salah bikin
         window.delSession = async (id) => {
             if(confirm("Hapus jadwal ujian ini secara permanen?")) {
                 await supabase.from('exam_sessions').delete().eq('id', id); loadSessions();
+                loadDropdownSesiMentah();
             }
         };
 
