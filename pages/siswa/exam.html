@@ -12,7 +12,23 @@
     <link rel="stylesheet" href="../../css/global.css">
     <link rel="icon" type="image/png" href="../../icon.png">
     <link rel="manifest" href="../../manifest.json">
-    <style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); 
+        /* Import Font Arab Tradisional */
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* CLASS KHUSUS BAHASA ARAB - Menggunakan CSS modern untuk teks campuran (SINKRON DENGAN GURU) */
+        .font-arabic { 
+            font-family: 'Amiri', serif !important; 
+            font-size: 1.8em !important; 
+            line-height: 1.8 !important;
+            /* Isolasi Bidi Modern Anti Titik Nyasar */
+            unicode-bidi: isolate !important; 
+            display: inline-block; 
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-[#f1f5f9] font-sans pb-10 select-none relative overflow-x-hidden notranslate" translate="no" oncopy="return false" onpaste="return false" oncontextmenu="return false">
 
@@ -154,7 +170,6 @@
         document.getElementById('mob-mapel').innerText = studentData.mapel;
         document.getElementById('mob-kelas').innerText = `Kls ${studentData.class}-${studentData.subKelas}`;
 
-        // [PENYESUAIAN INJEKSI] - Modifikasi listener agar toggle tampilan Flex
         window.addEventListener('online', () => { 
             document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE'; 
             document.getElementById('offline-alert').classList.add('hidden'); 
@@ -168,26 +183,23 @@
             document.getElementById('offline-alert').classList.add('flex');
         });
 
-        // [INJEKSI 5 - ALAT PACU JANTUNG] - Memaksa Exambro mengecek koneksi nyata ke Supabase
         window.cekKoneksiManual = async () => {
             const btn = document.querySelector('#offline-alert button');
             if(btn) btn.innerText = "MENCARI...";
             try {
-                // Tembakan ringan ke database. Kalau berhasil, berarti internet sebenarnya jalan.
                 const { error } = await supabase.from('schools').select('id').limit(1);
                 if (!error) {
                     document.getElementById('net-status').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE'; 
                     document.getElementById('offline-alert').classList.add('hidden'); 
                     document.getElementById('offline-alert').classList.remove('flex');
                     if(btn) btn.innerText = "CARI SINYAL 🔄";
-                    syncAns(); // Dorong jawaban yang nyangkut
+                    syncAns(); 
                 } else { throw new Error("Offline"); }
             } catch (err) {
                 if(btn) btn.innerText = "CARI SINYAL 🔄";
             }
         };
 
-        // Robot Pacu Jantung: Otomatis ngetuk server setiap 10 detik kalau statusnya sedang offline
         setInterval(() => {
             if (!document.getElementById('offline-alert').classList.contains('hidden')) {
                 window.cekKoneksiManual();
@@ -216,9 +228,12 @@
                 
                 if (session.jam_selesai) {
                     const now = new Date();
-                    const target = new Date();
-                    const [h, m] = session.jam_selesai.split(':');
-                    target.setHours(parseInt(h, 10), parseInt(m, 10), 0);
+                    const tglSesi = session.tanggal || now.toISOString().slice(0, 10);
+                    let target = new Date(`${tglSesi}T${session.jam_selesai}:00`);
+                    
+                    if (session.jam_selesai === "00:00") {
+                        target.setDate(target.getDate() + 1);
+                    }
                     
                     const diffSeconds = Math.floor((target.getTime() - now.getTime()) / 1000);
                     
@@ -226,7 +241,7 @@
                         timeLeft = diffSeconds;
                     } else {
                         alert("Waktu ujian untuk Sesi ini telah habis sesuai Jadwal yang ditetapkan Server!");
-                        return submitExam();
+                        return submitExam(true);
                     }
                 } else {
                     let savedTime = parseInt(localStorage.getItem(`${storageKey}_time`));
@@ -293,6 +308,27 @@
             updateSubmitUI(); renderUI(); startTimer(); subscribeRealtime(); syncAns();
         }
 
+        // [MESIN SAKTI V3] SINKRON DENGAN BANK SOAL GURU
+        const formatMixedText = (text) => {
+            if (!text) return '';
+            const arabicRegex = /([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020]+(?:\s*[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+)*)/g;
+            
+            return text.split('\n').map(line => {
+                if (line.trim().length === 0) return '<br/>';
+                const hasArabic = /[\u0600-\u06FF]/.test(line);
+                
+                if(hasArabic) {
+                    const parsedLine = line.replace(arabicRegex, (match) => {
+                        if (match.trim().length === 0) return match;
+                        return `<span class="font-arabic" dir="rtl">\u202B${match}\u202C</span>`;
+                    });
+                    return `<div dir="auto" style="text-align: right; direction: rtl;">${parsedLine}</div>`;
+                } else {
+                    return `<div dir="ltr" style="text-align: left; direction: ltr;">${line}</div>`;
+                }
+            }).join('');
+        };
+
         function renderNav() {
             document.getElementById('nav-grid').innerHTML = questions.map((x, i) => {
                 let cls = 'bg-white text-slate-500 border-slate-200 hover:border-emerald-300'; 
@@ -319,16 +355,17 @@
                  <span class="text-[11px] font-black bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border tracking-wider">SOAL KE: ${currentIndex+1} / ${questions.length}</span>
               </div>
             `;
-            if(q.teks_wacana) html += `<div class="mb-5 p-4 bg-slate-50 border-l-[3px] border-slate-400 text-sm katex-render">${q.teks_wacana}</div>`;
+            
+            if(q.teks_wacana) html += `<div class="mb-5 p-4 bg-slate-50 border-l-[3px] border-slate-400 text-sm katex-render wacana-soal">${formatMixedText(q.teks_wacana)}</div>`;
             if(q.gambar) html += `<div class="mb-5 flex justify-center"><img src="${q.gambar}" class="max-h-72 object-contain rounded-lg shadow-sm border border-slate-200"/></div>`;
-            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3 whitespace-pre-wrap leading-relaxed">${q.pertanyaan || ''}</div>`;
+            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3 whitespace-pre-wrap leading-relaxed">${formatMixedText(q.pertanyaan || '')}</div>`;
 
             if(type === 'PG') {
                 html += `<div class="space-y-2.5 pl-3">`;
                 ['A','B','C','D'].forEach(opt => {
                     if(!q[`opsi_${opt.toLowerCase()}`]) return; 
                     const isSel = answers[q.id] === opt;
-                    html += `<button onclick="jawabPG('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isSel?'bg-blue-50 border-blue-500 font-bold shadow-sm':'bg-white border-slate-200 hover:border-blue-300'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm shrink-0 ${isSel?'bg-blue-600 text-white':'bg-slate-100 text-slate-500'}">${opt}</span><div class="flex-1 pt-1 katex-render">${q[`opsi_${opt.toLowerCase()}`]}</div></button>`;
+                    html += `<button onclick="jawabPG('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isSel?'bg-blue-50 border-blue-500 font-bold shadow-sm':'bg-white border-slate-200 hover:border-blue-300'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm shrink-0 ${isSel?'bg-blue-600 text-white':'bg-slate-100 text-slate-500'}">${opt}</span><div class="flex-1 pt-1 katex-render">${formatMixedText(q[`opsi_${opt.toLowerCase()}`])}</div></button>`;
                 });
                 html += `</div>`;
             } else if(type === 'PGK') {
@@ -336,7 +373,7 @@
                 ['A','B','C','D'].forEach(opt => {
                     if(!q[`opsi_${opt.toLowerCase()}`]) return;
                     const isSel = answers[q.id] && answers[q.id].split(',').includes(opt);
-                    html += `<button onclick="jawabPGK('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isSel?'bg-orange-50 border-orange-500 font-bold shadow-sm':'bg-white border-slate-200 hover:border-orange-300'}"><div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg border-2 mt-0.5 ${isSel?'bg-orange-500 border-orange-500 text-white':'bg-slate-100 border-slate-300'}">${isSel?'✓':''}</div><div class="flex-1 text-sm pt-0.5 katex-render"><span class="font-black mr-2 opacity-50">${opt}.</span>${q[`opsi_${opt.toLowerCase()}`]}</div></button>`;
+                    html += `<button onclick="jawabPGK('${q.id}','${opt}')" class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isSel?'bg-orange-50 border-orange-500 font-bold shadow-sm':'bg-white border-slate-200 hover:border-orange-300'}"><div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg border-2 mt-0.5 ${isSel?'bg-orange-500 border-orange-500 text-white':'bg-slate-100 border-slate-300'}">${isSel?'✓':''}</div><div class="flex-1 text-sm pt-0.5 katex-render"><span class="font-black mr-2 opacity-50">${opt}.</span>${formatMixedText(q[`opsi_${opt.toLowerCase()}`])}</div></button>`;
                 });
                 html += `</div>`;
             } else if(type === 'ESAI') {

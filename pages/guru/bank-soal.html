@@ -7,6 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
@@ -17,21 +20,28 @@
         
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        /* CLASS KHUSUS BAHASA ARAB */
+        /* CLASS KHUSUS BAHASA ARAB - Menggunakan CSS modern untuk teks campuran */
         .font-arabic { 
             font-family: 'Amiri', serif !important; 
-            font-size: 1.6em; /* Diperbesar agar harakat terbaca jelas */
-            line-height: 2; 
+            font-size: 1.8em !important; 
+            line-height: 1.8 !important;
+            /* Isolasi Bidi Modern */
+            unicode-bidi: isolate !important; 
+            display: inline-block; /* Membantu menahan struktur */
         }
         
-        /* Auto RTL Alignment */
+        /* Auto RTL Alignment untuk form input */
         textarea[dir="auto"], input[dir="auto"] {
             text-align: start;
+            unicode-bidi: plaintext; /* Agar saat ngetik campuran juga rapi */
         }
+
+        #word-export-canvas { display: none; }
     </style>
 </head>
 <body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
     <div id="sidebar-container"></div>
+    
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
         <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
            <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
@@ -44,29 +54,55 @@
            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full relative">
             <div class="max-w-6xl mx-auto space-y-6 pb-10 animate-in fade-in duration-500">
                 <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="hidden" />
 
                 <div class="bg-white p-5 rounded-[24px] shadow-sm border border-slate-200 space-y-4">
                   <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-100 pb-3">
-                    <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> Bank Soal V2</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-auto">
-                        <button id="btn-download-template" class="bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Template</button>
-                        <button id="btn-trigger-import" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload Excel</button>
-                        <button id="btn-open-modal" class="bg-slate-800 hover:bg-slate-700 text-white py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Ketik Manual</button>
+                    <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-emerald-500"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> Pangkalan Soal</h3>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button id="btn-download-template" class="flex-1 sm:flex-none bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Template</button>
+                        <button id="btn-trigger-import" class="flex-1 sm:flex-none bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload Excel</button>
+                        <button id="btn-export-word" class="flex-1 sm:flex-none bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Cetak Word</button>
+                        <button id="btn-open-modal" class="flex-1 sm:flex-none w-full sm:w-auto mt-1 sm:mt-0 bg-slate-800 hover:bg-slate-700 text-white py-2.5 px-3 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Ketik Manual</button>
                     </div>
                   </div>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <select id="filter-mapel" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer"><option value="">-- Semua Mata Pelajaran --</option></select>
-                    <select id="filter-kelas" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer"><option value="">-- Semua Tingkatan Kelas --</option></select>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <select id="filter-mapel" class="w-full p-2.5 border border-slate-200 rounded-lg bg-white text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer shadow-sm"><option value="">-- Saring Mata Pelajaran --</option></select>
+                    <select id="filter-kelas" class="w-full p-2.5 border border-slate-200 rounded-lg bg-white text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 cursor-pointer shadow-sm"><option value="">-- Saring Tingkat Kelas --</option></select>
                   </div>
+                </div>
+
+                <div class="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden mb-6">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-slate-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                        <h3 class="text-xs font-black text-slate-700 uppercase tracking-widest">Rangkuman Ketersediaan Soal</h3>
+                    </div>
+                    <div class="overflow-x-auto w-full custom-scrollbar max-h-60">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-white text-slate-500 border-b border-slate-100 sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="py-3 px-5 font-black uppercase text-[10px] tracking-wider text-center">Kelas</th>
+                                    <th class="py-3 px-5 font-black uppercase text-[10px] tracking-wider">Mata Pelajaran</th>
+                                    <th class="py-3 px-5 font-black uppercase text-[10px] tracking-wider text-center">PG Biasa</th>
+                                    <th class="py-3 px-5 font-black uppercase text-[10px] tracking-wider text-center">PG Kompleks</th>
+                                    <th class="py-3 px-5 font-black uppercase text-[10px] tracking-wider text-center">Soal Esai</th>
+                                    <th class="py-3 px-5 font-black uppercase text-[10px] tracking-wider text-center">Total Soal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-table-body" class="divide-y divide-slate-100">
+                                <tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold text-xs">Memuat tabel ringkasan...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-between bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200 mb-4 hidden" id="bulk-action-bar">
                     <label class="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-600 cursor-pointer select-none">
                         <input type="checkbox" id="cb-select-all" onchange="toggleSelectAll(this)" class="w-5 h-5 rounded cursor-pointer accent-emerald-500">
-                        Pilih Semua
+                        Pilih Semua Tampilan Saat Ini
                     </label>
                     <button id="btn-bulk-delete" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 py-2 px-3 md:px-4 rounded-lg text-[10px] md:text-xs font-black items-center justify-center gap-1.5 transition-all shadow-sm hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="inline-block mr-1 mb-0.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> 
@@ -75,11 +111,21 @@
                 </div>
 
                 <div id="soal-container" class="space-y-4">
-                   <div class="text-center p-10 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 text-sm font-bold">Memuat soal...</div>
+                   <div class="text-center p-10 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 text-sm font-bold">Memuat rincian soal...</div>
                 </div>
             </div>
         </div>
     </main>
+
+    <div id="modal-preview-soal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 z-[120] hidden transition-all">
+        <div class="bg-white p-6 md:p-8 rounded-[2rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl relative custom-scrollbar">
+            <button onclick="document.getElementById('modal-preview-soal').classList.replace('flex','hidden')" class="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 rounded-full transition-colors z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div class="text-[10px] font-black bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg inline-block mb-4 tracking-widest uppercase border border-emerald-200">TAMPILAN DI LAYAR SISWA</div>
+            <div id="preview-content-box" class="w-full relative"></div>
+        </div>
+    </div>
 
     <div id="modal-soal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 z-[110] hidden">
         <div class="bg-white p-5 md:p-6 rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20 custom-scrollbar">
@@ -170,6 +216,8 @@
         </div>
     </div>
 
+    <div id="word-export-canvas"></div>
+
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
         import { renderGuruSidebar } from '../../js/components/sidebar-guru.js';
@@ -177,10 +225,37 @@
 
         let schoolId = null;
         let teacherEmail = null;
-        let bankData = [];
-        let selectedForDelete = []; // Array untuk menampung ID yang dicentang
+        let bankData = []; 
+        let filteredData = []; 
+        let selectedForDelete = []; 
         
-        const isArab = (txt) => /[\u0600-\u06FF]/.test(txt || '');
+        // [MESIN SAKTI V3] Line-by-Line Bidi Isolate
+        // Ini akan memaksa browser memperlakukan teks Indo sebagai LTR (Kiri) dan teks Arab sbg RTL (Kanan) secara terpisah
+        const formatMixedText = (text) => {
+            if (!text) return '';
+            const arabicRegex = /([\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u0020]+(?:\s*[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]+)*)/g;
+            
+            // Pisah berdasarkan baris (Enter)
+            return text.split('\n').map(line => {
+                if (line.trim().length === 0) return '<br/>';
+                
+                // Cek apakah baris ini didominasi huruf Arab atau Latin
+                const hasArabic = /[\u0600-\u06FF]/.test(line);
+                
+                if(hasArabic) {
+                    // Jika ada Arabnya, ganti dengan font-arabic khusus
+                    const parsedLine = line.replace(arabicRegex, (match) => {
+                        if (match.trim().length === 0) return match;
+                        // Penambahan karakter kontrol \u202B (RTL Embedding) dan \u202C (Pop Directional)
+                        return `<span class="font-arabic" dir="rtl">\u202B${match}\u202C</span>`;
+                    });
+                    return `<div dir="auto" style="text-align: right; direction: rtl;">${parsedLine}</div>`;
+                } else {
+                    // Jika murni Latin/Indonesia, biarkan normal
+                    return `<div dir="ltr" style="text-align: left; direction: ltr;">${line}</div>`;
+                }
+            }).join('');
+        };
 
         async function initPage() {
             const { data: { session } } = await supabase.auth.getSession();
@@ -192,35 +267,102 @@
             document.getElementById('user-name').innerText = profile.name;
             document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
 
-            const [{data: mapels}, {data: kelas}] = await Promise.all([
-                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
-                supabase.from('master_classes').select('name').eq('school_id', schoolId)
-            ]);
+            document.getElementById('filter-mapel').addEventListener('change', applyFilters);
+            document.getElementById('filter-kelas').addEventListener('change', applyFilters);
 
-            if(mapels) document.getElementById('q_mapel').innerHTML += mapels.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
-            if(kelas) document.getElementById('q_kelas').innerHTML += kelas.map(k => `<option value="${k.name}">${k.name}</option>`).join('');
-            
             loadSoal();
         }
 
         async function loadSoal() {
-            // Reset state centang saat memuat ulang data
             selectedForDelete = [];
             document.getElementById('cb-select-all').checked = false;
             updateBulkUI();
 
             const { data } = await supabase.from('bank_soal').select('*').eq('teacher_email', teacherEmail).order('created_at', { ascending: false });
             bankData = data || [];
-            renderSoal(bankData);
+            
+            buildDropdownFilters();
+            renderTabelPreview();
+            
+            filteredData = [...bankData];
+            renderKartuSoal(filteredData);
         }
 
-        function renderSoal(dataToRender) {
+        function buildDropdownFilters() {
+            const mapels = [...new Set(bankData.map(q => q.mapel).filter(Boolean))];
+            const kelas = [...new Set(bankData.map(q => q.kelas).filter(Boolean))];
+            
+            const valM = document.getElementById('filter-mapel').value;
+            const valK = document.getElementById('filter-kelas').value;
+
+            document.getElementById('filter-mapel').innerHTML = '<option value="">-- Semua Mata Pelajaran --</option>' + mapels.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('filter-kelas').innerHTML = '<option value="">-- Semua Tingkatan Kelas --</option>' + kelas.map(k => `<option value="${k}">Tingkat ${k}</option>`).join('');
+            
+            document.getElementById('q_mapel').innerHTML = '<option value="">Pilih Mapel...</option>' + mapels.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('q_kelas').innerHTML = '<option value="">Pilih Kelas...</option>' + kelas.map(k => `<option value="${k}">Tingkat ${k}</option>`).join('');
+
+            if(mapels.includes(valM)) document.getElementById('filter-mapel').value = valM;
+            if(kelas.includes(valK)) document.getElementById('filter-kelas').value = valK;
+        }
+
+        function applyFilters() {
+            const m = document.getElementById('filter-mapel').value;
+            const k = document.getElementById('filter-kelas').value;
+
+            filteredData = bankData.filter(q => {
+                return (m === '' || q.mapel === m) && (k === '' || q.kelas === k);
+            });
+
+            document.getElementById('cb-select-all').checked = false;
+            selectedForDelete = [];
+            updateBulkUI();
+
+            renderKartuSoal(filteredData);
+        }
+
+        function renderTabelPreview() {
+            const tbody = document.getElementById('preview-table-body');
+            if (bankData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold text-xs">Belum ada bank soal terkumpul.</td></tr>';
+                return;
+            }
+
+            const grouped = {};
+            bankData.forEach(q => {
+                const key = `${q.kelas}____${q.mapel}`;
+                if (!grouped[key]) {
+                    grouped[key] = { kelas: q.kelas, mapel: q.mapel, pg: 0, pgk: 0, esai: 0, total: 0 };
+                }
+                grouped[key].total++;
+                if (q.jenis_soal === 'PGK') grouped[key].pgk++;
+                else if (q.jenis_soal === 'ESAI') grouped[key].esai++;
+                else grouped[key].pg++; 
+            });
+
+            const sortedGroups = Object.values(grouped).sort((a, b) => {
+                if(a.kelas !== b.kelas) return a.kelas.localeCompare(b.kelas);
+                return a.mapel.localeCompare(b.mapel);
+            });
+
+            tbody.innerHTML = sortedGroups.map(g => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-2 px-5 text-center font-bold text-slate-600 text-xs">Tingkat ${g.kelas}</td>
+                    <td class="py-2 px-5 font-black text-slate-800 text-xs uppercase">${g.mapel}</td>
+                    <td class="py-2 px-5 text-center font-bold text-blue-600 bg-blue-50/30">${g.pg}</td>
+                    <td class="py-2 px-5 text-center font-bold text-orange-600 bg-orange-50/30">${g.pgk}</td>
+                    <td class="py-2 px-5 text-center font-bold text-purple-600 bg-purple-50/30">${g.esai}</td>
+                    <td class="py-2 px-5 text-center font-black text-emerald-700 bg-emerald-50/50">${g.total}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderKartuSoal(dataToRender) {
             const container = document.getElementById('soal-container');
             const bulkBar = document.getElementById('bulk-action-bar');
 
             if (dataToRender.length === 0) {
-                bulkBar.classList.add('hidden');
-                container.innerHTML = '<div class="text-center p-10 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 text-sm font-bold">Belum ada soal tersimpan. Pilih ketik manual atau Upload Excel.</div>';
+                bulkBar.classList.add('hidden'); bulkBar.classList.remove('flex');
+                container.innerHTML = '<div class="text-center p-10 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 text-sm font-bold">Tidak ada soal yang ditemukan pada saringan ini.</div>';
                 return;
             }
             
@@ -238,18 +380,30 @@
                         <span class="text-[10px] font-black px-2.5 py-1 rounded-md border ${(!q.jenis_soal || q.jenis_soal === 'PG') ? 'bg-blue-50 text-blue-700 border-blue-200' : q.jenis_soal === 'PGK' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-purple-50 text-purple-700 border-purple-200'}">
                            Tipe: ${q.jenis_soal || 'PG'}
                         </span>
+                        ${q.kode_wacana ? `<span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2.5 py-1 rounded-md border">Wacana: ${q.kode_wacana}</span>` : ''}
                       </div>
                       
-                      <div class="font-bold text-base mb-4 text-slate-800 flex whitespace-pre-wrap ${isArab(q.pertanyaan) ? 'flex-row-reverse text-right font-arabic' : ''}">
-                          <span class="text-emerald-600 ${isArab(q.pertanyaan) ? 'ml-2' : 'mr-2'}">${i+1}.</span>
-                          <div class="flex-1 katex-render" dir="auto">${q.pertanyaan || ' '}</div>
+                      <div class="font-bold text-sm md:text-base mb-4 text-slate-800 flex flex-col md:flex-row gap-2 whitespace-pre-wrap">
+                          <span class="text-emerald-600 shrink-0">${i+1}.</span>
+                          <div class="flex-1 katex-render overflow-x-auto">${formatMixedText(q.pertanyaan || ' ')}</div>
                       </div>
                       
+                      <div class="text-xs font-semibold text-slate-600 mb-2 truncate">Kunci: <span class="bg-slate-100 px-1.5 rounded">${q.kunci||'-'}</span></div>
                     </div>
                   </div>
+                  
                   <div class="flex gap-2 self-end md:self-start mt-3 md:mt-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5 w-full md:w-auto">
-                    <button onclick="editSoal('${q.id}')" class="flex-1 md:flex-none flex justify-center items-center bg-blue-50 hover:bg-blue-100 text-blue-600 p-3 rounded-xl transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
-                    <button onclick="delSoal('${q.id}')" class="flex-1 md:flex-none flex justify-center items-center bg-red-50 hover:bg-red-100 text-red-600 p-3 rounded-xl transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    <button onclick="previewSoal('${q.id}')" class="flex-1 md:flex-none flex justify-center items-center bg-emerald-50 hover:bg-emerald-100 text-emerald-600 p-3 rounded-xl transition-colors shadow-sm" title="Preview Tampilan Siswa">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                    
+                    <button onclick="editSoal('${q.id}')" class="flex-1 md:flex-none flex justify-center items-center bg-blue-50 hover:bg-blue-100 text-blue-600 p-3 rounded-xl transition-colors shadow-sm" title="Edit Soal">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    
+                    <button onclick="delSoal('${q.id}')" class="flex-1 md:flex-none flex justify-center items-center bg-red-50 hover:bg-red-100 text-red-600 p-3 rounded-xl transition-colors shadow-sm" title="Hapus Soal">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
                   </div>
                 </div>
             `).join('');
@@ -259,6 +413,141 @@
                 els.forEach(el => renderMathInElement(el, { delimiters: [{left: "$", right: "$", display: false}, {left: "$$", right: "$$", display: true}] }));
             }
         }
+
+        // =======================================================
+        // FUNGSI PREVIEW SOAL SEPERTI LAYAR SISWA
+        // =======================================================
+        window.previewSoal = (id) => {
+            const q = bankData.find(x => x.id == id);
+            if(!q) return;
+
+            const type = q.jenis_soal || 'PG';
+            let html = '';
+            
+            if(q.teks_wacana) html += `<div class="mb-5 p-4 bg-slate-50 border-l-[3px] border-slate-400 text-sm katex-render wacana-soal">${formatMixedText(q.teks_wacana)}</div>`;
+            if(q.gambar) html += `<div class="mb-5 flex justify-center"><img src="${q.gambar}" class="max-h-72 object-contain rounded-lg shadow-sm border border-slate-200"/></div>`;
+            
+            html += `<div class="text-base sm:text-lg font-semibold mb-6 text-slate-800 katex-render pl-3 whitespace-pre-wrap leading-relaxed">${formatMixedText(q.pertanyaan || '')}</div>`;
+
+            if(type === 'PG') {
+                html += `<div class="space-y-2.5 pl-3">`;
+                ['A','B','C','D'].forEach(opt => {
+                    if(!q[`opsi_${opt.toLowerCase()}`]) return; 
+                    const isKunci = q.kunci === opt;
+                    html += `<div class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isKunci?'bg-emerald-50 border-emerald-500 shadow-sm':'bg-white border-slate-200'}"><span class="w-8 h-8 flex items-center justify-center rounded-lg font-black text-sm shrink-0 ${isKunci?'bg-emerald-600 text-white':'bg-slate-100 text-slate-500'}">${opt}</span><div class="flex-1 pt-1 katex-render">${formatMixedText(q[`opsi_${opt.toLowerCase()}`])}</div></div>`;
+                });
+                html += `</div>`;
+            } else if(type === 'PGK') {
+                html += `<div class="space-y-2.5 pl-3">`;
+                const keys = q.kunci ? q.kunci.split(',') : [];
+                ['A','B','C','D'].forEach(opt => {
+                    if(!q[`opsi_${opt.toLowerCase()}`]) return;
+                    const isKunci = keys.includes(opt);
+                    html += `<div class="w-full text-left p-3 rounded-xl border-2 flex items-start gap-3 transition-all ${isKunci?'bg-orange-50 border-orange-500 shadow-sm':'bg-white border-slate-200'}"><div class="w-7 h-7 flex shrink-0 items-center justify-center rounded-lg border-2 mt-0.5 ${isKunci?'bg-orange-500 border-orange-500 text-white':'bg-slate-100 border-slate-300'}">${isKunci?'✓':''}</div><div class="flex-1 text-sm pt-0.5 katex-render"><span class="font-black mr-2 opacity-50">${opt}.</span>${formatMixedText(q[`opsi_${opt.toLowerCase()}`])}</div></div>`;
+                });
+                html += `</div>`;
+            } else if(type === 'ESAI') {
+                html += `<div class="pl-3"><textarea placeholder="Kolom ini nantinya akan diisi jawaban oleh siswa..." class="w-full min-h-[150px] p-4 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none" disabled></textarea></div>`;
+            }
+
+            document.getElementById('preview-content-box').innerHTML = html;
+            if(window.renderMathInElement) renderMathInElement(document.getElementById('preview-content-box'), { delimiters: [{left:"$",right:"$",display:false}, {left:"$$",right:"$$",display:true}] });
+            
+            const modalPreview = document.getElementById('modal-preview-soal');
+            modalPreview.classList.remove('hidden'); modalPreview.classList.add('flex');
+        };
+
+        // =======================================================
+        // EKSPOR KE DOKUMEN WORD (.DOCX)
+        // =======================================================
+        document.getElementById('btn-export-word').onclick = () => {
+            if(filteredData.length === 0) return alert("Peringatan! Tidak ada soal yang bisa diekspor.");
+            
+            const btn = document.getElementById('btn-export-word');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = 'Memproses...'; btn.disabled = true;
+
+            const mapelTxt = document.getElementById('filter-mapel').value || 'Semua Mata Pelajaran';
+            const kelasTxt = document.getElementById('filter-kelas').value || 'Semua Kelas';
+
+            let htmlString = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.5; }
+                    .header { text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 20px; text-decoration: underline; }
+                    .meta { margin-bottom: 20px; font-weight: bold; }
+                    .wacana { border: 1px solid #000; padding: 10px; margin-bottom: 10px; font-style: italic; }
+                    .soal-box { margin-bottom: 20px; page-break-inside: avoid; }
+                    .kunci { font-weight: bold; text-decoration: underline; margin-top: 5px; color: #d32f2f; }
+                </style>
+            </head>
+            <body>
+                <div class="header">BANK SOAL ALIMA CBT</div>
+                <div class="meta">
+                    Mata Pelajaran: ${mapelTxt}<br>
+                    Tingkat Kelas: ${kelasTxt}<br>
+                    Total: ${filteredData.length} Soal
+                </div>
+            `;
+
+            let currentWacana = '';
+
+            filteredData.forEach((q, index) => {
+                htmlString += `<div class="soal-box">`;
+                
+                if(q.teks_wacana && q.kode_wacana !== currentWacana) {
+                    htmlString += `<div class="wacana"><b>[Wacana Bacaan]</b><br/>${formatMixedText(q.teks_wacana)}</div>`;
+                    currentWacana = q.kode_wacana;
+                }
+
+                if(q.gambar) { htmlString += `<div>[Gambar Terlampir: ${q.gambar}]</div>`; }
+
+                htmlString += `
+                <table style="width:100%; border:none;">
+                    <tr>
+                        <td style="width: 30px; vertical-align: top;">${index + 1}.</td>
+                        <td style="vertical-align: top;">${formatMixedText(q.pertanyaan || '')}</td>
+                    </tr>
+                </table>`;
+
+                if(q.jenis_soal !== 'ESAI') {
+                    const opsis = [{ label: 'A', text: q.opsi_a }, { label: 'B', text: q.opsi_b }, { label: 'C', text: q.opsi_c }, { label: 'D', text: q.opsi_d }];
+                    opsis.forEach(op => {
+                        if(!op.text) return;
+                        htmlString += `
+                        <table style="width:100%; border:none; margin-left: 30px;">
+                            <tr>
+                                <td style="width: 25px; vertical-align: top;">${op.label}.</td>
+                                <td style="vertical-align: top;">${formatMixedText(op.text)}</td>
+                            </tr>
+                        </table>`;
+                    });
+                }
+
+                htmlString += `<div class="kunci" style="margin-left: 30px;">Kunci Jawaban: ${q.kunci || '-'}</div>`;
+                htmlString += `</div>`;
+            });
+
+            htmlString += `</body></html>`;
+
+            try {
+                const converted = htmlDocx.asBlob(htmlString);
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(converted);
+                a.download = `Bank_Soal_Export_${new Date().toISOString().slice(0,10)}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } catch (err) {
+                alert('Gagal mengekspor: Browser tidak mendukung format ini.');
+            }
+
+            btn.innerHTML = originalHTML; btn.disabled = false;
+        };
+
 
         // =======================================================
         // FUNGSI HAPUS MASSAL (BULK DELETE)
@@ -313,7 +602,7 @@
                 
                 btn.disabled = false;
                 btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="inline-block mr-1 mb-0.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Hapus Terpilih (<span id="bulk-count">0</span>)`;
-                loadSoal();
+                loadSoal(); 
             }
         };
 
@@ -405,7 +694,7 @@
         // =======================================================
         // MODAL KETIK MANUAL
         // =======================================================
-        const modal = document.getElementById('modal-soal');
+        const modalKetik = document.getElementById('modal-soal');
         const jenisSelect = document.getElementById('q_jenis');
         const opsiContainer = document.getElementById('opsi-container');
         const pgKunciContainer = document.getElementById('pg-kunci-container');
@@ -419,8 +708,8 @@
             else { opsiContainer.classList.remove('hidden'); pgKunciContainer.classList.remove('hidden'); pgkAlert.classList.add('hidden'); cbs.forEach(cb => cb.classList.add('hidden')); }
         });
 
-        document.getElementById('btn-open-modal').onclick = () => { document.getElementById('form-soal').reset(); document.getElementById('q_id').value = ''; jenisSelect.dispatchEvent(new Event('change')); document.getElementById('modal-title').innerText = "Ketik Soal Baru"; modal.classList.remove('hidden'); modal.classList.add('flex'); };
-        document.getElementById('btn-close-modal').onclick = () => { modal.classList.remove('flex'); modal.classList.add('hidden'); };
+        document.getElementById('btn-open-modal').onclick = () => { document.getElementById('form-soal').reset(); document.getElementById('q_id').value = ''; jenisSelect.dispatchEvent(new Event('change')); document.getElementById('modal-title').innerText = "Ketik Soal Baru"; modalKetik.classList.remove('hidden'); modalKetik.classList.add('flex'); };
+        document.getElementById('btn-close-modal').onclick = () => { modalKetik.classList.remove('flex'); modalKetik.classList.add('hidden'); };
 
         window.editSoal = (id) => {
             const q = bankData.find(x => x.id == id);
@@ -443,7 +732,7 @@
                 cbs.forEach(cb => { cb.checked = keys.includes(cb.value); });
             } else { document.getElementById('q_kunci').value = q.kunci || 'A'; }
             
-            modal.classList.remove('hidden'); modal.classList.add('flex');
+            modalKetik.classList.remove('hidden'); modalKetik.classList.add('flex');
         };
 
         window.delSoal = async (id) => { if(confirm("Hapus permanen soal ini?")) { await supabase.from('bank_soal').delete().eq('id', id); loadSoal(); } };
@@ -474,7 +763,7 @@
 
             const id = document.getElementById('q_id').value;
             if(id) await supabase.from('bank_soal').update(payload).eq('id', id); else await supabase.from('bank_soal').insert([payload]);
-            modal.classList.remove('flex'); modal.classList.add('hidden'); loadSoal();
+            modalKetik.classList.remove('flex'); modalKetik.classList.add('hidden'); loadSoal();
         };
 
         document.addEventListener('DOMContentLoaded', initPage);
