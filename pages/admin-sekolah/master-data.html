@@ -14,11 +14,11 @@
 </head>
 <body class="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans text-slate-800 w-full max-w-[100vw]">
 
-    <div id="sidebar-container"></div>
+    <div id="sidebar-container" class="shrink-0"></div>
 
     <main class="flex-1 flex flex-col h-screen overflow-hidden relative z-0 w-full">
         
-        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4">
+        <header class="bg-white border-b border-slate-200 p-4 md:px-6 lg:px-8 flex justify-between items-center z-10 sticky top-0 shadow-sm w-full gap-4 shrink-0">
            <div class="flex items-center gap-3 flex-1 overflow-hidden pr-2">
              <button id="open-sidebar" class="md:hidden p-2 bg-slate-100 rounded-lg text-blue-600 hover:bg-slate-200 transition-colors shrink-0">
                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -38,7 +38,7 @@
         <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar w-full">
             <div class="max-w-5xl mx-auto space-y-6 pb-10 animate-in fade-in duration-300">
                 
-                <div class="bg-white p-6 rounded-[24px] shadow-sm border border-slate-200 mb-6">
+                <div class="bg-white p-6 rounded-[24px] shadow-sm border border-slate-200">
                     <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-blue-600"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                         Manajemen Master Data
@@ -48,9 +48,7 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
-                        <div class="p-5 border-b border-slate-100 bg-slate-50">
-                            <h4 class="font-black text-slate-800 text-base flex items-center gap-2"><span class="text-amber-500">🏫</span> Kelas / Rombel</h4>
-                        </div>
+                        <div class="p-5 border-b border-slate-100 bg-slate-50 font-black text-slate-800 text-base flex items-center gap-2">🏫 Kelas / Rombel</div>
                         <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
                             <ul id="list-kelas" class="space-y-2"></ul>
                         </div>
@@ -63,9 +61,7 @@
                     </div>
 
                     <div class="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
-                        <div class="p-5 border-b border-slate-100 bg-slate-50">
-                            <h4 class="font-black text-slate-800 text-base flex items-center gap-2"><span class="text-emerald-500">📚</span> Mata Pelajaran</h4>
-                        </div>
+                        <div class="p-5 border-b border-slate-100 bg-slate-50 font-black text-slate-800 text-base flex items-center gap-2">📚 Mata Pelajaran</div>
                         <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
                             <ul id="list-mapel" class="space-y-2"></ul>
                         </div>
@@ -77,7 +73,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </main>
@@ -106,35 +101,42 @@
         }
 
         async function loadData() {
+            // Tarik data kelas
             const { data: kelas } = await supabase.from('master_classes').select('id, name').eq('school_id', schoolId).order('name');
             document.getElementById('list-kelas').innerHTML = kelas ? kelas.map(k => `
                 <li class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-200 font-bold text-sm text-slate-700 shadow-sm">
-                    ${k.name} <button onclick="delData('master_classes', ${k.id})" class="text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-200 transition-all">×</button>
+                    ${k.name} 
+                    <button onclick="delData('master_classes', '${k.id}')" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition-all">×</button>
                 </li>
-            `).join('') : '';
+            `).join('') : '<li class="text-center text-slate-400 font-bold text-xs">Belum ada data</li>';
 
+            // Tarik data mapel
             const { data: mapel } = await supabase.from('master_subjects').select('id, name').eq('school_id', schoolId).order('name');
             document.getElementById('list-mapel').innerHTML = mapel ? mapel.map(m => `
                 <li class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-200 font-bold text-sm text-slate-700 shadow-sm">
-                    ${m.name} <button onclick="delData('master_subjects', ${m.id})" class="text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-200 transition-all">×</button>
+                    ${m.name} 
+                    <button onclick="delData('master_subjects', '${m.id}')" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition-all">×</button>
                 </li>
-            `).join('') : '';
+            `).join('') : '<li class="text-center text-slate-400 font-bold text-xs">Belum ada data</li>';
         }
 
         document.getElementById('form-kelas').onsubmit = async (e) => {
             e.preventDefault();
-            await supabase.from('master_classes').insert({ school_id: schoolId, name: document.getElementById('in-kelas').value.toUpperCase() });
+            await supabase.from('master_classes').insert({ school_id: schoolId, name: document.getElementById('in-kelas').value.toUpperCase().trim() });
             e.target.reset(); loadData();
         };
 
         document.getElementById('form-mapel').onsubmit = async (e) => {
             e.preventDefault();
-            await supabase.from('master_subjects').insert({ school_id: schoolId, name: document.getElementById('in-mapel').value.toUpperCase() });
+            await supabase.from('master_subjects').insert({ school_id: schoolId, name: document.getElementById('in-mapel').value.toUpperCase().trim() });
             e.target.reset(); loadData();
         };
 
         window.delData = async (table, id) => {
-            if(confirm('Hapus item master ini?')) { await supabase.from(table).delete().eq('id', id); loadData(); }
+            if(confirm('Hapus item master ini?')) { 
+                await supabase.from(table).delete().eq('id', id); 
+                loadData(); 
+            }
         }
 
         document.addEventListener('DOMContentLoaded', initPage);

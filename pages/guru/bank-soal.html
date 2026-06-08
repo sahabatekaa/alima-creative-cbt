@@ -263,6 +263,24 @@
             const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
             schoolId = profile.school_id;
             teacherEmail = profile.email;
+
+            // --- MULAI TAMBAHKAN KODE INI ---
+            // Tarik data asli dari tabel master instansi
+            const [{data: masterMapel}, {data: masterKelas}] = await Promise.all([
+                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
+                supabase.from('master_classes').select('name').eq('school_id', schoolId)
+            ]);
+
+            if(masterMapel) {
+                document.getElementById('q_mapel').innerHTML = '<option value="">Pilih Mapel...</option>' + 
+                    masterMapel.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+            }
+            if(masterKelas) {
+                document.getElementById('q_kelas').innerHTML = '<option value="">Pilih Kelas...</option>' + 
+                    masterKelas.map(k => `<option value="${k.name}">Tingkat ${k.name}</option>`).join('');
+            }
+            // --- BATAS AKHIR KODE TAMBAHAN ---
+
             
             document.getElementById('user-name').innerText = profile.name;
             document.getElementById('user-initial').innerText = profile.name.charAt(0).toUpperCase();
@@ -298,8 +316,6 @@
             document.getElementById('filter-mapel').innerHTML = '<option value="">-- Semua Mata Pelajaran --</option>' + mapels.map(m => `<option value="${m}">${m}</option>`).join('');
             document.getElementById('filter-kelas').innerHTML = '<option value="">-- Semua Tingkatan Kelas --</option>' + kelas.map(k => `<option value="${k}">Tingkat ${k}</option>`).join('');
             
-            document.getElementById('q_mapel').innerHTML = '<option value="">Pilih Mapel...</option>' + mapels.map(m => `<option value="${m}">${m}</option>`).join('');
-            document.getElementById('q_kelas').innerHTML = '<option value="">Pilih Kelas...</option>' + kelas.map(k => `<option value="${k}">Tingkat ${k}</option>`).join('');
 
             if(mapels.includes(valM)) document.getElementById('filter-mapel').value = valM;
             if(kelas.includes(valK)) document.getElementById('filter-kelas').value = valK;
@@ -609,26 +625,61 @@
         // =======================================================
         // MESIN EXCEL (DOWNLOAD TEMPLATE & UPLOAD)
         // =======================================================
-        document.getElementById('btn-download-template').onclick = () => {
+        // =======================================================
+        // MESIN EXCEL: TEMPLATE DINAMIS (ADA CONTEKAN MAPEL/KELAS)
+        // =======================================================
+        document.getElementById('btn-download-template').onclick = async () => {
+            // Tarik data master dari admin untuk ditaruh di Excel sebagai contekan
+            const [{data: masterMapel}, {data: masterKelas}] = await Promise.all([
+                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
+                supabase.from('master_classes').select('name').eq('school_id', schoolId)
+            ]);
+
+            const cMapel = masterMapel?.[0]?.name || 'BAHASA INDONESIA';
+            const cKelas = masterKelas?.[0]?.name || '7';
+
             const templateData = [
                 ['Jenis Soal (PG/PGK/ESAI)', 'Mapel', 'Kelas', 'Kode Wacana', 'Teks Wacana', 'URL Gambar', 'Pertanyaan', 'Opsi A', 'Opsi B', 'Opsi C', 'Opsi D', 'Kunci Jawaban (PGK pisah dgn koma)'],
-                ['PG', 'BAHASA INDONESIA', '7', '', '', '', 'Apa ibukota Indonesia?', 'Bandung', 'Jakarta', 'Surabaya', 'Medan', 'B'],
-                ['PGK', 'BAHASA INDONESIA', '7', '', '', '', 'Manakah yang termasuk pulau di Indonesia?', 'Jawa', 'Bali', 'Hokkaido', 'Sumatera', 'A,B,D'],
-                ['ESAI', 'BAHASA INDONESIA', '7', 'WCN-01', 'Bacalah wacana ini dengan saksama...', '', 'Sebutkan 3 pesan moral dari wacana di atas!', '', '', '', '', '']
+                ['PG', cMapel, cKelas, '', '', '', 'Contoh pertanyaan?', 'Opsi 1', 'Opsi 2', 'Opsi 3', 'Opsi 4', 'A']
             ];
-            const ws = XLSX.utils.aoa_to_sheet(templateData);
+
+            // Buat sheet 2 berisi contekan patokan admin
+            const referensiData = [['DAFTAR MAPEL RESMI ADMIN', 'DAFTAR KELAS RESMI ADMIN']];
+            const maxLen = Math.max(masterMapel?.length || 0, masterKelas?.length || 0);
+            for(let i = 0; i < maxLen; i++) {
+                referensiData.push([
+                    masterMapel?.[i]?.name || '',
+                    masterKelas?.[i]?.name || ''
+                ]);
+            }
+
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Template_Soal");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(templateData), "Lembar_Input_Soal");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(referensiData), "INFO_MAPEL_KELAS_RESMI");
             XLSX.writeFile(wb, "Template_Upload_Soal_AlimaCBT.xlsx");
         };
+
 
         document.getElementById('btn-trigger-import').onclick = () => {
             document.getElementById('excel-file-input').click();
         };
 
-        document.getElementById('excel-file-input').onchange = (e) => {
+        // =======================================================
+        // MESIN EXCEL: UPLOAD DENGAN SATPAM VALIDASI KETAT
+        // =======================================================
+        document.getElementById('excel-file-input').onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            // PENTING: Tarik data admin TU sekarang juga untuk dicocokkan!
+            const [{data: masterMapel}, {data: masterKelas}] = await Promise.all([
+                supabase.from('master_subjects').select('name').eq('school_id', schoolId),
+                supabase.from('master_classes').select('name').eq('school_id', schoolId)
+            ]);
+            
+            // Bersihkan data admin jadi huruf besar semua & hilangkan spasi ganda
+            const validMapels = (masterMapel || []).map(m => m.name.toUpperCase().replace(/\s+/g, ' ').trim());
+            const validKelas = (masterKelas || []).map(k => String(k.name).toUpperCase().replace(/\s+/g, ' ').trim());
 
             const reader = new FileReader();
             reader.onload = async (event) => {
@@ -641,16 +692,30 @@
 
                     const rows = json.slice(1);
                     const payloadArray = [];
+                    let errorList = []; // Keranjang penampung daftar error guru
 
-                    for (const row of rows) {
+                    for (let i = 0; i < rows.length; i++) {
+                        const row = rows[i];
                         if(!row[1] || !row[2] || !row[6]) continue; 
+
+                        // Bersihkan ketikan guru (huruf besar & hilangkan spasi ganda tak sengaja)
+                        let mapelExcel = String(row[1] || '').toUpperCase().replace(/\s+/g, ' ').trim();
+                        let kelasExcel = String(row[2] || '').toUpperCase().replace(/\s+/g, ' ').trim();
+
+                        // SATPAM BERAKSI: Cocokkan dengan data Admin TU
+                        if (!validMapels.includes(mapelExcel)) {
+                            errorList.push(`Baris ${i + 2}: Mapel "${mapelExcel}" tidak terdaftar di sistem sekolah.`);
+                        }
+                        if (!validKelas.includes(kelasExcel)) {
+                            errorList.push(`Baris ${i + 2}: Kelas "${kelasExcel}" tidak terdaftar di sistem sekolah.`);
+                        }
 
                         payloadArray.push({
                             school_id: schoolId,
                             teacher_email: teacherEmail,
-                            jenis_soal: String(row[0] || 'PG').toUpperCase(),
-                            mapel: String(row[1] || '').toUpperCase(),
-                            kelas: String(row[2] || '').toUpperCase(),
+                            jenis_soal: String(row[0] || 'PG').toUpperCase().replace(/\s+/g, ''),
+                            mapel: mapelExcel,
+                            kelas: kelasExcel,
                             kode_wacana: row[3] || '',
                             teks_wacana: row[4] || '',
                             gambar: row[5] || '',
@@ -663,8 +728,18 @@
                         });
                     }
 
+                    // Jika ada error/typo, HENTIKAN proses dan tampilkan peringatan!
+                    if (errorList.length > 0) {
+                        alert("⚠️ GAGAL UPLOAD! Ditemukan kesalahan pengetikan Mapel/Kelas:\n\n" + 
+                              errorList.slice(0, 5).join('\n') + 
+                              (errorList.length > 5 ? '\n...dan lainnya.' : '') + 
+                              "\n\nPeriksa Sheet 2 di file Template untuk melihat penulisan yang benar dari Admin.");
+                        document.getElementById('excel-file-input').value = "";
+                        return;
+                    }
+
                     if(payloadArray.length === 0) {
-                        alert("Tidak ada baris soal yang valid. Pastikan format kolom sesuai dengan template!");
+                        alert("Tidak ada baris soal yang valid. Pastikan kolom format benar.");
                         document.getElementById('excel-file-input').value = "";
                         return;
                     }
@@ -673,15 +748,13 @@
 
                     const { error } = await supabase.from('bank_soal').insert(payloadArray);
                     
-                    if (error) {
-                        alert("Gagal mengimpor data: " + error.message);
-                        loadSoal();
-                    } else {
-                        alert(`Berhasil! ${payloadArray.length} soal telah diunggah ke Bank Soal.`);
-                        loadSoal();
-                    }
+                    if (error) throw error;
+                    
+                    alert(`Berhasil! ${payloadArray.length} soal telah diunggah tanpa error.`);
+                    loadSoal();
+                    
                 } catch (err) {
-                    alert("Terjadi kesalahan saat memproses file Excel. Pastikan file tidak korup.");
+                    alert("Gagal memproses file Excel: " + err.message);
                     console.error(err);
                     loadSoal();
                 }
@@ -689,6 +762,7 @@
             };
             reader.readAsArrayBuffer(file);
         };
+
 
 
         // =======================================================

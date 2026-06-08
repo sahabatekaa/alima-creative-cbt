@@ -15,21 +15,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap'); 
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        /* MESIN CETAK PDF KHUSUS */
         @media print { 
           @page { margin: 1.5cm; size: portrait; } 
           html, body { background: white !important; color: black !important; }
-          
-          /* Sembunyikan SEMUA elemen UI web saat diprint */
           body > *:not(#print-frame) { display: none !important; }
-          
-          /* Tampilkan HANYA bingkai cetak */
-          #print-frame { 
-              display: block !important; 
-              position: absolute !important; 
-              top: 0; left: 0; width: 100%; 
-              background: white; 
-          }
+          #print-frame { display: block !important; position: absolute !important; top: 0; left: 0; width: 100%; background: white; }
         }
     </style>
 </head>
@@ -72,7 +62,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3 bg-slate-50 p-2 md:p-3 rounded-xl md:rounded-2xl border border-slate-100">
                         <select id="f-mapel" class="w-full p-2.5 md:p-3 border border-slate-200 rounded-lg md:rounded-xl bg-white outline-none text-[11px] md:text-xs font-bold text-slate-700 focus:border-emerald-500"><option value="">-- Semua Mapel --</option></select>
                         <select id="f-kelas" class="w-full p-2.5 md:p-3 border border-slate-200 rounded-lg md:rounded-xl bg-white outline-none text-[11px] md:text-xs font-bold text-slate-700 focus:border-emerald-500"><option value="">-- Semua Kelas --</option></select>
-                        <select id="f-token" class="w-full p-2.5 md:p-3 border border-emerald-300 rounded-lg md:rounded-xl bg-emerald-50 outline-none text-[11px] md:text-xs font-black text-emerald-800 focus:border-emerald-500"><option value="">-- Semua Token --</option></select>
+                        <select id="f-subkelas" class="w-full p-2.5 md:p-3 border border-emerald-300 rounded-lg md:rounded-xl bg-emerald-50 outline-none text-[11px] md:text-xs font-black text-emerald-800 focus:border-emerald-500"><option value="">-- Semua Sub Kelas --</option></select>
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-2 md:gap-2.5 pt-1">
@@ -90,7 +80,7 @@
                                 <tr>
                                     <th class="py-2.5 px-2 md:px-3 text-center w-8 font-black uppercase text-[9px] md:text-[10px] tracking-wider">No</th>
                                     <th class="py-2.5 px-2 md:px-3 font-black uppercase text-[9px] md:text-[10px] tracking-wider">Siswa</th>
-                                    <th class="py-2.5 px-2 md:px-3 text-center font-black uppercase text-[9px] md:text-[10px] tracking-wider">Kls/Token</th>
+                                    <th class="py-2.5 px-2 md:px-3 text-center font-black uppercase text-[9px] md:text-[10px] tracking-wider">Kls/Ruang</th>
                                     <th class="py-2.5 px-2 md:px-3 text-center font-black uppercase text-[9px] md:text-[10px] tracking-wider">Skor (PG|E)</th>
                                     <th class="py-2.5 px-2 md:px-3 text-center font-black uppercase text-[9px] md:text-[10px] tracking-wider">Nilai Akhir</th>
                                     <th class="py-2.5 px-2 md:px-3 text-center font-black uppercase text-[9px] md:text-[10px] tracking-wider">Aksi</th>
@@ -135,8 +125,7 @@
         </div>
     </main>
 
-    <div id="print-frame" class="hidden text-black bg-white p-4">
-        </div>
+    <div id="print-frame" class="hidden text-black bg-white p-4"></div>
 
     <script type="module">
         import { supabase } from '../../js/config/supabase.js';
@@ -148,7 +137,6 @@
         let activeStudentId = null;
         let bobotPG_Aktif = 40; let bobotEsai_Aktif = 60; 
         
-        // Simpan variabel data sekolah untuk diprint
         let sNama = 'NAMA SEKOLAH'; let sAlamat = 'Alamat Instansi'; let sTelp = '-'; let sKota = 'Kota/Kabupaten';
 
         async function initPage() {
@@ -166,7 +154,7 @@
                 sNama = school.name.toUpperCase();
                 sAlamat = school.alamat || 'Alamat Belum Diatur';
                 sTelp = school.telepon || '-';
-                sKota = school.kota || 'Medan'; // Bisa disesuaikan di Supabase
+                sKota = school.kota || 'Kota/Kabupaten'; 
             }
             loadLeaderboard();
         }
@@ -181,23 +169,23 @@
             
             const mSet = [...new Set(rawData.map(l => l.mapel).filter(Boolean))];
             const kSet = [...new Set(rawData.map(l => l.kelas).filter(Boolean))];
-            const tSet = [...new Set(rawData.map(l => l.token).filter(Boolean))];
+            const skSet = [...new Set(rawData.map(l => l.sub_kelas).filter(Boolean))];
 
             document.getElementById('f-mapel').innerHTML = '<option value="">-- Semua Mapel --</option>' + mSet.map(m => `<option value="${m}">${m}</option>`).join('');
             document.getElementById('f-kelas').innerHTML = '<option value="">-- Semua Kelas --</option>' + kSet.map(k => `<option value="${k}">${k}</option>`).join('');
-            document.getElementById('f-token').innerHTML = '<option value="">-- Semua Token --</option>' + tSet.map(t => `<option value="${t}">${t}</option>`).join('');
+            document.getElementById('f-subkelas').innerHTML = '<option value="">-- Semua Sub Kelas --</option>' + skSet.map(sk => `<option value="${sk}">${sk}</option>`).join('');
 
             document.getElementById('f-mapel').onchange = filterData;
             document.getElementById('f-kelas').onchange = filterData;
-            document.getElementById('f-token').onchange = filterData;
+            document.getElementById('f-subkelas').onchange = filterData;
             filterData();
         }
 
         function filterData() {
             const m = document.getElementById('f-mapel').value;
             const k = document.getElementById('f-kelas').value;
-            const t = document.getElementById('f-token').value;
-            filteredData = rawData.filter(l => (m === '' || l.mapel === m) && (k === '' || l.kelas === k) && (t === '' || l.token === t));
+            const sk = document.getElementById('f-subkelas').value;
+            filteredData = rawData.filter(l => (m === '' || l.mapel === m) && (k === '' || l.kelas === k) && (sk === '' || l.sub_kelas === sk));
             renderTable();
         }
 
@@ -212,7 +200,7 @@
                         <p class="font-black text-slate-800 text-[11px] md:text-sm uppercase">${l.student_name || 'Anonim'}</p>
                         ${l.is_essay_graded ? '<span class="text-[7px] md:text-[8px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded border mt-0.5 inline-block">ESAI SELESAI</span>' : '<span class="text-[7px] md:text-[8px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border mt-0.5 inline-block">PERLU KOREKSI</span>'}
                     </td>
-                    <td class="py-2.5 px-2 md:px-3 text-center font-bold text-slate-600 text-[10px] md:text-xs">${l.kelas}-${l.sub_kelas || ''}<br/><span class="text-[8px] md:text-[9px] text-emerald-600 font-mono bg-emerald-50 px-1 rounded border border-emerald-200 mt-0.5 md:mt-1 inline-block">${l.token}</span></td>
+                    <td class="py-2.5 px-2 md:px-3 text-center font-bold text-slate-600 text-[10px] md:text-xs">${l.kelas}-${l.sub_kelas || ''}</td>
                     <td class="py-2.5 px-2 md:px-3 text-center font-bold uppercase">
                         <div class="inline-flex flex-col sm:flex-row items-center bg-slate-50 border border-slate-200 rounded-md overflow-hidden text-[9px] md:text-[10px]"><span class="px-1.5 py-0.5 md:py-1 bg-white text-slate-500 w-full sm:w-auto border-b sm:border-b-0 sm:border-r border-slate-200">PG:<b class="text-slate-800 ml-1">${l.objective_score||0}</b></span><span class="px-1.5 py-0.5 md:py-1 text-slate-500 w-full sm:w-auto">E:<b class="${l.essay_score > 0 ? 'text-amber-600' : 'text-slate-800'} ml-1">${l.essay_score||0}</b></span></div>
                     </td>
@@ -230,9 +218,6 @@
             `).join('');
         }
 
-        // ==========================================
-        // FUNGSI CETAK DINAMIS DENGAN PRINT-FRAME
-        // ==========================================
         window.generatePDF = (mode) => {
             if(filteredData.length === 0) return alert("Saring data terlebih dahulu sebelum mencetak!");
             
@@ -240,7 +225,7 @@
             const dateStr = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
             const mapelTxt = document.getElementById('f-mapel').value || 'Semua Mata Pelajaran';
             const kelasTxt = document.getElementById('f-kelas').value || 'Semua Kelas';
-            const tokenTxt = document.getElementById('f-token').value || 'Semua Token';
+            const subKelasTxt = document.getElementById('f-subkelas').value || 'Semua Ruang';
             
             let htmlContent = `
                 <div style="text-align: center; border-bottom: 4px double black; padding-bottom: 15px; margin-bottom: 20px;">
@@ -253,7 +238,7 @@
             if(mode === 'rekap') {
                 htmlContent += `
                     <h3 style="text-align: center; font-size: 18px; font-weight: bold; text-decoration: underline; margin-bottom: 20px;">DAFTAR NILAI UJIAN</h3>
-                    <p style="font-size: 12px; margin-bottom: 10px;">Mata Pelajaran: <b>${mapelTxt}</b> <br> Kelas: <b>${kelasTxt}</b> | Token: <b>${tokenTxt}</b></p>
+                    <p style="font-size: 12px; margin-bottom: 10px;">Mata Pelajaran: <b>${mapelTxt}</b> <br> Kelas: <b>${kelasTxt}</b> | Ruang: <b>${subKelasTxt}</b></p>
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
                         <thead>
                             <tr style="background-color: #f1f5f9;">
@@ -281,7 +266,7 @@
             else if(mode === 'hadir') {
                 htmlContent += `
                     <h3 style="text-align: center; font-size: 18px; font-weight: bold; text-decoration: underline; margin-bottom: 20px;">DAFTAR HADIR PESERTA UJIAN</h3>
-                    <p style="font-size: 12px; margin-bottom: 10px;">Mata Pelajaran: <b>${mapelTxt}</b> <br> Kelas: <b>${kelasTxt}</b> | Token: <b>${tokenTxt}</b></p>
+                    <p style="font-size: 12px; margin-bottom: 10px;">Mata Pelajaran: <b>${mapelTxt}</b> <br> Kelas: <b>${kelasTxt}</b> | Ruang: <b>${subKelasTxt}</b></p>
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
                         <thead>
                             <tr style="background-color: #f1f5f9;">
@@ -316,8 +301,8 @@
                         <br>
                         <table style="width: 100%; border: none; margin-bottom: 20px;">
                             <tr><td style="width: 250px; padding: 5px 0;">Mata Pelajaran</td><td>: <b>${mapelTxt}</b></td></tr>
-                            <tr><td style="padding: 5px 0;">Kelas / Ruangan</td><td>: <b>${kelasTxt}</b></td></tr>
-                            <tr><td style="padding: 5px 0;">Token Sesi</td><td>: <b>${tokenTxt}</b></td></tr>
+                            <tr><td style="padding: 5px 0;">Tingkat Kelas</td><td>: <b>${kelasTxt}</b></td></tr>
+                            <tr><td style="padding: 5px 0;">Ruangan / Sub Kelas</td><td>: <b>${subKelasTxt}</b></td></tr>
                             <tr><td style="padding: 5px 0;">Jumlah Peserta Terdaftar</td><td>: <b>${filteredData.length} Peserta</b></td></tr>
                             <tr><td style="padding: 5px 0;">Jumlah Peserta Hadir</td><td>: <b>________ Peserta</b></td></tr>
                             <tr><td style="padding: 5px 0;">Jumlah Peserta Tidak Hadir</td><td>: <b>________ Peserta</b></td></tr>
@@ -331,7 +316,6 @@
                 `;
             }
 
-            // Tanda Tangan Footer
             if(mode === 'berita') {
                 htmlContent += `
                     <div style="display: flex; justify-content: space-between; margin-top: 60px; text-align: center; font-size: 14px;">
@@ -363,18 +347,12 @@
             }
 
             frame.innerHTML = htmlContent;
-            
-            // Panggil Print
             setTimeout(() => { window.print(); }, 200);
         };
 
-
-        // ==========================================
-        // FITUR EXCEL
-        // ==========================================
         document.getElementById('btn-export-excel').onclick = () => {
             if(filteredData.length===0) return alert("Data Kosong!");
-            const rows = filteredData.map((l, i) => ({ "No": i+1, "Nama Siswa": l.student_name, "Kelas": l.kelas, "Mapel": l.mapel, "Nilai PG": l.objective_score, "Nilai Esai": l.essay_score, "Skor Akhir": Math.round(l.score) }));
+            const rows = filteredData.map((l, i) => ({ "No": i+1, "Nama Siswa": l.student_name, "Kelas": l.kelas, "Ruang": l.sub_kelas, "Mapel": l.mapel, "Nilai PG": l.objective_score, "Nilai Esai": l.essay_score, "Skor Akhir": Math.round(l.score) }));
             const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Rekap CBT"); XLSX.writeFile(wb, `Rekap_Nilai_${new Date().toISOString().slice(0,10)}.xlsx`);
         };
@@ -382,9 +360,6 @@
         document.getElementById('btn-bersihkan').onclick = async () => { const c = prompt("Ketik HAPUS untuk membersihkan semua nilai Anda:"); if(c === "HAPUS") { await supabase.from('leaderboard').delete().eq('teacher_email', teacherEmail); loadLeaderboard(); } };
         window.delRekap = async (id) => { if(confirm("Hapus permanen data nilai siswa ini?")) { await supabase.from('leaderboard').delete().eq('id', id); loadLeaderboard(); } };
 
-        // ==========================================
-        // FITUR ANALISIS DAN KOREKSI
-        // ==========================================
         window.analisisSiswa = async (id) => {
             const student = rawData.find(r => r.id === id);
             if(!student) return;
@@ -394,12 +369,11 @@
             const content = document.getElementById('analisis-content');
             content.innerHTML = '<div class="text-center p-6 md:p-10 font-bold text-slate-400 animate-pulse text-xs md:text-sm">Memuat naskah soal...</div>';
 
-            // [INJEKSI PROTEKSI] Tambahkan .eq('teacher_email', teacherEmail) agar tidak menarik soal guru lain
             const { data: soalList } = await supabase.from('bank_soal')
                 .select('*')
                 .eq('mapel', student.mapel)
                 .eq('kelas', student.kelas)
-                .eq('teacher_email', teacherEmail); // Saringan Wajib
+                .eq('teacher_email', teacherEmail); 
                 
             if(!soalList || soalList.length === 0) {
                 content.innerHTML = '<div class="text-center p-6 text-rose-500 font-bold border-2 border-dashed border-rose-200 rounded-xl text-xs md:text-sm">Soal tidak ditemukan di bank soal.</div>'; return;
@@ -466,13 +440,12 @@
             const content = document.getElementById('koreksi-content');
             content.innerHTML = '<div class="text-center p-6 font-bold text-amber-400 animate-pulse text-xs md:text-sm">Menyiapkan Lembar Koreksi...</div>';
 
-            // [INJEKSI PROTEKSI] Tambahkan .eq('teacher_email', teacherEmail) agar tidak menarik soal esai guru lain
             const { data: soalList } = await supabase.from('bank_soal')
                 .select('id, pertanyaan, kunci')
                 .eq('mapel', student.mapel)
                 .eq('kelas', student.kelas)
                 .eq('jenis_soal', 'ESAI')
-                .eq('teacher_email', teacherEmail); // Saringan Wajib
+                .eq('teacher_email', teacherEmail); 
             
             if(!soalList || soalList.length === 0) {
                 content.innerHTML = '<div class="text-center p-6 text-slate-500 font-bold bg-white rounded-xl text-xs md:text-sm">Sesi ini tidak mengandung Soal Esai.</div>';
